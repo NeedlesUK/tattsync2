@@ -16,6 +16,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
+  supabase: ReturnType<typeof createClient> | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,17 +29,18 @@ let supabase: ReturnType<typeof createClient> | null = null;
 
 // Only initialize Supabase if we have valid URL and key (not placeholder values)
 if (supabaseUrl && 
-    supabaseAnonKey && 
-    supabaseUrl !== 'https://your-project-id.supabase.co' && 
-    supabaseAnonKey !== 'your-supabase-anon-key' &&
-    supabaseUrl.startsWith('https://')) {
+    supabaseAnonKey) {
   supabase = createClient(supabaseUrl, supabaseAnonKey);
+  console.log('✅ Supabase client initialized');
 } else {
   console.error('❌ Supabase configuration invalid:');
   console.error('VITE_SUPABASE_URL:', supabaseUrl);
   console.error('VITE_SUPABASE_ANON_KEY present:', !!supabaseAnonKey);
   console.error('Please update your .env file with actual Supabase credentials');
 }
+
+// Create admin client for direct database access
+const supabaseAdmin = supabase;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -48,55 +50,89 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to fetch user data from our database
   const fetchUserData = async (userId: string, userEmail: string) => {
     try {
-      // Try to get user data from our database
-      console.log('Fetching user data for:', userId, userEmail);
+      console.log('🔍 Fetching user data for:', userId, userEmail);
       
-      if (supabaseAdmin) {
+      // Special case for gary@tattscore.com - always admin
+      if (userEmail === 'gary@tattscore.com') {
+        console.log('👑 Setting admin role for gary@tattscore.com');
+        return {
+          id: userId,
+          name: 'Gary Watts',
+          email: 'gary@tattscore.com',
+          role: 'admin'
+        };
+      }
+      
+      // Try direct database query first
+      if (supabase) {
         try {
-          // Use supabaseAdmin to directly query the database
-          const { data, error } = await supabaseAdmin
+          console.log('🔍 Querying Supabase directly');
+          const { data, error } = await supabase
             .from('users')
             .select('id, name, email, role')
             .eq('id', userId)
             .single();
           
           if (error) {
-            console.error('Error fetching user data from Supabase:', error);
+            console.error('❌ Error fetching user data from Supabase:', error);
             throw error;
           }
           
-          console.log('User data from Supabase:', data);
+          console.log('✅ User data from Supabase:', data);
           return data;
         } catch (error) {
-          console.error('Error fetching user data from Supabase:', error);
+          console.error('❌ Error fetching user data from Supabase:', error);
           // Fall through to the fallback
         }
       } else if (session?.access_token) {
         try {
-          console.log('Fetching user data from API');
+          console.log('🔍 Fetching user data from API');
           const response = await axios.get(`/api/users/${userId}`, {
             headers: {
               'Authorization': `Bearer ${session.access_token}`
             }
           });
-          console.log('User data from API:', response.data);
+          console.log('✅ User data from API:', response.data);
           return response.data;
         } catch (error) {
-          console.error('Error fetching user data from API:', error);
+          console.error('❌ Error fetching user data from API:', error);
           // Fall through to the fallback
         }
       }
       
-      // Fallback to basic user info if API call fails
+      // Fallback to basic user info
+      console.log('⚠️ Using fallback user data');
+      
+      // Special case for gary@tattscore.com - always admin
+      if (userEmail === 'gary@tattscore.com') {
+        return {
+          id: userId,
+          name: 'Gary Watts',
+          email: 'gary@tattscore.com',
+          role: 'admin'
+        };
+      }
+      
       return {
-        id: userId || '',
-        name: userEmail?.split('@')[0] || 'User', 
+        id: userId,
+        name: userEmail?.split('@')[0] || 'User',
         email: userEmail || '',
-        role: 'admin' // Default to admin for gary@tattscore.com
+        role: 'artist' as const
       };
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error('❌ Error fetching user data:', error);
       // Fallback to basic user info if API call fails
+      
+      // Special case for gary@tattscore.com - always admin
+      if (userEmail === 'gary@tattscore.com') {
+        return {
+          id: userId,
+          name: 'Gary Watts',
+          email: 'gary@tattscore.com',
+          role: 'admin'
+        };
+      }
+      
       return {
         id: userId,
         name: userEmail?.split('@')[0] || 'User',
@@ -109,26 +145,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user state with complete data
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
+      console.log('🔄 Updating user state for session:', session.user.email);
       try {
-        const userData = await fetchUserData(session.user.id, session.user.email || '');
-        console.log('Setting user state with data:', userData);
+        // Special case for gary@tattscore.com - always admin
+        if (session.user.email === 'gary@tattscore.com') {
+          console.log('👑 Setting admin user for gary@tattscore.com');
+          setUser({
+            id: session.user.id,
+            name: 'Gary Watts',
+            email: 'gary@tattscore.com',
+            role: 'admin',
+            avatar: undefined
+          });
+          return;
+        }
         
+        const userData = await fetchUserData(session.user.id, session.user.email || '');
+        console.log('✅ Setting user state with data:', userData);
+
         setUser({
           id: userData.id,
           name: userData.name,
           email: userData.email,
-          role: userData.role || session.user.user_metadata?.role || 'admin',
-          // Don't hardcode avatar URL
+          role: userData.role || session.user.user_metadata?.role || 'artist',
           avatar: undefined
         });
       } catch (error) {
-        console.error('Error updating user state:', error);
+        console.error('❌ Error updating user state:', error);
+        
+        // Special case for gary@tattscore.com - always admin
+        if (session.user.email === 'gary@tattscore.com') {
+          console.log('👑 Setting admin user for gary@tattscore.com (fallback)');
+          setUser({
+            id: session.user.id,
+            name: 'Gary Watts',
+            email: 'gary@tattscore.com',
+            role: 'admin',
+            avatar: undefined
+          });
+          return;
+        }
+        
         // Fallback to basic user info from session
         setUser({
           id: session.user.id,
           name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
-          role: session.user.user_metadata?.role || 'admin'
+          role: session.user.user_metadata?.role || 'artist'
         });
       }
     } else {
@@ -140,7 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!supabase) {
-      console.warn('Supabase not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+      console.warn('⚠️ Supabase not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
       setIsLoading(false);
       return;
     }
@@ -148,6 +211,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
+      
+      console.log('🔍 Initial session check:', session?.user?.email);
       
       if (session?.access_token) {
         // Set the authorization header for API requests
@@ -162,6 +227,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log('🔄 Auth state changed:', session?.user?.email);
       setSession(session);
       
       if (session?.access_token) {
@@ -226,7 +292,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, session, login, logout, isLoading, supabase }}>
       {children}
     </AuthContext.Provider>
   );
