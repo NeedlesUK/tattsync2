@@ -34,3 +34,40 @@ const dbConfig = {
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
 };
+
+// Create connection pool
+const pool = new Pool(dbConfig);
+
+// Test database connection
+async function testConnection() {
+  try {
+    const client = await pool.connect();
+    console.log("✅ PostgreSQL Database connected successfully");
+    const result = await client.query("SELECT NOW()");
+    console.log("📅 Database time:", result.rows[0].now);
+    client.release();
+    return true;
+  } catch (error) {
+    console.error("❌ Database connection failed:", error.message);
+    return false;
+  }
+}
+
+// Initialize database connection
+testConnection();
+
+// Helper function to execute queries
+async function query(text, params) {
+  const client = await pool.connect();
+  try {
+    const result = await client.query(text, params);
+    return result;
+  } catch (error) {
+    console.error("Database query error:", error.message);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { pool, query, supabase };
