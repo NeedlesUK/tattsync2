@@ -44,9 +44,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
         try {
           // Only check if we're not already on the setup page
           if (location.pathname !== '/setup') {
-            const authContext = useAuth();
-            const supabase = authContext.supabase;
-            
             if (supabase) {
               // Check if any admin users exist
               const { data, error } = await supabase
@@ -74,7 +71,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     };
     
     checkSetupNeeded();
-  }, [isLoading, user, location.pathname, navigate]);
+  }, [isLoading, user, location.pathname, navigate, supabase]);
 
   if (isLoading) {
     return (
