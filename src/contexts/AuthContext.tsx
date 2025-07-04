@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import { createClient, Session, User } from '@supabase/supabase-js';
 import axios from 'axios';
 import { api } from '../lib/api';
-import { api } from '../lib/api';
 
 interface AuthUser {
   id: string;
@@ -18,12 +17,10 @@ interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
   supabase: ReturnType<typeof createClient> | null;
+  updateUserEmail: (newEmail: string) => Promise<void>;
+  updateUserRoles: (roles: string[], primaryRole: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  updateUserEmail: (newEmail: string) => Promise<void>;
-  updateUserRoles: (roles: string[], primaryRole: string) => Promise<void>;
-  updateUserEmail: (newEmail: string) => Promise<void>;
-  updateUserRoles: (roles: string[], primaryRole: string) => Promise<void>;
   isLoading: boolean;
   supabase: ReturnType<typeof createClient> | null;
   updateUserProfile: (profileData: Partial<AuthUser>) => void;
