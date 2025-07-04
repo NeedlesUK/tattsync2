@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar, MapPin, QrCode, Download, Share2, Clock } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface TicketCardProps {
   ticket: {
@@ -72,11 +73,14 @@ export function TicketCard({ ticket, onDownload, onShare }: TicketCardProps) {
         
         {ticket.status === 'active' && (
           <div className="flex justify-center mb-4">
-            <div className="bg-white p-3 rounded-lg">
-              <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${ticket.qrCode}`}
-                alt="Ticket QR Code" 
-                className="w-32 h-32"
+            <div className="bg-white p-3 rounded-lg flex items-center justify-center">
+              <QRCodeSVG 
+                value={ticket.qrCode} 
+                size={128} 
+                bgColor={"#ffffff"} 
+                fgColor={"#000000"} 
+                level={"L"} 
+                includeMargin={false}
               />
             </div>
           </div>

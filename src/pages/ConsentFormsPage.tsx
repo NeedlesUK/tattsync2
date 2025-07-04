@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Filter, FileText, QrCode, Eye, Edit, Trash2, Download, Calendar, User } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { ConsentFormBuilder } from '../components/consent/ConsentFormBuilder';
 import { ConsentFormViewer } from '../components/consent/ConsentFormViewer';
 import { useAuth } from '../contexts/AuthContext';
@@ -473,11 +474,14 @@ export function ConsentFormsPage() {
                       <QrCode className="w-4 h-4" />
                     </button>
                     <button 
-                      className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-3 py-2 rounded-lg text-sm transition-colors"
-                      onClick={() => handleDeleteForm(form.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <QRCodeSVG 
+                      value={`https://tattsync.com/consent/${form.id}`} 
+                      size={96} 
+                      bgColor={"#ffffff"} 
+                      fgColor={"#000000"} 
+                      level={"L"} 
+                      includeMargin={false}
+                    />
                   </div>
                 </div>
               ))}
