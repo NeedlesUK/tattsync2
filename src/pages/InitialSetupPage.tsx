@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, User, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
-import axios from 'axios';
+import { api } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export function InitialSetupPage() {
+  const { supabase } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -19,17 +21,34 @@ export function InitialSetupPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    checkSetupStatus();
+    if (supabase) {
+      checkSetupStatus();
+    } else {
+      setNeedsSetup(false);
+    }
   }, []);
 
   const checkSetupStatus = async () => {
     try {
-      const response = await axios.get('/api/auth/setup-status');
-      setNeedsSetup(response.data.needsInitialSetup);
+      // Check if admin exists by querying the users table
+      const { data, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('role', 'admin')
+        .limit(1);
+        
+      if (error) {
+        console.error('Error checking for admin users:', error);
+        setNeedsSetup(false);
+        return;
+      }
       
-      if (!response.data.needsInitialSetup) {
-        // Redirect to login if setup is already complete
-        navigate('/login');
+      // If admin users exist, we don't need setup
+      const needsInitialSetup = !data || data.length === 0;
+      setNeedsSetup(needsInitialSetup);
+      
+      if (!needsInitialSetup) {
+        navigate('/login'); // Redirect to login if setup is already complete
       }
     } catch (error) {
       console.error('Error checking setup status:', error);
@@ -84,11 +103,59 @@ export function InitialSetupPage() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('/api/auth/create-initial-admin', {
-        name: formData.name,
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
+      }
+      
+      // Create user with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+            role: 'admin'
+          }
+        }
       });
+      
+      if (authError) {
+        throw authError;
+      }
+      
+      if (!authData.user) {
+        throw new Error('Failed to create user');
+      }
+      
+      // Insert user into users table with admin role
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: authData.user.id,
+          name: formData.name,
+          email: formData.email,
+          role: 'admin',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        
+      if (insertError) {
+        throw insertError;
+      }
+      
+      // Add admin role to user_roles table
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: authData.user.id,
+          role: 'admin',
+          is_primary: true,
+          created_at: new Date().toISOString()
+        });
+        
+      if (roleError) {
+        console.error('Error adding admin role:', roleError);
+      }
 
       setSuccess('Initial admin account created successfully! You can now log in.');
       
@@ -100,15 +167,7 @@ export function InitialSetupPage() {
     } catch (err: any) {
       console.error('Setup error:', err);
       
-      let errorMessage = 'Failed to create admin account. Please try again.';
-      
-      if (err.response?.data?.error) {
-        errorMessage = err.response.data.error;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-      
-      setError(errorMessage);
+      setError(err.message || 'Failed to create admin account. Please try again.');
     } finally {
       setIsLoading(false);
     }

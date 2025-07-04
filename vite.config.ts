@@ -6,11 +6,12 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     exclude: ['lucide-react'],
+    include: ['qrcode.react']
   },
   server: {
     proxy: {
       '/api': {
-        target: 'http://92.204.90.247:3003',
+        target: 'http://localhost:3003',
         changeOrigin: true,
         secure: false
       }

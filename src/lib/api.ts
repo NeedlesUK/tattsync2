@@ -1,5 +1,5 @@
 // API configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://92.204.90.247:3003';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const api = {
   baseURL: API_BASE_URL,
@@ -7,6 +7,8 @@ export const api = {
   // Helper method to make requests with proper error handling
   async request(endpoint: string, options: RequestInit = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
+    
+    console.log(`Making API request to: ${url}`);
     
     const config: RequestInit = {
       headers: {
@@ -18,6 +20,7 @@ export const api = {
 
     try {
       const response = await fetch(url, config);
+      console.log(`Response status: ${response.status}`);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

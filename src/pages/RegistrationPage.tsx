@@ -24,18 +24,37 @@ export function RegistrationPage() {
   const checkSetupStatus = async () => {
     try {
       // Skip API call if Supabase is not configured
-      if (!supabase) {
-        console.error('Supabase not configured. Please update your .env file with actual Supabase credentials');
+      try {
+        if (!supabase) {
+          console.error('Supabase not configured. Please update your .env file with actual Supabase credentials');
+          setNeedsSetup(false); // Default to false if check fails
+          return;
+        }
+        
+        // Check if admin exists by querying the users table
+        const { data, error } = await supabase
+          .from('users')
+          .select('id')
+          .eq('role', 'admin')
+          .limit(1);
+          
+        if (error) {
+          console.error('Error checking for admin users:', error);
+          setNeedsSetup(false);
+          return;
+        }
+        
+        // If no admin users exist, we need setup
+        const needsInitialSetup = !data || data.length === 0;
+        setNeedsSetup(needsInitialSetup);
+        
+        if (needsInitialSetup) {
+          // Redirect to setup page if initial setup is needed
+          navigate('/setup');
+        }
+      } catch (error) {
+        console.error('Error checking setup status:', error);
         setNeedsSetup(false); // Default to false if check fails
-        return;
-      }
-      
-      const response = await api.get('/api/auth/setup-status');
-      setNeedsSetup(response.needsInitialSetup);
-      
-      if (response.needsInitialSetup) {
-        // Redirect to setup page if initial setup is needed
-        navigate('/setup');
       }
     } catch (error) {
       console.error('Error checking setup status:', error);
