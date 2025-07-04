@@ -162,7 +162,7 @@ export function ProfilePage() {
   const handleSave = async () => {
     if (!supabase || !user) return;
     
-    console.log('Saving profile...');
+    console.log('Saving profile...', formData);
     setIsSaving(true);
     setSaveSuccess('');
     setSaveError('');
@@ -197,6 +197,26 @@ export function ProfilePage() {
       
       // Update or insert user profile
       console.log('Updating user profile...');
+      console.log('Profile data:', {
+        user_id: user.id,
+        phone: formData.phone,
+        location: formData.location,
+        bio: formData.bio,
+        website: formData.website,
+        instagram: formData.instagram,
+        facebook: formData.facebook,
+        tiktok: formData.tiktok,
+        experience: formData.experience,
+        specialties: formData.specialties,
+        profile_picture: profilePicture,
+        show_instagram: formData.show_instagram,
+        show_facebook: formData.show_facebook,
+        show_tiktok: formData.show_tiktok,
+        show_website: formData.show_website, 
+        show_profile: formData.show_profile,
+        updated_at: new Date().toISOString()
+      });
+      
       const { error: profileError } = await supabase
         .from('user_profiles')
         .upsert({
@@ -221,7 +241,7 @@ export function ProfilePage() {
       
       if (profileError) {
         console.log('Error updating profile:', profileError);
-        console.error('Error updating profile:', profileError);
+        console.error('Error updating profile:', profileError.message);
         setSaveError('Failed to update profile. Please try again.');
         setIsSaving(false);
         return;
@@ -243,6 +263,12 @@ export function ProfilePage() {
       // Success
       console.log('Profile updated successfully!');
       setSaveSuccess('Profile updated successfully!');
+      
+      // Refresh user data
+      if (user.email !== formData.email) {
+        window.location.reload();
+      }
+      
       setIsEditing(false);
     } catch (error) {
       console.log('Error saving profile:', error);
@@ -359,10 +385,11 @@ export function ProfilePage() {
   const handleAddRole = async () => {
     if (!newRole || !supabase || !user) return;
     
-    console.log('Adding role:', newRole);
+    console.log('Adding role:', newRole, 'to existing roles:', userRoles);
     try {
-      await updateUserRoles([...userRoles, newRole], primaryRole);
-      setUserRoles(prev => [...prev, newRole]);
+      const updatedRoles = [...userRoles, newRole];
+      await updateUserRoles(updatedRoles, primaryRole);
+      setUserRoles(updatedRoles);
       setNewRole('');
       console.log('Role added successfully');
     } catch (error) {
@@ -373,7 +400,7 @@ export function ProfilePage() {
   const handleRemoveRole = async (role: string) => {
     if (role === primaryRole || !supabase || !user) return;
     
-    console.log('Removing role:', role);
+    console.log('Removing role:', role, 'from roles:', userRoles);
     try {
       const updatedRoles = userRoles.filter(r => r !== role);
       await updateUserRoles(updatedRoles, primaryRole);
@@ -387,7 +414,7 @@ export function ProfilePage() {
   const handleSetPrimaryRole = async (role: string) => {
     if (!supabase || !user) return;
     
-    console.log('Setting primary role:', role);
+    console.log('Setting primary role:', role, 'current roles:', userRoles);
     try {
       await updateUserRoles(userRoles, role);
       setPrimaryRole(role);
@@ -769,7 +796,10 @@ export function ProfilePage() {
                 <div className="mt-6 p-6 bg-white/5 rounded-lg border border-white/10">
                   <h3 className="text-lg font-semibold text-white mb-4">User Roles</h3>
                   
-                  <div className="mb-4">
+                  <div className="mb-4 space-y-2">
+                    <p className="text-gray-300 text-sm">
+                      Your current roles:
+                    </p>
                     <div className="flex flex-wrap gap-2 mb-2">
                       {userRoles.map(role => (
                         <div 
@@ -783,7 +813,10 @@ export function ProfilePage() {
                           <span>{role}</span>
                           {role !== primaryRole && (
                             <button 
-                              onClick={() => handleRemoveRole(role)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveRole(role);
+                              }}
                               className="text-gray-400 hover:text-red-400 ml-1"
                             >
                               <Trash2 className="w-3 h-3" />
@@ -791,7 +824,10 @@ export function ProfilePage() {
                           )}
                           {role !== primaryRole && (
                             <button 
-                              onClick={() => handleSetPrimaryRole(role)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSetPrimaryRole(role);
+                              }}
                               className="text-gray-400 hover:text-purple-400 ml-1"
                             >
                               <CheckCircle className="w-3 h-3" />
@@ -804,7 +840,10 @@ export function ProfilePage() {
                     <div className="flex items-center space-x-2 mt-4">
                       <select
                         value={newRole}
-                        onChange={(e) => setNewRole(e.target.value)}
+                        onChange={(e) => {
+                          console.log('Selected role:', e.target.value);
+                          setNewRole(e.target.value);
+                        }}
                         className="bg-white/5 border border-white/20 rounded-lg text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       >
                         <option value="">Select a role to add</option>
@@ -820,7 +859,7 @@ export function ProfilePage() {
                       <button
                         onClick={handleAddRole}
                         disabled={!newRole}
-                        className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg transition-colors"
+                        className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg transition-colors flex items-center"
                       >
                         <Plus className="w-4 h-4" />
                       </button>

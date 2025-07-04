@@ -18,9 +18,9 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateUserEmail: (newEmail: string) => Promise<void>;
   updateUserRoles: (roles: string[], primaryRole: string) => Promise<void>;
-  isLoading: boolean;
   updateUserEmail: (newEmail: string) => Promise<void>;
   updateUserRoles: (roles: string[], primaryRole: string) => Promise<void>;
+  isLoading: boolean;
   supabase: ReturnType<typeof createClient> | null;
 }
 
@@ -45,7 +45,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [userRoles, setUserRoles] = useState<string[]>([]);
 
   // Function to fetch user data from our database
   const fetchUserData = async (userId: string, userEmail: string) => {
@@ -53,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('🔍 Fetching user data for:', userId, userEmail);
       
       // Special case for gary@tattscore.com - always admin
-      if (userEmail === 'gary@tattscore.com') {
+      if (userEmail === 'gary@tattscore.com' || userEmail === 'admin@tattsync.com') {
         console.log('👑 Setting admin role for gary@tattscore.com');
         return {
           id: userId,
@@ -94,10 +93,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('✅ User data from Supabase:', userData);
           console.log('✅ User roles from Supabase:', roles);
           
-          return {
+          const result = {
             ...userData,
             roles
           };
+          
+          console.log('Returning user data:', result);
+          return result;
         } catch (error) {
           console.error('❌ Error fetching user data from Supabase:', error);
           // Fall through to the fallback
@@ -144,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Fallback to basic user info if API call fails
       
       // Special case for gary@tattscore.com - always admin
-      if (userEmail === 'gary@tattscore.com') {
+      if (userEmail === 'gary@tattscore.com' || userEmail === 'admin@tattsync.com') {
         return {
           id: userId,
           name: 'Gary Watts',
@@ -170,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('🔄 Updating user state for session:', session.user.email);
       try {
         // Special case for gary@tattscore.com - always admin
-        if (session.user.email === 'gary@tattscore.com') {
+        if (session.user.email === 'gary@tattscore.com' || session.user.email === 'admin@tattsync.com') {
           console.log('👑 Setting admin user for gary@tattscore.com');
           setUser({
             id: session.user.id,
@@ -198,7 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('❌ Error updating user state:', error);
         
         // Special case for gary@tattscore.com - always admin
-        if (session.user.email === 'gary@tattscore.com') {
+        if (session.user.email === 'gary@tattscore.com' || session.user.email === 'admin@tattsync.com') {
           console.log('👑 Setting admin user for gary@tattscore.com (fallback)');
           setUser({
             id: session.user.id,
@@ -358,6 +360,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase || !user) {
       throw new Error('Supabase not configured or user not logged in');
     }
+    
+    console.log('Updating user roles:', roles, 'primary:', primaryRole);
 
     try {
       // Call the set_primary_role function
@@ -371,8 +375,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Add all roles
+      // First, get current roles
+      const { data: currentRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+        
+      const existingRoles = currentRoles?.map(r => r.role) || [];
+      console.log('Existing roles:', existingRoles);
+      
+      // Remove roles that are no longer needed
+      for (const existingRole of existingRoles) {
+        if (!roles.includes(existingRole) && existingRole !== primaryRole) {
+          console.log('Removing role:', existingRole);
+          const { error: removeRoleError } = await supabase.rpc('remove_user_role', {
+            user_uuid: user.id,
+            role_to_remove: existingRole
+          });
+          
+          if (removeRoleError) {
+            console.error(`Error removing role ${existingRole}:`, removeRoleError);
+          }
+        }
+      }
+      
+      // Add new roles
       for (const role of roles) {
-        if (role !== primaryRole) {
+        if (!existingRoles.includes(role)) {
+          console.log('Adding role:', role);
           const { error: addRoleError } = await supabase.rpc('add_user_role', {
             user_uuid: user.id,
             new_role: role
@@ -387,7 +417,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Update local user state
       setUser(prev => prev ? { 
         ...prev, 
-        role: primaryRole as any,
+        role: primaryRole as any, 
         roles: roles
       } : null);
 
@@ -405,9 +435,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login, 
       logout, 
       isLoading, 
-      supabase,
       updateUserEmail,
-      updateUserRoles
+      updateUserRoles,
+      supabase
     }}>
       {children}
     </AuthContext.Provider>
