@@ -1,5 +1,5 @@
 const express = require('express');
-const { supabase } = require('../config/database');
+const { supabase, supabaseAdmin } = require('../config/database');
 const router = express.Router();
 
 // Create initial admin user endpoint (only works if no admin exists)
@@ -12,14 +12,14 @@ router.post('/create-initial-admin', async (req, res) => {
       return res.status(400).json({ error: 'Name, email, and password are required' });
     }
 
-    if (!supabase) {
+    if (!supabaseAdmin) {
       return res.status(500).json({ 
-        error: 'Supabase not configured. Please check environment variables.' 
+        error: 'Supabase admin not configured. Please check environment variables.' 
       });
     }
 
     // Check if any admin users already exist
-    const { data: existingAdmins, error: checkError } = await supabase
+    const { data: existingAdmins, error: checkError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('role', 'admin')
@@ -36,8 +36,8 @@ router.post('/create-initial-admin', async (req, res) => {
       });
     }
 
-    // Create user with Supabase Auth
-    const { data, error } = await supabase.auth.admin.createUser({
+    // Create user with Supabase Auth using admin client
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       user_metadata: {
@@ -54,7 +54,7 @@ router.post('/create-initial-admin', async (req, res) => {
 
     // Insert user data into our custom users table
     if (data.user) {
-      const { error: insertError } = await supabase
+      const { error: insertError } = await supabaseAdmin
         .from('users')
         .upsert({
           id: data.user.id,
@@ -69,7 +69,7 @@ router.post('/create-initial-admin', async (req, res) => {
         console.error('Error inserting admin user data:', insertError);
         // Try to clean up the Supabase user if database insert fails
         try {
-          await supabase.auth.admin.deleteUser(data.user.id);
+          await supabaseAdmin.auth.admin.deleteUser(data.user.id);
         } catch (cleanupError) {
           console.error('Failed to cleanup Supabase user:', cleanupError);
         }
@@ -95,13 +95,13 @@ router.post('/create-initial-admin', async (req, res) => {
 // Check if initial admin setup is needed
 router.get('/setup-status', async (req, res) => {
   try {
-    if (!supabase) {
+    if (!supabaseAdmin) {
       return res.status(500).json({ 
-        error: 'Supabase not configured. Please check environment variables.' 
+        error: 'Supabase admin not configured. Please check environment variables.' 
       });
     }
 
-    const { data: existingAdmins, error } = await supabase
+    const { data: existingAdmins, error } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('role', 'admin')
@@ -167,9 +167,9 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: error.message });
     }
 
-    // Insert user data into our custom users table
+    // Insert user data into our custom users table using admin client
     if (data.user) {
-      const { error: insertError } = await supabase
+      const { error: insertError } = await supabaseAdmin
         .from('users')
         .upsert({
           id: data.user.id,
@@ -225,10 +225,10 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Get user data from our custom table
+    // Get user data from our custom table using admin client
     let userData = null;
     try {
-      const { data: userResult, error: userError } = await supabase
+      const { data: userResult, error: userError } = await supabaseAdmin
         .from('users')
         .select('*')
         .eq('id', data.user.id)

@@ -1,4 +1,4 @@
-const { supabase } = require('../config/database');
+const { supabase, supabaseAdmin } = require('../config/database');
 
 // Middleware to authenticate Supabase JWT tokens
 async function authenticateToken(req, res, next) {
@@ -10,7 +10,7 @@ async function authenticateToken(req, res, next) {
   }
 
   try {
-    // Verify Supabase JWT token
+    // Verify Supabase JWT token using public client
     if (supabase) {
       const { data, error } = await supabase.auth.getUser(token);
       const user = data?.user;
@@ -20,8 +20,8 @@ async function authenticateToken(req, res, next) {
         return res.status(403).json({ error: 'Invalid or expired token' });
       }
       
-      // Get user data from the database using Supabase
-      const { data: userData, error: userError } = await supabase
+      // Get user data from the database using admin client for database queries
+      const { data: userData, error: userError } = await supabaseAdmin
         .from('users')
         .select('id, name, email, role')
         .eq('id', user.id)
