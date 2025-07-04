@@ -304,6 +304,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) {
       throw new Error('Supabase not configured. Please check your environment variables.');
       const response = await api.post('/api/auth/login', {
+      }
+      )
+    }
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -314,6 +317,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.session && response.user) {
         setUser(response.user);
         setSession(response.session);
+      }
 
       // Set authorization header immediately after successful login
       if (data.session?.access_token) {
