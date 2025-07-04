@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Camera, CheckCircle, XCircle, AlertCircle, User, Calendar, Clock } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface TicketScannerModalProps {
   eventId: number;
@@ -247,6 +248,7 @@ export function TicketScannerModal({
                   <div className="text-center">
                     <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-300">Camera preview will appear here</p>
+                    {/* QR code scanner would be implemented here in a real application */}
                   </div>
                 )}
               </div>
