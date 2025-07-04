@@ -1,441 +1,245 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { createClient, Session, User } from '@supabase/supabase-js';
-import axios from 'axios';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { Settings, User, Calendar, CreditCard, Users, MessageSquare, Award, Building2 } from 'lucide-react';
 
-interface AuthUser {
-  id: string;
-  name: string;
-  email: string; 
-  role: 'admin' | 'artist' | 'piercer' | 'performer' | 'trader' | 'volunteer' | 'event_manager' | 'event_admin' | 'client' | 'studio_manager' | 'judge';
-  roles?: { role: string; is_primary: boolean }[];
-  roles?: string[];
-  avatar?: string;
-}
-
-interface AuthContextType {
-  user: AuthUser | null;
-  session: Session | null;
-  supabase: ReturnType<typeof createClient> | null;
-  updateUserEmail: (newEmail: string) => Promise<void>;
-  updateUserRoles: (roles: string[], primaryRole: string) => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>; 
-  isLoading: boolean;
-  supabase: ReturnType<typeof createClient> | null;
-  updateUserProfile: (profileData: Partial<AuthUser>) => void;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-let supabase: ReturnType<typeof createClient> | null = null; 
-
-// Only initialize Supabase if we have valid URL and key (not placeholder values)
-if (supabaseUrl && supabaseAnonKey) {
-  try {
-    if (supabaseUrl !== 'your_supabase_project_url' && 
-        supabaseAnonKey !== 'your_supabase_anon_key' && 
-        supabaseUrl.startsWith('https://')) {
-      supabase = createClient(supabaseUrl, supabaseAnonKey);
-      console.log('✅ Supabase client initialized in AuthContext');
-    } else {
-      console.warn('⚠️ Invalid Supabase credentials (placeholder values detected)');
-    }
-  } catch (error) {
-    console.error("❌ Failed to initialize Supabase client in AuthContext:", error);
-    supabase = null;
-  }
-} else {
-  console.warn('⚠️ Supabase credentials missing. Using mock data.');
-  console.warn('Missing:', {
-    url: !supabaseUrl ? 'VITE_SUPABASE_URL' : null
+export function InitialSetupPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [setupData, setSetupData] = useState({
+    organizationName: '',
+    organizationType: 'convention',
+    primaryRole: user?.role || 'event_manager',
+    features: [] as string[],
+    eventTypes: [] as string[]
   });
-  supabase = null;
-}
 
-// Create admin client for direct database access
-const supabaseAdmin = supabase;
+  const organizationTypes = [
+    { id: 'convention', label: 'Tattoo Convention', description: 'Multi-day events with artists, traders, and competitions' },
+    { id: 'studio', label: 'Tattoo Studio', description: 'Individual studio managing appointments and clients' },
+    { id: 'festival', label: 'Art Festival', description: 'Cultural events featuring various art forms including tattoos' },
+    { id: 'competition', label: 'Competition Only', description: 'Focused on tattoo competitions and judging' }
+  ];
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null); 
-  const [isLoading, setIsLoading] = useState(true);
+  const availableFeatures = [
+    { id: 'applications', label: 'Artist Applications', icon: Users, description: 'Manage artist and trader applications' },
+    { id: 'ticketing', label: 'Ticket Sales', icon: CreditCard, description: 'Sell tickets to attendees' },
+    { id: 'booking', label: 'Appointment Booking', icon: Calendar, description: 'Allow clients to book appointments' },
+    { id: 'consent', label: 'Consent Forms', icon: MessageSquare, description: 'Digital consent form management' },
+    { id: 'tattscore', label: 'TattScore Judging', icon: Award, description: 'Competition judging and scoring' },
+    { id: 'studio', label: 'Studio Management', icon: Building2, description: 'Multi-studio management tools' }
+  ];
 
-  // Function to update user profile data in the context
-  const updateUserProfile = (profileData: Partial<AuthUser>) => {
-    if (!user) return;
-    
-    setUser(prev => {
-      if (!prev) return null;
-      return { ...prev, ...profileData };
-    });
-  };
+  const eventTypeOptions = [
+    'artist', 'piercer', 'performer', 'trader', 'volunteer', 'caterer'
+  ];
 
-  // Function to fetch user data from our database
-  const fetchUserData = async (userId: string, userEmail: string) => {
-    try {
-      console.log('🔍 Fetching user data for:', userId, userEmail);
-      
-      // Try direct database query first
-      if (supabase) {
-        try {
-          console.log('🔍 Querying Supabase for user data');
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('id, name, email, role')
-            .eq('id', userId)
-            .single();
-          
-          if (userError) {
-            console.error('❌ Error fetching user data from Supabase:', userError);
-            throw userError;
-          }
-          
-          // Fetch user roles
-          const { data: rolesData, error: rolesError } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', userId);
-            
-          if (rolesError) {
-            console.error('❌ Error fetching user roles from Supabase:', rolesError);
-          }
-          
-          const roles = rolesData ? rolesData.map(r => r.role) : [userData.role];
-          
-          console.log('✅ User data from Supabase:', userData);
-          console.log('✅ User roles from Supabase:', roles);
-          
-          const result = {
-            ...userData,
-            roles
-          };
-          
-          console.log('Returning user data:', result);
-          return result;
-        } catch (error) {
-          console.error('❌ Error fetching user data from Supabase:', error);
-          // Fall through to the fallback
-        }
-      } else if (session?.access_token) {
-        try {
-          console.log('🔍 Fetching user data from API');
-          const response = await axios.get(`/api/users/${userId}`, {
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`
-            }
-          });
-          console.log('✅ User data from API:', response.data);
-          return response.data;
-        } catch (error) {
-          console.error('❌ Error fetching user data from API:', error);
-          // Fall through to the fallback
-        }
-      }
-      
-      // Fallback to basic user info
-      console.log('⚠️ Using fallback user data');
-      
-      // Special case for gary@tattscore.com - always admin
-      if (userEmail === 'gary@tattscore.com') {
-        return {
-          id: userId,
-          name: 'Gary Watts',
-          email: 'gary@tattscore.com',
-          role: 'admin',
-          roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge']
-        };
-      }
-      
-      return {
-        id: userId,
-        name: userEmail?.split('@')[0] || 'User',
-        email: userEmail || '',
-        role: 'artist' as const,
-        roles: ['artist']
-      };
-    } catch (error) {
-      console.error('❌ Error fetching user data:', error);
-      // Fallback to basic user info if API call fails
-      
-      return {
-        id: userId,
-        name: userEmail?.split('@')[0] || 'User',
-        email: userEmail || '',
-        role: 'artist' as const,
-        roles: ['artist']
-      };
-    }
-  };
-
-  // Function to update user state with complete data
-  const updateUserState = async (session: Session | null) => {
-    if (session?.user) {
-      console.log('🔄 Updating user state for session:', session.user.email); 
-      try {
-        const userData = await fetchUserData(session.user.id, session.user.email || '');
-        
-        // Fetch user roles if supabase is available
-        if (supabase) {
-          try {
-            const { data: rolesData, error: rolesError } = await supabase
-              .rpc('get_user_roles', { user_uuid: session.user.id });
-            
-            if (!rolesError && rolesData) {
-              setUserRoles(rolesData);
-            }
-          } catch (error) {
-            console.error('Error fetching user roles:', error);
-          }
-        }
-        console.log('✅ Setting user state with data:', userData);
-
-        setUser({
-          id: userData.id,
-          name: userData.name,
-          email: userData.email,
-          role: userData.role || session.user.user_metadata?.role || 'artist', 
-          roles: userData.roles || [userData.role || session.user.user_metadata?.role || 'artist'],
-          avatar: undefined
-        });
-      } catch (error) {
-        console.error('❌ Error updating user state:', error);
-        
-        // Fallback to basic user info from session
-        setUser({
-          id: session.user.id,
-          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
-          role: session.user.user_metadata?.role || 'artist',
-          roles: [session.user.user_metadata?.role || 'artist']
-        });
-      }
+  const handleNext = () => {
+    if (currentStep < 4) {
+      setCurrentStep(currentStep + 1);
     } else {
-      setUser(null);
-      // Clear authorization header when no user
-      delete axios.defaults.headers.common['Authorization'];
+      handleComplete();
     }
   };
 
-  useEffect(() => {
-    if (!supabase) {
-      console.warn('⚠️ Supabase not configured. Please check your environment variables.');
-      setIsLoading(false);
-      return;
-    }
-
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      
-      console.log('🔍 Initial session check:', session?.user?.email);
-      
-      if (session?.access_token) {
-        // Set the authorization header for API requests
-        axios.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
-      }
-      
-      await updateUserState(session);
-      setIsLoading(false);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log('🔄 Auth state changed:', session?.user?.email);
-      setSession(session);
-      
-      if (session?.access_token) {
-        // Set the authorization header for API requests
-        axios.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
-      } else {
-        // Clear authorization header when no session
-        delete axios.defaults.headers.common['Authorization'];
-      }
-      
-      await updateUserState(session);
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const login = async (email: string, password: string) => {
-    if (!supabase) {
-      throw new Error('Supabase not configured. Please check your environment variables.');
-    }
-
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      // Set authorization header immediately after successful login
-      if (data.session?.access_token) {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${data.session.access_token}`;
-      }
-
-      // User state will be updated by the auth state change listener
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
     }
   };
 
-  const logout = async () => {
-    if (!supabase) {
-      throw new Error('Supabase not configured');
-    }
-
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        throw error;
-      }
-      // Clear authorization header
-      delete axios.defaults.headers.common['Authorization'];
-      // User state will be updated by the auth state change listener
-    } catch (error) {
-      console.error('Logout error:', error);
-      throw error;
-    }
+  const handleComplete = () => {
+    // Save setup data and redirect to dashboard
+    console.log('Setup completed:', setupData);
+    navigate('/dashboard');
   };
 
-  // Function to update user email
-  const updateUserEmail = async (newEmail: string) => {
-    if (!supabase || !user) {
-      throw new Error('Supabase not configured or user not logged in');
-    }
-
-    try {
-      // Update email in Supabase Auth
-      const { error: authError } = await supabase.auth.updateUser({
-        email: newEmail
-      });
-
-      if (authError) {
-        throw authError;
-      }
-
-      // Update email in users table
-      const { error: dbError } = await supabase
-        .from('users')
-        .update({ email: newEmail, updated_at: new Date().toISOString() })
-        .eq('id', user.id);
-
-      if (dbError) {
-        throw dbError;
-      }
-
-      // Update local user state
-      setUser(prev => prev ? { ...prev, email: newEmail } : null);
-
-      return true;
-    } catch (error) {
-      console.error('Error updating email:', error);
-      throw error;
-    }
+  const toggleFeature = (featureId: string) => {
+    setSetupData(prev => ({
+      ...prev,
+      features: prev.features.includes(featureId)
+        ? prev.features.filter(f => f !== featureId)
+        : [...prev.features, featureId]
+    }));
   };
 
-  // Function to update user roles
-  const updateUserRoles = async (roles: string[], primaryRole: string) => {
-    if (!supabase || !user) {
-      throw new Error('Supabase not configured or user not logged in');
-    }
-    
-    console.log('Updating user roles:', roles, 'primary:', primaryRole);
-
-    try {
-      // Call the set_primary_role function
-      const { error: primaryRoleError } = await supabase.rpc('set_primary_role', {
-        user_uuid: user.id,
-        primary_role: primaryRole
-      });
-
-      if (primaryRoleError) {
-        throw primaryRoleError;
-      }
-
-      // Add all roles
-      // First, get current roles
-      const { data: currentRoles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id);
-        
-      const existingRoles = currentRoles?.map(r => r.role) || [];
-      console.log('Existing roles:', existingRoles);
-      
-      // Remove roles that are no longer needed
-      for (const existingRole of existingRoles) {
-        if (!roles.includes(existingRole) && existingRole !== primaryRole) {
-          console.log('Removing role:', existingRole);
-          const { error: removeRoleError } = await supabase.rpc('remove_user_role', {
-            user_uuid: user.id,
-            role_to_remove: existingRole
-          });
-          
-          if (removeRoleError) {
-            console.error(`Error removing role ${existingRole}:`, removeRoleError);
-          }
-        }
-      }
-      
-      // Add new roles
-      for (const role of roles) {
-        if (!existingRoles.includes(role)) {
-          console.log('Adding role:', role);
-          const { error: addRoleError } = await supabase.rpc('add_user_role', {
-            user_uuid: user.id,
-            new_role: role
-          });
-
-          if (addRoleError) {
-            console.error(`Error adding role ${role}:`, addRoleError);
-          }
-        }
-      }
-
-      // Update local user state
-      setUser(prev => prev ? { 
-        ...prev, 
-        role: primaryRole as any, 
-        roles: roles
-      } : null);
-
-      return true;
-    } catch (error) {
-      console.error('Error updating roles:', error);
-      throw error;
-    }
+  const toggleEventType = (eventType: string) => {
+    setSetupData(prev => ({
+      ...prev,
+      eventTypes: prev.eventTypes.includes(eventType)
+        ? prev.eventTypes.filter(t => t !== eventType)
+        : [...prev.eventTypes, eventType]
+    }));
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user,
-      session,
-      supabase,
-      login,
-      logout,
-      isLoading,
-      updateUserEmail,
-      updateUserRoles,
-      updateUserProfile
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full">
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-8">
+          <div className="text-center mb-8">
+            <Settings className="w-16 h-16 text-purple-400 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-white mb-2">Welcome to TattScore</h1>
+            <p className="text-purple-200">Let's set up your account to get started</p>
+          </div>
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+          {/* Progress Bar */}
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm text-purple-200">Step {currentStep} of 4</span>
+              <span className="text-sm text-purple-200">{Math.round((currentStep / 4) * 100)}% Complete</span>
+            </div>
+            <div className="w-full bg-white/10 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${(currentStep / 4) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Step 1: Organization Info */}
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white mb-4">Organization Information</h2>
+              
+              <div>
+                <label className="block text-purple-200 text-sm font-medium mb-2">
+                  Organization Name
+                </label>
+                <input
+                  type="text"
+                  value={setupData.organizationName}
+                  onChange={(e) => setSetupData(prev => ({ ...prev, organizationName: e.target.value }))}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Enter your organization name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-purple-200 text-sm font-medium mb-2">
+                  Organization Type
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {organizationTypes.map((type) => (
+                    <div
+                      key={type.id}
+                      onClick={() => setSetupData(prev => ({ ...prev, organizationType: type.id }))}
+                      className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                        setupData.organizationType === type.id
+                          ? 'border-purple-500 bg-purple-500/20'
+                          : 'border-white/20 bg-white/5 hover:bg-white/10'
+                      }`}
+                    >
+                      <h3 className="text-white font-medium mb-1">{type.label}</h3>
+                      <p className="text-purple-200 text-sm">{type.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Primary Role */}
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white mb-4">Your Primary Role</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {['admin', 'event_manager', 'artist', 'piercer', 'studio_manager', 'judge'].map((role) => (
+                  <div
+                    key={role}
+                    onClick={() => setSetupData(prev => ({ ...prev, primaryRole: role }))}
+                    className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                      setupData.primaryRole === role
+                        ? 'border-purple-500 bg-purple-500/20'
+                        : 'border-white/20 bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <User className="w-6 h-6 text-purple-400 mb-2" />
+                    <h3 className="text-white font-medium capitalize">{role.replace('_', ' ')}</h3>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Features */}
+          {currentStep === 3 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white mb-4">Select Features</h2>
+              <p className="text-purple-200 mb-6">Choose the features you'd like to enable for your organization</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {availableFeatures.map((feature) => {
+                  const Icon = feature.icon;
+                  return (
+                    <div
+                      key={feature.id}
+                      onClick={() => toggleFeature(feature.id)}
+                      className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                        setupData.features.includes(feature.id)
+                          ? 'border-purple-500 bg-purple-500/20'
+                          : 'border-white/20 bg-white/5 hover:bg-white/10'
+                      }`}
+                    >
+                      <Icon className="w-6 h-6 text-purple-400 mb-2" />
+                      <h3 className="text-white font-medium mb-1">{feature.label}</h3>
+                      <p className="text-purple-200 text-sm">{feature.description}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Event Types */}
+          {currentStep === 4 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white mb-4">Application Types</h2>
+              <p className="text-purple-200 mb-6">Select the types of applications you'll accept</p>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {eventTypeOptions.map((eventType) => (
+                  <div
+                    key={eventType}
+                    onClick={() => toggleEventType(eventType)}
+                    className={`p-4 rounded-lg border cursor-pointer transition-all text-center ${
+                      setupData.eventTypes.includes(eventType)
+                        ? 'border-purple-500 bg-purple-500/20'
+                        : 'border-white/20 bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <h3 className="text-white font-medium capitalize">{eventType}</h3>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between mt-8">
+            <button
+              onClick={handleBack}
+              disabled={currentStep === 1}
+              className="px-6 py-3 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Back
+            </button>
+            
+            <button
+              onClick={handleNext}
+              disabled={
+                (currentStep === 1 && !setupData.organizationName) ||
+                (currentStep === 3 && setupData.features.length === 0) ||
+                (currentStep === 4 && setupData.eventTypes.length === 0)
+              }
+              className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {currentStep === 4 ? 'Complete Setup' : 'Next'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
