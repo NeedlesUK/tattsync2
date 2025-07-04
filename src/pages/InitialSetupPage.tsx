@@ -38,7 +38,14 @@ export function InitialSetupPage() {
         return;
       }
       
-     const { data, error } = await supabase
+      if (!supabase) {
+        console.error('Supabase client not initialized. Please check your environment variables.');
+        setError('Supabase client not initialized. Please check your .env file for proper configuration.');
+        setNeedsSetup(false);
+        return;
+      }
+      
+      const { data, error } = await supabase
         .from('users')
         .select('id')
         .eq('role', 'admin')
@@ -53,6 +60,10 @@ export function InitialSetupPage() {
       // If admin users exist, we don't need setup
       const needsInitialSetup = !data || data.length === 0;
       setNeedsSetup(needsInitialSetup);
+      
+      if (!needsInitialSetup) {
+        navigate('/login'); // Redirect to login if setup is already complete
+      }
     } catch (error) {
       console.error('Error checking setup status:', error);
       setError('Failed to check setup status');
