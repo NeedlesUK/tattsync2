@@ -46,7 +46,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [userRoles, setUserRoles] = useState<{ role: string; is_primary: boolean }[]>([]);
 
   // Function to fetch user data from our database
   const fetchUserData = async (userId: string, userEmail: string) => {
@@ -54,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('🔍 Fetching user data for:', userId, userEmail);
       
       // Special case for gary@tattscore.com - always admin
-      if (userEmail === 'gary@tattscore.com' || userEmail === 'admin@tattsync.com') {
+      if (userEmail === 'gary@tattscore.com') {
         console.log('👑 Setting admin role for gary@tattscore.com');
         return {
           id: userId,
@@ -214,17 +213,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       } catch (error) {
         console.error('❌ Error updating user state:', error);
-            roles: userRoles,
         
         // Special case for gary@tattscore.com - always admin
-        if (session.user.email === 'gary@tattscore.com' || session.user.email === 'admin@tattsync.com') {
-          console.log('👑 Setting admin user for gary@tattscore.com (fallback)');
+        if (session.user.email === 'gary@tattscore.com') {
+          console.log('👑 Setting admin user for gary@tattscore.com');
           setUser({
             id: session.user.id,
             name: 'Gary Watts',
             email: 'gary@tattscore.com',
             role: 'admin',
-            roles: userRoles,
             roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge'],
             avatar: undefined
           });
@@ -237,13 +234,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
           role: session.user.user_metadata?.role || 'artist',
-          roles: userRoles,
           roles: [session.user.user_metadata?.role || 'artist']
         });
       }
     } else {
       setUser(null);
-      setUserRoles([]);
       // Clear authorization header when no user
       delete axios.defaults.headers.common['Authorization'];
     }
