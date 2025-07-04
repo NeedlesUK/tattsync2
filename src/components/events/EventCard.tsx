@@ -1,5 +1,6 @@
 import React from 'react';
-import { Calendar, MapPin, Users, Edit, Eye, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Edit, Eye, Trash2, Settings } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Event {
   id: number;
@@ -14,6 +15,7 @@ interface Event {
   status: string;
   image: string;
   event_manager_id?: string;
+  event_manager_email?: string;
   event_manager_name?: string;
   event_manager_email?: string;
 }
@@ -26,6 +28,8 @@ interface EventCardProps {
 }
 
 export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
+  const { user } = useAuth();
+  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
@@ -48,7 +52,9 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
     }
   };
 
-  const attendancePercentage = (event.attendees / event.maxAttendees) * 100;
+  // Check if user is the event manager for this event
+  const isEventManager = user?.id === event.event_manager_id || 
+                         user?.email === event.event_manager_email;
 
   return (
     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:bg-white/10 transition-all group">
@@ -78,50 +84,44 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
             <MapPin className="w-4 h-4 mr-2" />
             {event.venue}, {event.location}
           </div>
-          <div className="flex items-center text-gray-300 text-sm">
-            <Users className="w-4 h-4 mr-2" />
-            {event.attendees} / {event.maxAttendees} attendees
-          </div>
-        </div>
-
-        {/* Attendance Progress */}
-        <div className="mb-4">
-          <div className="flex justify-between text-sm text-gray-300 mb-1">
-            <span>Attendance</span>
-            <span>{Math.round(attendancePercentage)}%</span>
-          </div>
-          <div className="w-full bg-gray-700 rounded-full h-2">
-            <div
-              className="bg-gradient-to-r from-purple-500 to-teal-500 h-2 rounded-full transition-all"
-              style={{ width: `${attendancePercentage}%` }}
-            />
-          </div>
         </div>
 
         {/* Actions */}
         <div className="flex space-x-2 mt-2">
-          <button 
-            onClick={() => onView ? onView(event.id) : null}
-            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1"
-          >
-            <Eye className="w-4 h-4" />
-            <span>View</span>
-          </button>
-          {onEdit && (
-          <button 
-            onClick={() => onEdit(event.id)}
-            className="bg-white/10 hover:bg-white/20 text-gray-300 px-3 py-2 rounded-lg text-sm transition-colors"
-          >
-            <Edit className="w-4 h-4" />
-          </button>
+          {isEventManager ? (
+            <button 
+              onClick={() => onView ? onView(event.id) : null}
+              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Manage</span>
+            </button>
+          ) : (
+            <button 
+              onClick={() => onView ? onView(event.id) : null}
+              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1"
+            >
+              <Eye className="w-4 h-4" />
+              <span>View</span>
+            </button>
           )}
-          {onDelete && (
-          <button 
-            onClick={() => onDelete(event.id)}
-            className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-3 py-2 rounded-lg text-sm transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          
+          {isEventManager && onEdit && (
+            <button 
+              onClick={() => onEdit(event.id)}
+              className="bg-white/10 hover:bg-white/20 text-gray-300 px-3 py-2 rounded-lg text-sm transition-colors"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
+          )}
+          
+          {isEventManager && onDelete && (
+            <button 
+              onClick={() => onDelete(event.id)}
+              className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-3 py-2 rounded-lg text-sm transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
           )}
         </div>
       </div>

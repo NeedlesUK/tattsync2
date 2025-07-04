@@ -5,13 +5,13 @@ import { CreateEventModal } from '../components/events/CreateEventModal';
 import { useAuth } from '../contexts/AuthContext';
 
 export function EventsPage() {
-  const { user } = useAuth();
-  const supabase = useAuth().supabase;
+  const { user, supabase } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [events, setEvents] = useState<any[]>([]);
+  const [userEvents, setUserEvents] = useState<any[]>([]);
 
   useEffect(() => {
     fetchEvents();
@@ -42,7 +42,7 @@ export function EventsPage() {
           .order('start_date', { ascending: false });
 
         if (error) {
-          console.error('Error fetching events:', error);
+          console.error('Error fetching events from Supabase:', error);
           setEvents([]);
         } else {
           // Format the data to match the expected structure
@@ -53,7 +53,7 @@ export function EventsPage() {
             date: event.start_date,
             endDate: event.end_date,
             location: event.location,
-            venue: event.venue,
+            venue: event.venue || '',
             attendees: 0, // This would need to be calculated from applications or tickets
             maxAttendees: event.max_attendees,
             status: event.status || 'draft',
@@ -61,7 +61,26 @@ export function EventsPage() {
             event_manager_name: event.users?.name,
             event_manager_email: event.users?.email
           }));
-          
+
+          // Filter events managed by the current user
+          const managedEvents = formattedEvents.filter(event => 
+            event.event_manager_id === user?.id || 
+            event.event_manager_email === user?.email
+          );
+
+          // Set user's events
+          setUserEvents(managedEvents);
+
+          // Log the events for debugging
+          console.log('All events:', formattedEvents);
+          console.log('User events:', managedEvents);
+          console.log('Current user:', user);
+
+          // If the user is an event manager, make sure their events are at the top
+          if (user?.role === 'event_manager' && managedEvents.length > 0) {
+            console.log('User is an event manager with events');
+          }
+
           setEvents(formattedEvents);
         }
       } else {
@@ -82,12 +101,19 @@ export function EventsPage() {
     }
   };
 
-  const filteredEvents = events.filter(event => {
+  // Filter events based on search and status
+  const getFilteredEvents = (eventList: any[]) => eventList.filter(event => {
     const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          event.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'all' || event.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
+  
+  // Get filtered events
+  const filteredUserEvents = getFilteredEvents(userEvents);
+  const filteredAllEvents = getFilteredEvents(events).filter(
+    event => !userEvents.some(userEvent => userEvent.id === event.id)
+  );
 
   const isAdmin = user?.role === 'admin';
 
@@ -145,10 +171,38 @@ export function EventsPage() {
           </div>
         </div>
 
-        {/* Events Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEvents.map((event) => (
-            <EventCard key={event.id} event={event} />
+        {/* User's Events Section (if they have any) */}
+        {filteredUserEvents.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-white mb-4">Your Events</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredUserEvents.map((event) => (
+                <EventCard 
+                  key={event.id} 
+                  event={event} 
+                  onView={(id) => console.log('View event', id)}
+                  onEdit={(id) => console.log('Edit event', id)}
+                  onDelete={(id) => console.log('Delete event', id)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* All Events Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-white mb-4">
+            {filteredUserEvents.length > 0 ? 'All Events' : 'Events'}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredAllEvents.map((event) => (
+              <EventCard 
+                key={event.id} 
+                event={event} 
+                onView={(id) => console.log('View event', id)}
+                onEdit={isAdmin ? (id) => console.log('Edit event', id) : undefined}
+                onDelete={isAdmin ? (id) => console.log('Delete event', id) : undefined}
+              />
           ))}
         </div>
 
@@ -164,6 +218,7 @@ export function EventsPage() {
             </p>
           </div>
         )}
+        </div>
 
         {isAdmin && (
           <CreateEventModal
