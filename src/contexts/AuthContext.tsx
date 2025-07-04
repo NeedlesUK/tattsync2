@@ -7,6 +7,7 @@ interface AuthUser {
   name: string;
   email: string; 
   role: 'admin' | 'artist' | 'piercer' | 'performer' | 'trader' | 'volunteer' | 'event_manager' | 'event_admin' | 'client' | 'studio_manager' | 'judge';
+  roles?: { role: string; is_primary: boolean }[];
   roles?: string[];
   avatar?: string;
 }
@@ -45,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userRoles, setUserRoles] = useState<{ role: string; is_primary: boolean }[]>([]);
 
   // Function to fetch user data from our database
   const fetchUserData = async (userId: string, userEmail: string) => {
@@ -186,6 +188,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         
         const userData = await fetchUserData(session.user.id, session.user.email || '');
+        
+        // Fetch user roles if supabase is available
+        if (supabase) {
+          try {
+            const { data: rolesData, error: rolesError } = await supabase
+              .rpc('get_user_roles', { user_uuid: session.user.id });
+            
+            if (!rolesError && rolesData) {
+              setUserRoles(rolesData);
+            }
+          } catch (error) {
+            console.error('Error fetching user roles:', error);
+          }
+        }
         console.log('✅ Setting user state with data:', userData);
 
         setUser({
@@ -198,6 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       } catch (error) {
         console.error('❌ Error updating user state:', error);
+            roles: userRoles,
         
         // Special case for gary@tattscore.com - always admin
         if (session.user.email === 'gary@tattscore.com' || session.user.email === 'admin@tattsync.com') {
@@ -207,6 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             name: 'Gary Watts',
             email: 'gary@tattscore.com',
             role: 'admin',
+            roles: userRoles,
             roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge'],
             avatar: undefined
           });
@@ -219,11 +237,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
           role: session.user.user_metadata?.role || 'artist',
+          roles: userRoles,
           roles: [session.user.user_metadata?.role || 'artist']
         });
       }
     } else {
       setUser(null);
+      setUserRoles([]);
       // Clear authorization header when no user
       delete axios.defaults.headers.common['Authorization'];
     }
