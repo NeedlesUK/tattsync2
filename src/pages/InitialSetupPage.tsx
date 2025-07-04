@@ -31,7 +31,13 @@ export function InitialSetupPage() {
   const checkSetupStatus = async () => {
     try {
       // Check if admin exists by querying the users table
-      const { data, error } = await supabase
+      if (!supabase) {
+        console.error('Supabase client not initialized. Please check your environment variables.');
+        setError('Supabase client not initialized. Please check your .env file for proper configuration.');
+        setNeedsSetup(false);
+        return;
+      }
+      
         .from('users')
         .select('id')
         .eq('role', 'admin')
@@ -46,10 +52,6 @@ export function InitialSetupPage() {
       // If admin users exist, we don't need setup
       const needsInitialSetup = !data || data.length === 0;
       setNeedsSetup(needsInitialSetup);
-      
-      if (!needsInitialSetup) {
-        navigate('/login'); // Redirect to login if setup is already complete
-      }
     } catch (error) {
       console.error('Error checking setup status:', error);
       setError('Failed to check setup status');
@@ -103,7 +105,7 @@ export function InitialSetupPage() {
     setIsLoading(true);
 
     try {
-      if (!supabase) {
+      if (!supabase || !supabase.auth) {
         throw new Error('Supabase client not initialized');
       }
       
@@ -187,7 +189,7 @@ export function InitialSetupPage() {
   if (needsSetup === false) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto px-4">
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
           <p className="text-gray-300">Setup already complete. Redirecting to login...</p>
         </div>

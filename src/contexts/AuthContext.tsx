@@ -35,18 +35,19 @@ let supabase: ReturnType<typeof createClient> | null = null;
 // Only initialize Supabase if we have valid URL and key (not placeholder values)
 if (supabaseUrl && 
     supabaseAnonKey && 
-    supabaseUrl !== 'your_supabase_project_url' && 
+    supabaseUrl !== 'your_supabase_project_url' &&
     supabaseAnonKey !== 'your_supabase_anon_key' &&
     supabaseUrl.startsWith('https://')) {
   try {
     supabase = createClient(supabaseUrl, supabaseAnonKey);
     console.log('✅ Supabase client initialized');
   } catch (error) {
-    console.error('❌ Failed to initialize Supabase client:', error);
+    console.error("❌ Failed to initialize Supabase client:", error.message);
     supabase = null;
   }
 } else {
   console.warn('⚠️ Supabase not configured properly. Using mock data.');
+  console.error("Please update your .env file with actual Supabase credentials from your Supabase project dashboard");
   supabase = null;
 }
 
