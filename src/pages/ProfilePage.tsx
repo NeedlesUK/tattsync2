@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Camera, Save, Edit, Shield, Calendar, Award, Eye, EyeOff, Lock, Instagram, Facebook, Globe, Plus, Trash2, CheckCircle, AlertCircle, EyeOff as EyeSlash } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeSVG } from "qrcode.react";
 
 export function ProfilePage() {
   const { user, logout, updateUserEmail, updateUserRoles, supabase } = useAuth();
@@ -379,8 +379,8 @@ export function ProfilePage() {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
+      day: 'numeric',
+      month: 'numeric',
       year: 'numeric'
     });
   };
@@ -866,7 +866,7 @@ export function ProfilePage() {
                 <div className="flex justify-end">
                   <button
                     onClick={handleChangePassword}
-                    className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all flex items-center space-x-2"
+                    className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all flex items-center space-x-2"
                   >
                     <Save className="w-4 h-4" />
                     <span>Change Password</span>
@@ -917,7 +917,7 @@ export function ProfilePage() {
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-white mb-4">Profile QR Code</h3>
               <div className="flex justify-center mb-3">
-                <div className="bg-white p-3 rounded-lg">
+                <div className="bg-white p-3 rounded-lg flex items-center justify-center">
                   <QRCodeSVG 
                     value={`https://tattsync.com/profile/${user?.id}`} 
                     size={128} 
