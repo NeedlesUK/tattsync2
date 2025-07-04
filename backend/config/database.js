@@ -5,7 +5,11 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 let supabase = null;
-if (supabaseUrl && supabaseServiceKey) {
+if (supabaseUrl && 
+    supabaseServiceKey && 
+    supabaseUrl !== 'your_supabase_project_url' && 
+    supabaseServiceKey !== 'your_supabase_service_role_key' &&
+    supabaseUrl.startsWith('http')) {
   try {
     supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
@@ -27,7 +31,10 @@ if (supabaseUrl && supabaseServiceKey) {
     console.error("❌ Failed to initialize Supabase client:", error.message);
   }
 } else {
-  console.error("❌ Missing Supabase credentials!");
+  console.error("❌ Missing or invalid Supabase credentials! Please check your environment variables.");
+  console.error("Required: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
+  console.error("Current SUPABASE_URL:", supabaseUrl);
+  console.error("Service role key present:", !!supabaseServiceKey);
 }
 
 // For backward compatibility with pg queries
