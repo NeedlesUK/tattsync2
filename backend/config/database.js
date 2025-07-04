@@ -19,24 +19,17 @@ if (supabaseUrl && supabaseServiceKey) {
     console.error("❌ Failed to initialize Supabase client:", error.message);
   }
 } else {
-  console.warn("⚠️ Supabase credentials not found. Some features may not work.");
+  console.warn("⚠️ Supabase credentials not found.");
 }
 
-// PostgreSQL connection configuration
-const dbConfig = {
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME || "postgres",
-  port: process.env.DB_PORT || 5432,
-  ssl: { rejectUnauthorized: false }, // ALWAYS use SSL for Supabase
+// PostgreSQL connection using DATABASE_URL
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
   max: 10,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
-};
-
-// Create connection pool
-const pool = new Pool(dbConfig);
+  connectionTimeoutMillis: 10000,
+});
 
 // Test database connection
 async function testConnection() {
@@ -53,10 +46,8 @@ async function testConnection() {
   }
 }
 
-// Initialize database connection
 testConnection();
 
-// Helper function to execute queries
 async function query(text, params) {
   const client = await pool.connect();
   try {
