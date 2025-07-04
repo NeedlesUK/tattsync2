@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-
+import { X, Calendar, MapPin, Users, User, Mail, AlertCircle, Shield } from 'lucide-react';
 interface CreateEventModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -8,7 +7,7 @@ interface CreateEventModalProps {
 
 export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
   const { user } = useAuth();
-  const { supabase } = useAuth();
+  const supabase = useAuth().supabase;
   const { supabase } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
@@ -35,7 +34,6 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
     e.preventDefault();
     setError(null);
     setSuccess(null);
-    setSuccess(null);
     setIsSubmitting(true);
     
     try {
@@ -44,7 +42,7 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
         throw new Error('Only Master Admins can create events. Please contact an administrator if you need to create an event.');
       }
 
-      // Format the data for Supabase
+      // Format the data for the API
       const eventData = {
         name: formData.name,
         description: formData.description,
@@ -54,12 +52,10 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
         location: formData.location,
         venue: formData.venue,
         max_attendees: parseInt(formData.maxAttendees) || 500,
-        status: 'draft',
-        max_attendees: parseInt(formData.maxAttendees) || 500,
         status: 'draft'
       };
       
-      console.log('Submitting event data:', eventData);
+      console.log('Submitting event data:', eventData, 'User role:', user?.role);
       // Create event directly with Supabase
       if (!supabase) {
         throw new Error('Supabase client not initialized');
@@ -174,8 +170,17 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
     } catch (err: any) {
       console.error('Error creating event:', err);
       setError(err.message || err.error_description || 'Failed to create event. Please try again.');
-      setError(err.message || err.error_description || 'Failed to create event. Please try again.');
+      setIsSubmitting(false);
     }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
     // Auto-generate slug from name
     if (name === 'name') {
       const slug = value
