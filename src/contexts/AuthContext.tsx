@@ -29,10 +29,15 @@ let supabase: ReturnType<typeof createClient> | null = null;
 // Only initialize Supabase if we have valid URL and key (not placeholder values)
 if (supabaseUrl && 
     supabaseAnonKey && 
-    supabaseUrl !== 'your_supabase_project_url' && 
-    supabaseAnonKey !== 'your_supabase_anon_key' &&
-    supabaseUrl.startsWith('http')) {
+    supabaseUrl !== 'https://your-project-id.supabase.co' && 
+    supabaseAnonKey !== 'your-supabase-anon-key' &&
+    supabaseUrl.startsWith('https://')) {
   supabase = createClient(supabaseUrl, supabaseAnonKey);
+} else {
+  console.error('❌ Supabase configuration invalid:');
+  console.error('VITE_SUPABASE_URL:', supabaseUrl);
+  console.error('VITE_SUPABASE_ANON_KEY present:', !!supabaseAnonKey);
+  console.error('Please update your .env file with actual Supabase credentials');
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -148,7 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     if (!supabase) {
-      throw new Error('Supabase not configured');
+      throw new Error('Supabase not configured. Please check your environment variables.');
     }
 
     try {

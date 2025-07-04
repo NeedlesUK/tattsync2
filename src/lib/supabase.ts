@@ -3,11 +3,23 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+// Validate Supabase credentials
+if (!supabaseUrl || 
+    !supabaseAnonKey || 
+    supabaseUrl === 'https://your-project-id.supabase.co' || 
+    supabaseAnonKey === 'your-supabase-anon-key') {
+  console.error('Missing or invalid Supabase environment variables');
+  console.error('Please update your .env file with actual Supabase credentials');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create client only if we have valid credentials
+export const supabase = (supabaseUrl && 
+                         supabaseAnonKey && 
+                         supabaseUrl !== 'https://your-project-id.supabase.co' && 
+                         supabaseAnonKey !== 'your-supabase-anon-key' &&
+                         supabaseUrl.startsWith('https://')) 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 // Database types
 export interface Database {

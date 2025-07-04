@@ -22,6 +22,13 @@ export function RegistrationPage() {
 
   const checkSetupStatus = async () => {
     try {
+      // Skip API call if Supabase is not configured
+      if (!supabase) {
+        console.error('Supabase not configured. Please update your .env file with actual Supabase credentials');
+        setNeedsSetup(false); // Default to false if check fails
+        return;
+      }
+      
       const response = await axios.get('/api/auth/setup-status');
       setNeedsSetup(response.data.needsInitialSetup);
       
@@ -50,6 +57,13 @@ export function RegistrationPage() {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage('');
+
+    // Check if Supabase is configured
+    if (!supabase) {
+      setErrorMessage('Authentication service not configured. Please check your environment variables.');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       await login(formData.email, formData.password);
