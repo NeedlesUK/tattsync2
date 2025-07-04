@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { HomePage } from './pages/HomePage';
+import { InitialSetupPage } from './pages/InitialSetupPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { EventsPage } from './pages/EventsPage';
 import { ApplicationsPage } from './pages/ApplicationsPage';
@@ -61,6 +62,7 @@ function App() {
           <main className="flex-1">
             <Routes>
               <Route path="/" element={<HomePage />} />
+              <Route path="/setup" element={<InitialSetupPage />} />
               <Route path="/login" element={<RegistrationPage />} />
               
               {/* Registration flow routes */}

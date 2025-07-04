@@ -51,6 +51,18 @@ export function RegistrationPage() {
     }
   };
 
+  // Show loading while checking setup status
+  if (needsSetup === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen pt-16">
       <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-12">

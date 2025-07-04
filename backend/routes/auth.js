@@ -4,6 +4,100 @@ const jwt = require('jsonwebtoken');
 const { query, supabase } = require('../config/database');
 const router = express.Router();
 
+// Create initial admin user endpoint (only works if no admin exists)
+router.post('/create-initial-admin', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    // Validate input
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' });
+    }
+
+    // Check if any admin users already exist
+    const existingAdmins = await query('SELECT id FROM users WHERE role = $1 LIMIT 1', ['admin']);
+    
+    if (existingAdmins.rows.length > 0) {
+      return res.status(403).json({ 
+        error: 'Initial admin already exists. Contact an existing administrator to create additional admin accounts.' 
+      });
+    }
+
+    // Use Supabase Auth if available
+    if (supabase) {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        user_metadata: {
+          name,
+          role: 'admin'
+        },
+        email_confirm: true
+      });
+
+      if (error) {
+        console.error('Supabase admin creation error:', error);
+        return res.status(400).json({ error: error.message });
+      }
+
+      // Insert user data into our custom users table
+      if (data.user) {
+        try {
+          await query(`
+            INSERT INTO users (id, name, email, role, created_at, updated_at) 
+            VALUES ($1, $2, $3, 'admin', NOW(), NOW())
+            ON CONFLICT (id) DO UPDATE SET
+              name = EXCLUDED.name,
+              role = EXCLUDED.role,
+              updated_at = NOW()
+          `, [data.user.id, name, email]);
+        } catch (dbError) {
+          console.error('Error inserting admin user data:', dbError);
+          // Try to clean up the Supabase user if database insert fails
+          try {
+            await supabase.auth.admin.deleteUser(data.user.id);
+          } catch (cleanupError) {
+            console.error('Failed to cleanup Supabase user:', cleanupError);
+          }
+          return res.status(500).json({ error: 'Failed to create admin user in database' });
+        }
+      }
+
+      res.status(201).json({
+        message: 'Initial admin user created successfully',
+        user: {
+          id: data.user?.id,
+          name,
+          email,
+          role: 'admin'
+        }
+      });
+    } else {
+      return res.status(500).json({ 
+        error: 'Supabase not configured. Please check environment variables.' 
+      });
+    }
+  } catch (error) {
+    console.error('Initial admin creation error:', error);
+    res.status(500).json({ error: 'Failed to create initial admin user' });
+  }
+});
+
+// Check if initial admin setup is needed
+router.get('/setup-status', async (req, res) => {
+  try {
+    const existingAdmins = await query('SELECT id FROM users WHERE role = $1 LIMIT 1', ['admin']);
+    
+    res.json({
+      needsInitialSetup: existingAdmins.rows.length === 0,
+      hasAdmins: existingAdmins.rows.length > 0
+    });
+  } catch (error) {
+    console.error('Error checking setup status:', error);
+    res.status(500).json({ error: 'Failed to check setup status' });
+  }
+});
+
 // Register endpoint
 router.post('/register', async (req, res) => {
   try {

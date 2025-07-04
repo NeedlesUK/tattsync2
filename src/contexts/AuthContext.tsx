@@ -38,13 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to fetch user data from our database
   const fetchUserData = async (userId: string, userEmail: string) => {
     try {
-      const token = session?.access_token;
-      if (!token) return null;
-
-      // Set the authorization header for API requests
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-      const response = await axios.get(`/api/users/${userId}`);
+      // Try to get user data from our database
+      const response = await axios.get(`/api/users/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
       return response.data;
     } catch (error) {
       console.error('Error fetching user data:', error);
