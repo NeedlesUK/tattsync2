@@ -12,7 +12,7 @@ async function authenticateToken(req, res, next) {
   try {
     // Verify Supabase JWT token
     if (supabase) {
-      const { data: { user }, error } = await supabase.auth.getUser(token);
+      const { data: { user }, error } = await supabase.auth.admin.getUser(token);
       
       if (error || !user) {
         console.error('Supabase auth error:', error);
