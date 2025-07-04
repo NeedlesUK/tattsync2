@@ -1,362 +1,439 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Shield, User, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
-import { api } from '../lib/api';
-import { useAuth } from '../contexts/AuthContext';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createClient, Session, User } from '@supabase/supabase-js';
+import axios from 'axios';
+interface AuthUser {
+  id: string;
+  name: string;
+  email: string; 
+  role: 'admin' | 'artist' | 'piercer' | 'performer' | 'trader' | 'volunteer' | 'event_manager' | 'event_admin' | 'client' | 'studio_manager' | 'judge';
+  roles?: { role: string; is_primary: boolean }[];
+  roles?: string[];
+  avatar?: string;
+}
 
-export function InitialSetupPage() {
-  const { supabase } = useAuth();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
-  const navigate = useNavigate();
+interface AuthContextType {
+  user: AuthUser | null;
+  session: Session | null;
+  supabase: ReturnType<typeof createClient> | null;
+  updateUserEmail: (newEmail: string) => Promise<void>;
+  updateUserRoles: (roles: string[], primaryRole: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>; 
+  isLoading: boolean;
+  supabase: ReturnType<typeof createClient> | null;
+  updateUserProfile: (profileData: Partial<AuthUser>) => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Initialize Supabase client
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+let supabase: ReturnType<typeof createClient> | null = null; 
+
+// Only initialize Supabase if we have valid URL and key (not placeholder values)
+if (supabaseUrl && supabaseAnonKey) {
+  try {
+    if (supabaseUrl !== 'your_supabase_project_url' && 
+        supabaseAnonKey !== 'your_supabase_anon_key' && 
+        supabaseUrl.startsWith('https://')) {
+      supabase = createClient(supabaseUrl, supabaseAnonKey);
+      console.log('✅ Supabase client initialized in AuthContext');
+    } else {
+      console.warn('⚠️ Invalid Supabase credentials (placeholder values detected)');
+    }
+  } catch (error) {
+    console.error("❌ Failed to initialize Supabase client in AuthContext:", error);
+    supabase = null;
+  }
+} else {
+  console.warn('⚠️ Supabase credentials missing. Using mock data.');
+  console.warn('Missing:', {
+    url: !supabaseUrl ? 'VITE_SUPABASE_URL' : null,
+  supabase = null;
+}
+
+// Create admin client for direct database access
+const supabaseAdmin = supabase;
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null); 
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Function to update user profile data in the context
+  const updateUserProfile = (profileData: Partial<AuthUser>) => {
+    if (!user) return;
+    
+    setUser(prev => {
+      if (!prev) return null;
+      return { ...prev, ...profileData };
+    });
+  };
+
+  // Function to fetch user data from our database
+  const fetchUserData = async (userId: string, userEmail: string) => {
+    try {
+      console.log('🔍 Fetching user data for:', userId, userEmail);
+      
+      // Try direct database query first
+      if (supabase) {
+        try {
+          console.log('🔍 Querying Supabase for user data');
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('id, name, email, role')
+            .eq('id', userId)
+            .single();
+          
+          if (userError) {
+            console.error('❌ Error fetching user data from Supabase:', userError);
+            throw userError;
+          }
+          
+          // Fetch user roles
+          const { data: rolesData, error: rolesError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', userId);
+            
+          if (rolesError) {
+            console.error('❌ Error fetching user roles from Supabase:', rolesError);
+          }
+          
+          const roles = rolesData ? rolesData.map(r => r.role) : [userData.role];
+          
+          console.log('✅ User data from Supabase:', userData);
+          console.log('✅ User roles from Supabase:', roles);
+          
+          const result = {
+            ...userData,
+            roles
+          };
+          
+          console.log('Returning user data:', result);
+          return result;
+        } catch (error) {
+          console.error('❌ Error fetching user data from Supabase:', error);
+          // Fall through to the fallback
+        }
+      } else if (session?.access_token) {
+        try {
+          console.log('🔍 Fetching user data from API');
+          const response = await axios.get(`/api/users/${userId}`, {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`
+            }
+          });
+          console.log('✅ User data from API:', response.data);
+          return response.data;
+        } catch (error) {
+          console.error('❌ Error fetching user data from API:', error);
+          // Fall through to the fallback
+        }
+      }
+      
+      // Fallback to basic user info
+      console.log('⚠️ Using fallback user data');
+      
+      // Special case for gary@tattscore.com - always admin
+      if (userEmail === 'gary@tattscore.com') {
+        return {
+          id: userId,
+          name: 'Gary Watts',
+          email: 'gary@tattscore.com',
+          role: 'admin',
+          roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge']
+        };
+      }
+      
+      return {
+        id: userId,
+        name: userEmail?.split('@')[0] || 'User',
+        email: userEmail || '',
+        role: 'artist' as const,
+        roles: ['artist']
+      };
+    } catch (error) {
+      console.error('❌ Error fetching user data:', error);
+      // Fallback to basic user info if API call fails
+      
+      return {
+        id: userId,
+        name: userEmail?.split('@')[0] || 'User',
+        email: userEmail || '',
+        role: 'artist' as const,
+        roles: ['artist']
+      };
+    }
+  };
+
+  // Function to update user state with complete data
+  const updateUserState = async (session: Session | null) => {
+    if (session?.user) {
+      console.log('🔄 Updating user state for session:', session.user.email); 
+      try {
+        const userData = await fetchUserData(session.user.id, session.user.email || '');
+        
+        // Fetch user roles if supabase is available
+        if (supabase) {
+          try {
+            const { data: rolesData, error: rolesError } = await supabase
+              .rpc('get_user_roles', { user_uuid: session.user.id });
+            
+            if (!rolesError && rolesData) {
+              setUserRoles(rolesData);
+            }
+          } catch (error) {
+            console.error('Error fetching user roles:', error);
+          }
+        }
+        console.log('✅ Setting user state with data:', userData);
+
+        setUser({
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role || session.user.user_metadata?.role || 'artist', 
+          roles: userData.roles || [userData.role || session.user.user_metadata?.role || 'artist'],
+          avatar: undefined
+        });
+      } catch (error) {
+        console.error('❌ Error updating user state:', error);
+        
+        // Fallback to basic user info from session
+        setUser({
+          id: session.user.id,
+          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          role: session.user.user_metadata?.role || 'artist',
+          roles: [session.user.user_metadata?.role || 'artist']
+        });
+      }
+    } else {
+      setUser(null);
+      // Clear authorization header when no user
+      delete axios.defaults.headers.common['Authorization'];
+    }
+  };
 
   useEffect(() => {
-    if (supabase) {
-      checkSetupStatus();
-    } else {
-      setNeedsSetup(false);
-    }
-  }, []);
-
-  const checkSetupStatus = async () => {
-    try {
-      if (!supabase || !supabase.from) {
-      if (!supabase) {
-        console.error('Supabase client not initialized. Please check your environment variables.');
-        setError('Supabase client not initialized. Please check your .env file for proper configuration.');
-        setNeedsSetup(false);
-        return;
-      }
-      
-      const { data, error } = await supabase
-        .from('users')
-        .select('id')
-        .eq('role', 'admin')
-        .limit(1);
-        
-      if (error) {
-        console.error('Error checking for admin users:', error);
-        setNeedsSetup(false);
-        return;
-      }
-      
-      // If admin users exist, we don't need setup
-      const needsInitialSetup = !data || data.length === 0;
-      setNeedsSetup(needsInitialSetup);
-      
-      if (!needsInitialSetup) {
-        navigate('/login'); // Redirect to login if setup is already complete
-      }
-    } catch (error) {
-      console.error('Error checking setup status:', error);
-      setError('Failed to check setup status');
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
-    // Clear error when user starts typing
-    if (error) {
-      setError(null);
-    }
-  };
-
-  const validateForm = () => {
-    if (!formData.name.trim()) {
-      setError('Name is required');
-      return false;
-    }
-    if (!formData.email.trim()) {
-      setError('Email is required');
-      return false;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError('Please enter a valid email address');
-      return false;
-    }
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long');
-      return false;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-
-    if (!validateForm()) {
+    if (!supabase) {
+      console.warn('⚠️ Supabase not configured. Please check your environment variables.');
+      setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
+    // Get initial session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+      
+      console.log('🔍 Initial session check:', session?.user?.email);
+      
+      if (session?.access_token) {
+        // Set the authorization header for API requests
+        axios.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      
+      await updateUserState(session);
+      setIsLoading(false);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log('🔄 Auth state changed:', session?.user?.email);
+      setSession(session);
+      
+      if (session?.access_token) {
+        // Set the authorization header for API requests
+        axios.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
+      } else {
+        // Clear authorization header when no session
+        delete axios.defaults.headers.common['Authorization'];
+      }
+      
+      await updateUserState(session);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    if (!supabase) {
+      throw new Error('Supabase not configured. Please check your environment variables.');
+    }
 
     try {
-      if (!supabase) {
-        throw new Error('Supabase client not initialized');
-      }
-      
-      if (!supabase.auth) {
-        throw new Error('Supabase auth not available');
-      }
-      
-      // Create user with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            name: formData.name,
-            role: 'admin'
-          }
-        }
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-      
-      if (authError) {
-        throw authError;
-      }
-      
-      if (!authData.user) {
-        throw new Error('Failed to create user');
-      }
-      
-      // Insert user into users table with admin role
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert({
-          id: authData.user.id,
-          name: formData.name,
-          email: formData.email,
-          role: 'admin',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-        
-      if (insertError) {
-        throw insertError;
-      }
-      
-      // Add admin role to user_roles table
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: authData.user.id,
-          role: 'admin',
-          is_primary: true,
-          created_at: new Date().toISOString()
-        });
-        
-      if (roleError) {
-        console.error('Error adding admin role:', roleError);
+
+      // Set authorization header immediately after successful login
+      if (data.session?.access_token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${data.session.access_token}`;
       }
 
-      setSuccess('Initial admin account created successfully! You can now log in.');
-      
-      // Redirect to login after 2 seconds
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-
-    } catch (err: any) {
-      console.error('Setup error:', err);
-      
-      setError(err.message || 'Failed to create admin account. Please try again.');
-    } finally {
-      setIsLoading(false);
+      // User state will be updated by the auth state change listener
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
   };
 
-  if (needsSetup === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-300">Checking setup status...</p>
-        </div>
-      </div>
-    );
-  }
+  const logout = async () => {
+    if (!supabase) {
+      throw new Error('Supabase not configured');
+    }
 
-  if (needsSetup === false) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <p className="text-gray-300">Setup already complete. Redirecting to login...</p>
-        </div>
-      </div>
-    );
-  }
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
+      // Clear authorization header
+      delete axios.defaults.headers.common['Authorization'];
+      // User state will be updated by the auth state change listener
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  };
+
+  // Function to update user email
+  const updateUserEmail = async (newEmail: string) => {
+    if (!supabase || !user) {
+      throw new Error('Supabase not configured or user not logged in');
+    }
+
+    try {
+      // Update email in Supabase Auth
+      const { error: authError } = await supabase.auth.updateUser({
+        email: newEmail
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      // Update email in users table
+      const { error: dbError } = await supabase
+        .from('users')
+        .update({ email: newEmail, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+
+      if (dbError) {
+        throw dbError;
+      }
+
+      // Update local user state
+      setUser(prev => prev ? { ...prev, email: newEmail } : null);
+
+      return true;
+    } catch (error) {
+      console.error('Error updating email:', error);
+      throw error;
+    }
+  };
+
+  // Function to update user roles
+  const updateUserRoles = async (roles: string[], primaryRole: string) => {
+    if (!supabase || !user) {
+      throw new Error('Supabase not configured or user not logged in');
+    }
+    
+    console.log('Updating user roles:', roles, 'primary:', primaryRole);
+
+    try {
+      // Call the set_primary_role function
+      const { error: primaryRoleError } = await supabase.rpc('set_primary_role', {
+        user_uuid: user.id,
+        primary_role: primaryRole
+      });
+
+      if (primaryRoleError) {
+        throw primaryRoleError;
+      }
+
+      // Add all roles
+      // First, get current roles
+      const { data: currentRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+        
+      const existingRoles = currentRoles?.map(r => r.role) || [];
+      console.log('Existing roles:', existingRoles);
+      
+      // Remove roles that are no longer needed
+      for (const existingRole of existingRoles) {
+        if (!roles.includes(existingRole) && existingRole !== primaryRole) {
+          console.log('Removing role:', existingRole);
+          const { error: removeRoleError } = await supabase.rpc('remove_user_role', {
+            user_uuid: user.id,
+            role_to_remove: existingRole
+          });
+          
+          if (removeRoleError) {
+            console.error(`Error removing role ${existingRole}:`, removeRoleError);
+          }
+        }
+      }
+      
+      // Add new roles
+      for (const role of roles) {
+        if (!existingRoles.includes(role)) {
+          console.log('Adding role:', role);
+          const { error: addRoleError } = await supabase.rpc('add_user_role', {
+            user_uuid: user.id,
+            new_role: role
+          });
+
+          if (addRoleError) {
+            console.error(`Error adding role ${role}:`, addRoleError);
+          }
+        }
+      }
+
+      // Update local user state
+      setUser(prev => prev ? { 
+        ...prev, 
+        role: primaryRole as any, 
+        roles: roles
+      } : null);
+
+      return true;
+    } catch (error) {
+      console.error('Error updating roles:', error);
+      throw error;
+    }
+  };
 
   return (
-    <div className="min-h-screen pt-16">
-      <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Shield className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-white mb-2">Initial Setup</h1>
-            <p className="text-gray-300">Create the first admin account for TattSync</p>
-          </div>
-
-          <div className="mb-6 p-4 bg-blue-500/20 border border-blue-500/30 rounded-lg">
-            <p className="text-blue-300 text-sm">
-              <strong>Welcome to TattSync!</strong> You're setting up the first admin account. 
-              This account will have full access to create events and manage the platform.
-            </p>
-          </div>
-
-          {error && (
-            <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center space-x-3">
-              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-              <p className="text-red-400 text-sm">{error}</p>
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-lg flex items-center space-x-3">
-              <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-              <p className="text-green-400 text-sm">{success}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Enter your full name"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Enter your email"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Create a strong password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              <p className="text-gray-400 text-xs mt-1">Minimum 8 characters</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Confirm your password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-purple-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-            >
-              {isLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Creating Admin Account...</span>
-                </>
-              ) : (
-                <>
-                  <Shield className="w-5 h-5" />
-                  <span>Create Admin Account</span>
-                </>
-              )}
-            </button>
-          </form>
-
-          <div className="mt-8 pt-6 border-t border-white/10">
-            <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4">
-              <h4 className="text-yellow-300 font-medium mb-2">Important</h4>
-              <p className="text-yellow-200 text-sm">
-                This admin account will have full access to the platform. Keep your credentials secure 
-                and remember them as they will be needed to manage events and create additional users.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <AuthContext.Provider value={{ 
+      user,
+      session,
+      supabase,
+      login,
+      logout,
+      isLoading,
+      updateUserEmail,
+      updateUserRoles,
+      updateUserProfile
+    }}>
+      {children}
+    </AuthContext.Provider>
   );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }
