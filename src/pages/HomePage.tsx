@@ -97,7 +97,7 @@ export function HomePage() {
               Welcome back, {user.name}!
             </h1>
             <p className="text-xl text-gray-300 mb-8">
-              Ready to manage your next tattoo convention?
+              Your TattSync dashboard is ready
             </p>
             <Link
               to="/dashboard"
