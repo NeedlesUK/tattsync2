@@ -3,9 +3,11 @@ import { Plus, Search, Filter, Calendar, MapPin, Users } from 'lucide-react';
 import { EventCard } from '../components/events/EventCard';
 import { CreateEventModal } from '../components/events/CreateEventModal';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 
 export function EventsPage() {
   const { user } = useAuth();
+  const { supabase } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,14 +21,63 @@ export function EventsPage() {
   const fetchEvents = async () => {
     setIsLoading(true);
     try {
-      // In a real implementation, fetch from API
-      // For now, we'll just simulate loading
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Set loading to false without setting mock data
-      setEvents([]);
+      if (supabase) {
+        // Fetch events directly from Supabase
+        const { data, error } = await supabase
+          .from('events')
+          .select(`
+            id,
+            name,
+            description,
+            event_slug,
+            start_date,
+            end_date,
+            location,
+            venue,
+            max_attendees,
+            status,
+            created_at,
+            event_manager_id,
+            users:event_manager_id (name, email)
+          `)
+          .order('start_date', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching events:', error);
+          setEvents([]);
+        } else {
+          // Format the data to match the expected structure
+          const formattedEvents = data.map(event => ({
+            id: event.id,
+            name: event.name,
+            description: event.description,
+            date: event.start_date,
+            endDate: event.end_date,
+            location: event.location,
+            venue: event.venue,
+            attendees: 0, // This would need to be calculated from applications or tickets
+            maxAttendees: event.max_attendees,
+            status: event.status,
+            image: 'https://images.pexels.com/photos/1002638/pexels-photo-1002638.jpeg?auto=compress&cs=tinysrgb&w=400', // Placeholder
+            event_manager_name: event.users?.name,
+            event_manager_email: event.users?.email
+          }));
+          
+          setEvents(formattedEvents);
+        }
+      } else {
+        // Fallback to API if Supabase is not available
+        try {
+          const response = await axios.get('/api/events');
+          setEvents(response.data);
+        } catch (apiError) {
+          console.error('Error fetching events from API:', apiError);
+          setEvents([]);
+        }
+      }
     } catch (error) {
       console.error('Error fetching events:', error);
+      setEvents([]);
     } finally {
       setIsLoading(false);
     }
@@ -106,14 +157,22 @@ export function EventsPage() {
           <div className="text-center py-12">
             <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-300 mb-2">No events found</h3>
-            <p className="text-gray-400">Try adjusting your search or filters</p>
+            <p className="text-gray-400">
+              {searchTerm || filterStatus !== 'all'
+                ? 'Try adjusting your search or filters'
+                : 'No events have been created yet'
+              }
+            </p>
           </div>
         )}
 
         {isAdmin && (
           <CreateEventModal
             isOpen={isCreateModalOpen}
-            onClose={() => setIsCreateModalOpen(false)}
+            onClose={() => {
+              setIsCreateModalOpen(false);
+              fetchEvents(); // Refresh events after creating a new one
+            }}
           />
         )}
       </div>

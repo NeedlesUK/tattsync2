@@ -5,7 +5,7 @@ interface Event {
   id: number;
   name: string;
   description: string;
-  date: string;
+  date: string; // start_date
   endDate: string;
   location: string;
   venue: string;
@@ -13,13 +13,19 @@ interface Event {
   maxAttendees: number;
   status: string;
   image: string;
+  event_manager_id?: string;
+  event_manager_name?: string;
+  event_manager_email?: string;
 }
 
 interface EventCardProps {
   event: Event;
+  onView?: (eventId: number) => void;
+  onEdit?: (eventId: number) => void;
+  onDelete?: (eventId: number) => void;
 }
 
-export function EventCard({ event }: EventCardProps) {
+export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
@@ -93,17 +99,30 @@ export function EventCard({ event }: EventCardProps) {
         </div>
 
         {/* Actions */}
-        <div className="flex space-x-2">
-          <button className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1">
+        <div className="flex space-x-2 mt-2">
+          <button 
+            onClick={() => onView ? onView(event.id) : null}
+            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1"
+          >
             <Eye className="w-4 h-4" />
             <span>View</span>
           </button>
-          <button className="bg-white/10 hover:bg-white/20 text-gray-300 px-3 py-2 rounded-lg text-sm transition-colors">
+          {onEdit && (
+          <button 
+            onClick={() => onEdit(event.id)}
+            className="bg-white/10 hover:bg-white/20 text-gray-300 px-3 py-2 rounded-lg text-sm transition-colors"
+          >
             <Edit className="w-4 h-4" />
           </button>
-          <button className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-3 py-2 rounded-lg text-sm transition-colors">
+          )}
+          {onDelete && (
+          <button 
+            onClick={() => onDelete(event.id)}
+            className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-3 py-2 rounded-lg text-sm transition-colors"
+          >
             <Trash2 className="w-4 h-4" />
           </button>
+          )}
         </div>
       </div>
     </div>
