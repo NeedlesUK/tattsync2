@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 
 export function RegistrationPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -12,7 +13,27 @@ export function RegistrationPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const { login } = useAuth();
+  const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    checkSetupStatus();
+  }, []);
+
+  const checkSetupStatus = async () => {
+    try {
+      const response = await axios.get('/api/auth/setup-status');
+      setNeedsSetup(response.data.needsInitialSetup);
+      
+      if (response.data.needsInitialSetup) {
+        // Redirect to setup page if initial setup is needed
+        navigate('/setup');
+      }
+    } catch (error) {
+      console.error('Error checking setup status:', error);
+      setNeedsSetup(false); // Default to false if check fails
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -61,6 +82,11 @@ export function RegistrationPage() {
         </div>
       </div>
     );
+  }
+
+  // Redirect to setup page if needed
+  if (needsSetup === true) {
+    return <Navigate to="/setup" replace />;
   }
 
   return (
