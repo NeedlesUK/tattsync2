@@ -2,12 +2,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Users, CreditCard, MessageCircle, Gift, Shield, Award, Building } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useState, useEffect } from 'react';
 
 export function HomePage() {
   const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-  const [userData, setUserData] = useState<any>(null);
 
   const features = [
     {
@@ -57,37 +54,6 @@ export function HomePage() {
     }
   ];
 
-  useEffect(() => {
-    if (user) {
-      fetchUserData();
-    } else {
-      setIsLoading(false);
-    }
-  }, [user]);
-
-  const fetchUserData = async () => {
-    setIsLoading(true);
-    try {
-      // In a real implementation, fetch from API
-      // For now, we'll just simulate loading
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Set loading to false without setting mock data
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      setIsLoading(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
   if (user) {
     return (
       <div className="min-h-screen pt-16">
@@ -97,7 +63,7 @@ export function HomePage() {
               Welcome back, {user.name}!
             </h1>
             <p className="text-xl text-gray-300 mb-8">
-              Your TattSync dashboard is ready
+              Ready to manage your next tattoo convention?
             </p>
             <Link
               to="/dashboard"

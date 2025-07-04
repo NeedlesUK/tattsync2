@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
 import axios from 'axios';
-import { api } from '../lib/api';
 
 interface AuthUser {
   id: string;
@@ -35,9 +34,21 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 let supabase: ReturnType<typeof createClient> | null = null;
 
 // Only initialize Supabase if we have valid URL and key (not placeholder values)
-if (supabaseUrl) {
-  supabase = createClient(supabaseUrl, supabaseAnonKey);
-  console.log('✅ Supabase client initialized');
+if (supabaseUrl && 
+    supabaseAnonKey && 
+    supabaseUrl !== 'your_supabase_project_url' && 
+    supabaseAnonKey !== 'your_supabase_anon_key' &&
+    supabaseUrl.startsWith('https://')) {
+  try {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    console.log('✅ Supabase client initialized');
+  } catch (error) {
+    console.error('❌ Failed to initialize Supabase client:', error);
+    supabase = null;
+  }
+} else {
+  console.warn('⚠️ Supabase not configured properly. Using mock data.');
+  supabase = null;
 }
 
 // Create admin client for direct database access
@@ -47,6 +58,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Function to update user profile data in the context
+  const updateUserProfile = (profileData: Partial<AuthUser>) => {
+    if (!user) return;
+    
+    setUser(prev => {
+      if (!prev) return null;
+      return { ...prev, ...profileData };
+    });
+  };
 
   // Function to update user profile data in the context
   const updateUserProfile = (profileData: Partial<AuthUser>) => {
@@ -257,7 +278,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!supabase) {
-      console.warn('⚠️ Supabase not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+      console.warn('⚠️ Supabase not configured. Using mock data.');
+      
+      // Create a mock user for development
+      if (process.env.NODE_ENV === 'development') {
+        setUser({
+          id: '123',
+          name: 'Demo User',
+          email: 'demo@example.com',
+          role: 'admin',
+          roles: ['admin', 'artist'],
+          avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=128&h=128&dpr=2'
+        });
+      }
+      
       setIsLoading(false);
       return;
     }

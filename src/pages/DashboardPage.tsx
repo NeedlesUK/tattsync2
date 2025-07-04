@@ -2,37 +2,45 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Users, CreditCard, MessageCircle, TrendingUp, Clock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { StatsCard } from '../components/dashboard/StatsCard';
-import { RecentActivity } from '../components/dashboard/RecentActivity';
 import { EventCalendar } from '../components/calendar/EventCalendar';
 
 export function DashboardPage() {
   const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [stats] = useState([
+    {
+      title: 'Active Events',
+      value: '12',
+      change: '+3 from last month',
+      icon: Calendar,
+      color: 'purple'
+    },
+    {
+      title: 'Total Applications',
+      value: '247',
+      change: '+18% from last week',
+      icon: Users,
+      color: 'teal'
+    },
+    {
+      title: 'Revenue',
+      value: '£24,580',
+      change: '+12% from last month',
+      icon: CreditCard,
+      color: 'orange'
+    },
+    {
+      title: 'Messages',
+      value: '86',
+      change: '12 unread',
+      icon: MessageCircle,
+      color: 'blue'
+    }
+  ]);
 
   // Show different dashboard based on user role
   const isClient = user?.role === 'client';
   const isRegularUser = ['artist', 'piercer', 'performer', 'trader', 'volunteer'].includes(user?.role || '');
-
-  useEffect(() => {
-    // Fetch dashboard data
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
-      try {
-        // In a real implementation, fetch from API
-        // For now, we'll just simulate loading
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Set loading to false without setting mock data
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setIsLoading(false);
-      }
-    };
-    
-    fetchDashboardData();
-  }, []);
 
   if (isLoading) {
     return (
@@ -60,7 +68,7 @@ export function DashboardPage() {
         </div>
 
         {/* Show stats only for admins and event managers */}
-        {!isClient && !isRegularUser && stats.length > 0 && (
+        {!isClient && !isRegularUser && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, index) => (
               <StatsCard key={index} {...stat} />
@@ -80,12 +88,52 @@ export function DashboardPage() {
         ) : (
           // Dashboard view for admins and event managers
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-3 text-center py-12">
-              <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-300 mb-2">No data available</h3>
-              <p className="text-gray-400">
-                Connect to the backend to see your dashboard data
-              </p>
+            <div className="lg:col-span-2">
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+                <h2 className="text-xl font-semibold text-white mb-4">Recent Activity</h2>
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-medium">New artist application received</p>
+                      <p className="text-gray-300 text-sm">Sarah Johnson applied for Ink Fest 2024</p>
+                      <p className="text-gray-400 text-xs mt-1">2 hours ago</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-medium">Event published</p>
+                      <p className="text-gray-300 text-sm">Body Art Expo 2024 is now live</p>
+                      <p className="text-gray-400 text-xs mt-1">4 hours ago</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Upcoming Events</h2>
+                <div className="space-y-4">
+                  <div className="border border-white/10 rounded-lg p-4 hover:bg-white/5 transition-colors">
+                    <h3 className="text-white font-medium mb-2">Ink Fest 2024</h3>
+                    <div className="space-y-1">
+                      <div className="flex items-center text-gray-300 text-sm">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Mar 15, 2024
+                      </div>
+                      <div className="flex items-center text-gray-300 text-sm">
+                        <MapPin className="w-4 h-4 mr-2" />
+                        Los Angeles, CA
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
