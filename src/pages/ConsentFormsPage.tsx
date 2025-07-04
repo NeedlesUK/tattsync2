@@ -474,14 +474,11 @@ export function ConsentFormsPage() {
                       <QrCode className="w-4 h-4" />
                     </button>
                     <button 
-                    <QRCodeSVG 
-                      value={`https://tattsync.com/consent/${form.id}`} 
-                      size={96} 
-                      bgColor={"#ffffff"} 
-                      fgColor={"#000000"} 
-                      level={"L"} 
-                      includeMargin={false}
-                    />
+                      className="bg-white/10 hover:bg-white/20 text-gray-300 px-3 py-2 rounded-lg text-sm transition-colors"
+                      onClick={() => handleDeleteForm(form.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               ))}
