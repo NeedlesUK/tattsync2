@@ -30,65 +30,9 @@ export function EventCalendar() {
   const fetchEvents = async () => {
     try {
       setIsLoading(true);
-      // In a real implementation, this would fetch from your API
-      // For now, we'll use mock data
-      const mockEvents: CalendarEvent[] = [
-        {
-          id: 1,
-          name: 'Ink Fest 2024',
-          description: 'The premier tattoo convention on the West Coast',
-          event_slug: 'ink-fest-2024',
-          start_date: '2024-03-15',
-          end_date: '2024-03-17',
-          location: 'Los Angeles, CA',
-          venue: 'LA Convention Center',
-          status: 'published',
-          relationship: user?.role === 'event_manager' ? 'managing' : undefined,
-          applications_enabled: true,
-          ticketing_enabled: true
-        },
-        {
-          id: 2,
-          name: 'Body Art Expo',
-          description: 'Celebrating all forms of body art and modification',
-          event_slug: 'body-art-expo-2024',
-          start_date: '2024-03-22',
-          end_date: '2024-03-24',
-          location: 'New York, NY',
-          venue: 'Javits Center',
-          status: 'published',
-          applications_enabled: true,
-          ticketing_enabled: false
-        },
-        {
-          id: 3,
-          name: 'Tattoo Convention',
-          description: 'Traditional and modern tattoo showcase',
-          event_slug: 'tattoo-convention-2024',
-          start_date: '2024-04-05',
-          end_date: '2024-04-07',
-          location: 'Miami, FL',
-          venue: 'Miami Beach Convention Center',
-          status: 'published',
-          applications_enabled: true,
-          ticketing_enabled: true
-        },
-        {
-          id: 4,
-          name: 'UK Tattoo Festival',
-          description: 'The biggest tattoo festival in the UK',
-          event_slug: 'uk-tattoo-festival-2024',
-          start_date: '2024-05-10',
-          end_date: '2024-05-12',
-          location: 'London, UK',
-          venue: 'ExCeL London',
-          status: 'published',
-          applications_enabled: true,
-          ticketing_enabled: true
-        }
-      ];
-
-      setEvents(mockEvents);
+      // In a real implementation, this would fetch from API
+      // For now, we'll just set an empty array
+      setEvents([]);
     } catch (error) {
       console.error('Error fetching events:', error);
     } finally {

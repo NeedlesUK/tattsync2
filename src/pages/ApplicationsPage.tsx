@@ -39,112 +39,27 @@ export function ApplicationsPage() {
 
   // Mock data - in real implementation, fetch from API
   useEffect(() => {
-    if (!hasApplicationAccess) {
-      setIsLoading(false);
-      return;
-    }
-
-    const mockApplications: Application[] = [
-      {
-        id: 1,
-        applicant_name: 'Sarah Johnson',
-        applicant_email: 'sarah@example.com',
-        date_of_birth: '1990-05-15',
-        telephone: '+44 7700 900123',
-        application_type: 'artist',
-        status: 'pending',
-        created_at: '2024-01-15T14:30:00Z',
-        event_name: 'Ink Fest 2024',
-        event_id: 1,
-        used_existing_account: true,
-        form_data: {
-          studio_name: 'Ink Dreams Studio',
-          studio_address: '123 High Street\nLondon, SW1A 1AA',
-          uk_licence: 'Yes',
-          portfolio_url: 'https://instagram.com/sarahtattoos',
-          portfolio_type: 'instagram'
-        }
-      },
-      {
-        id: 2,
-        applicant_name: 'Mike Chen',
-        applicant_email: 'mike@example.com',
-        date_of_birth: '1985-08-22',
-        telephone: '+44 7700 900456',
-        application_type: 'piercer',
-        status: 'approved',
-        created_at: '2024-01-12T12:15:00Z',
-        event_name: 'Body Art Expo',
-        event_id: 2,
-        used_existing_account: false,
-        form_data: {
-          studio_name: 'Precision Piercing',
-          studio_address: '456 Queen Street\nManchester, M1 1AA',
-          uk_licence: 'Yes',
-          portfolio_url: 'https://facebook.com/precisionpiercing',
-          portfolio_type: 'facebook'
-        }
-      },
-      {
-        id: 3,
-        applicant_name: 'Emma Davis',
-        applicant_email: 'emma@example.com',
-        date_of_birth: '1992-03-10',
-        telephone: '+44 7700 900789',
-        application_type: 'performer',
-        status: 'rejected',
-        created_at: '2024-01-10T10:45:00Z',
-        event_name: 'Tattoo Convention',
-        event_id: 3,
-        used_existing_account: true,
-        form_data: {
-          performance_description: 'Fire breathing and acrobatic performances with a gothic aesthetic',
-          portfolio_url: 'https://tiktok.com/@emmadavis',
-          portfolio_type: 'tiktok'
-        }
-      },
-      {
-        id: 4,
-        applicant_name: 'Alex Rodriguez',
-        applicant_email: 'alex@example.com',
-        date_of_birth: '1988-11-30',
-        telephone: '+44 7700 900012',
-        application_type: 'trader',
-        status: 'pending',
-        created_at: '2024-01-08T16:20:00Z',
-        event_name: 'Ink Fest 2024',
-        event_id: 1,
-        used_existing_account: false,
-        form_data: {
-          business_name: 'Aftercare Essentials',
-          product_description: 'Premium tattoo aftercare products including healing balms, antibacterial soaps, and protective films',
-          portfolio_url: 'https://aftercareessentials.com',
-          portfolio_type: 'website'
-        }
-      },
-      {
-        id: 5,
-        applicant_name: 'Lisa Thompson',
-        applicant_email: 'lisa@example.com',
-        date_of_birth: '1995-07-18',
-        telephone: '+44 7700 900345',
-        application_type: 'caterer',
-        status: 'pending',
-        created_at: '2024-01-05T09:30:00Z',
-        event_name: 'Body Art Expo',
-        event_id: 2,
-        used_existing_account: true,
-        form_data: {
-          business_name: 'Street Food Delights',
-          menu_description: 'Gourmet burgers, loaded fries, vegan options, and craft beverages',
-          service_types: ['Food (menu in description)', 'Hot drinks', 'Soft drinks'],
-          portfolio_url: 'https://instagram.com/streetfooddelights',
-          portfolio_type: 'instagram'
-        }
+    const fetchApplications = async () => {
+      if (!hasApplicationAccess) {
+        setIsLoading(false);
+        return;
       }
-    ];
-
-    setApplications(mockApplications);
+      
+      try {
+        // In a real implementation, fetch from API
+        // For now, we'll just simulate loading
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Set empty applications array
+        setApplications([]);
+      } catch (error) {
+        console.error('Error fetching applications:', error);
+      }
+      
+      setIsLoading(false);
+    };
+    
+    fetchApplications();
     setIsLoading(false);
   }, [hasApplicationAccess]);
 

@@ -169,7 +169,7 @@ export function Header() {
                     <User className="w-6 h-6" />
                   )}
                   <div className="hidden sm:block">
-                    <span className="block">{user.name}</span>
+                    <span className="block">{user.name || 'User'}</span>
                     {roleDisplay && (
                       <div className="flex items-center space-x-1">
                         <roleDisplay.icon className="w-3 h-3" />

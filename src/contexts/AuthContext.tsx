@@ -49,12 +49,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserData = async (userId: string, userEmail: string) => {
     try {
       // Try to get user data from our database
-      const response = await axios.get(`/api/users/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`
+      if (session?.access_token) {
+        try {
+          const response = await axios.get(`/api/users/${userId}`, {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`
+            }
+          });
+          return response.data;
+        } catch (error) {
+          console.error('Error fetching user data from API:', error);
+          // Fall through to the fallback
         }
-      });
-      return response.data;
+      }
+      
+      // Fallback to basic user info if API call fails
+      return {
+        id: userId,
+        name: userEmail?.split('@')[0] || 'User',
+        email: userEmail || '',
+        role: 'artist' as const
+      };
     } catch (error) {
       console.error('Error fetching user data:', error);
       // Fallback to basic user info if API call fails
@@ -71,36 +86,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
       try {
-        // First try to get user data from our database
         const userData = await fetchUserData(session.user.id, session.user.email || '');
-        
-        if (userData) {
-          setUser({
-            id: userData.id,
-            name: userData.name,
-            email: userData.email,
-            role: userData.role,
-            avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=32&h=32&dpr=2'
-          });
-        } else {
-          // Fallback to session metadata
-          setUser({
-            id: session.user.id,
-            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-            email: session.user.email || '',
-            role: session.user.user_metadata?.role || 'artist',
-            avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=32&h=32&dpr=2'
-          });
-        }
+        setUser({
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role,
+          // Don't hardcode avatar URL
+          avatar: undefined
+        });
       } catch (error) {
         console.error('Error updating user state:', error);
-        // Fallback to session metadata
+        // Fallback to basic user info from session
         setUser({
           id: session.user.id,
           name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
-          role: session.user.user_metadata?.role || 'artist',
-          avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=32&h=32&dpr=2'
+          role: session.user.user_metadata?.role || 'artist'
         });
       }
     } else {

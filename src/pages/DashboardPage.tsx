@@ -3,46 +3,44 @@ import { Calendar, Users, CreditCard, MessageCircle, TrendingUp, Clock } from 'l
 import { useAuth } from '../contexts/AuthContext';
 import { StatsCard } from '../components/dashboard/StatsCard';
 import { RecentActivity } from '../components/dashboard/RecentActivity';
-import { UpcomingEvents } from '../components/dashboard/UpcomingEvents';
 import { EventCalendar } from '../components/calendar/EventCalendar';
 
 export function DashboardPage() {
   const { user } = useAuth();
-
-  const stats = [
-    {
-      title: 'Active Events',
-      value: '12',
-      change: '+3 from last month',
-      icon: Calendar,
-      color: 'purple'
-    },
-    {
-      title: 'Total Applications',
-      value: '247',
-      change: '+18% from last week',
-      icon: Users,
-      color: 'teal'
-    },
-    {
-      title: 'Revenue',
-      value: '£24,580',
-      change: '+12% from last month',
-      icon: CreditCard,
-      color: 'orange'
-    },
-    {
-      title: 'Messages',
-      value: '86',
-      change: '12 unread',
-      icon: MessageCircle,
-      color: 'blue'
-    }
-  ];
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<any[]>([]);
 
   // Show different dashboard based on user role
   const isClient = user?.role === 'client';
   const isRegularUser = ['artist', 'piercer', 'performer', 'trader', 'volunteer'].includes(user?.role || '');
+
+  useEffect(() => {
+    // Fetch dashboard data
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      try {
+        // In a real implementation, fetch from API
+        // For now, we'll just simulate loading
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Set loading to false without setting mock data
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        setIsLoading(false);
+      }
+    };
+    
+    fetchDashboardData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-16">
@@ -62,7 +60,7 @@ export function DashboardPage() {
         </div>
 
         {/* Show stats only for admins and event managers */}
-        {!isClient && !isRegularUser && (
+        {!isClient && !isRegularUser && stats.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {stats.map((stat, index) => (
               <StatsCard key={index} {...stat} />
@@ -82,11 +80,12 @@ export function DashboardPage() {
         ) : (
           // Dashboard view for admins and event managers
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <RecentActivity />
-            </div>
-            <div>
-              <UpcomingEvents />
+            <div className="lg:col-span-3 text-center py-12">
+              <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-300 mb-2">No data available</h3>
+              <p className="text-gray-400">
+                Connect to the backend to see your dashboard data
+              </p>
             </div>
           </div>
         )}

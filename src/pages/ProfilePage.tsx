@@ -4,17 +4,18 @@ import { useAuth } from '../contexts/AuthContext';
 
 export function ProfilePage() {
   const { user, logout } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false); 
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: '+1 (555) 123-4567',
-    location: 'Los Angeles, CA',
-    bio: 'Experienced tattoo artist specializing in traditional and neo-traditional styles.',
-    website: 'https://example.com',
-    instagram: '@artist_handle',
-    experience: '8 years',
-    specialties: ['Traditional', 'Neo-Traditional', 'Black & Grey']
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    bio: '',
+    website: '',
+    instagram: '',
+    experience: '',
+    specialties: [] as string[]
   });
 
   // Password change state
@@ -30,9 +31,45 @@ export function ProfilePage() {
   const [passwordChangeSuccess, setPasswordChangeSuccess] = useState('');
 
   // Profile picture state
-  const [profilePicture, setProfilePicture] = useState(user?.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=128&h=128&dpr=2');
+  const [profilePicture, setProfilePicture] = useState<string | undefined>(undefined);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Initialize form data with user info
+    if (user) {
+      setFormData(prevData => ({
+        ...prevData,
+        name: user.name || '',
+        email: user.email || ''
+      }));
+      
+      // Set profile picture if available
+      if (user.avatar) {
+        setProfilePicture(user.avatar);
+      }
+      
+      // Fetch additional profile data from API
+      fetchUserProfile();
+    }
+  }, [user]);
+
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      // In a real implementation, fetch from API
+      // For now, we'll just simulate loading
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Set loading to false without setting mock data
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+      setIsLoading(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({
@@ -155,36 +192,13 @@ export function ProfilePage() {
     }
   };
 
-  const stats = [
-    { label: 'Events Attended', value: '12', icon: Calendar },
-    { label: 'Years Experience', value: formData.experience, icon: Award },
-    { label: 'Specialties', value: formData.specialties.length.toString(), icon: User },
-    { label: 'Profile Views', value: '234', icon: Shield }
-  ];
-
-  const recentEvents = [
-    {
-      id: 1,
-      name: 'Ink Fest 2024',
-      date: '2024-03-15',
-      role: 'Artist',
-      status: 'completed'
-    },
-    {
-      id: 2,
-      name: 'Body Art Expo',
-      date: '2024-02-20',
-      role: 'Artist',
-      status: 'completed'
-    },
-    {
-      id: 3,
-      name: 'Tattoo Convention',
-      date: '2024-01-10',
-      role: 'Artist',
-      status: 'completed'
-    }
-  ];
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-16">
@@ -198,11 +212,17 @@ export function ProfilePage() {
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
           <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
             <div className="relative">
-              <img
-                src={profilePicture}
-                alt="Profile"
-                className="w-24 h-24 rounded-full object-cover border-4 border-purple-500/30"
-              />
+              {profilePicture ? (
+                <img
+                  src={profilePicture}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-purple-500/30"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-purple-500/20 flex items-center justify-center border-4 border-purple-500/30">
+                  <User className="w-12 h-12 text-purple-400" />
+                </div>
+              )}
               <button 
                 className="absolute bottom-0 right-0 bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-full transition-colors"
                 onClick={handleProfilePictureClick}
@@ -225,7 +245,7 @@ export function ProfilePage() {
             
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-2xl font-bold text-white">{formData.name}</h2>
+                <h2 className="text-2xl font-bold text-white">{formData.name || user?.name || 'User'}</h2>
                 <button
                   onClick={() => setIsEditing(!isEditing)}
                   className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
@@ -234,8 +254,8 @@ export function ProfilePage() {
                   <span>{isEditing ? 'Cancel' : 'Edit Profile'}</span>
                 </button>
               </div>
-              <p className="text-purple-400 mb-2 capitalize">{user?.role}</p>
-              <p className="text-gray-300">{formData.bio}</p>
+              <p className="text-purple-400 mb-2 capitalize">{user?.role || 'User'}</p>
+              {formData.bio && <p className="text-gray-300">{formData.bio}</p>}
             </div>
           </div>
         </div>
@@ -488,39 +508,10 @@ export function ProfilePage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Stats */}
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Statistics</h3>
-              <div className="space-y-4">
-                {stats.map((stat, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <stat.icon className="w-5 h-5 text-purple-400" />
-                      <span className="text-gray-300">{stat.label}</span>
-                    </div>
-                    <span className="text-white font-semibold">{stat.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Stats section removed - would be populated from API */}
 
             {/* Recent Events */}
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Recent Events</h3>
-              <div className="space-y-3">
-                {recentEvents.map((event) => (
-                  <div key={event.id} className="border border-white/10 rounded-lg p-3">
-                    <h4 className="text-white font-medium text-sm">{event.name}</h4>
-                    <p className="text-gray-400 text-xs">{event.date}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-purple-400 text-xs">{event.role}</span>
-                      <span className="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">
-                        {event.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Recent Events section removed - would be populated from API */}
           </div>
         </div>
       </div>

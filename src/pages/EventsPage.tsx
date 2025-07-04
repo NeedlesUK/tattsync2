@@ -6,51 +6,31 @@ import { useAuth } from '../contexts/AuthContext';
 
 export function EventsPage() {
   const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [events, setEvents] = useState<any[]>([]);
 
-  const events = [
-    {
-      id: 1,
-      name: 'Ink Fest 2024',
-      description: 'The premier tattoo convention on the West Coast',
-      date: '2024-03-15',
-      endDate: '2024-03-17',
-      location: 'Los Angeles, CA',
-      venue: 'LA Convention Center',
-      attendees: 247,
-      maxAttendees: 500,
-      status: 'published',
-      image: 'https://images.pexels.com/photos/1002638/pexels-photo-1002638.jpeg?auto=compress&cs=tinysrgb&w=400'
-    },
-    {
-      id: 2,
-      name: 'Body Art Expo',
-      description: 'Celebrating all forms of body art and modification',
-      date: '2024-03-22',
-      endDate: '2024-03-24',
-      location: 'New York, NY',
-      venue: 'Javits Center',
-      attendees: 189,
-      maxAttendees: 400,
-      status: 'published',
-      image: 'https://images.pexels.com/photos/1319461/pexels-photo-1319461.jpeg?auto=compress&cs=tinysrgb&w=400'
-    },
-    {
-      id: 3,
-      name: 'Tattoo Convention',
-      description: 'Traditional and modern tattoo showcase',
-      date: '2024-04-05',
-      endDate: '2024-04-07',
-      location: 'Miami, FL',
-      venue: 'Miami Beach Convention Center',
-      attendees: 156,
-      maxAttendees: 350,
-      status: 'draft',
-      image: 'https://images.pexels.com/photos/590493/pexels-photo-590493.jpeg?auto=compress&cs=tinysrgb&w=400'
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  const fetchEvents = async () => {
+    setIsLoading(true);
+    try {
+      // In a real implementation, fetch from API
+      // For now, we'll just simulate loading
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Set loading to false without setting mock data
+      setEvents([]);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -60,6 +40,14 @@ export function EventsPage() {
   });
 
   const isAdmin = user?.role === 'admin';
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-16">
