@@ -1,3 +1,16 @@
+/*
+  # Fix Event Manager Policies
+
+  1. New Columns
+    - Add `event_manager_id` column to `events` table if it doesn't exist
+    - Create index on the column
+
+  2. Security
+    - Update RLS policies for events table
+    - Check if policies exist before creating them
+    - Ensure admin user has all roles
+*/
+
 -- Update event_manager_id column in events table
 DO $$
 BEGIN
@@ -20,6 +33,7 @@ BEGIN
   -- Drop existing policies if they exist
   DROP POLICY IF EXISTS "Anyone can read published events" ON events;
   DROP POLICY IF EXISTS "Admins can manage events" ON events;
+  DROP POLICY IF EXISTS "Event managers can manage their events" ON events;
   
   -- Create new policies
   CREATE POLICY "Anyone can read published events"
@@ -39,14 +53,23 @@ BEGIN
     USING (
       auth.uid() IN (SELECT id FROM users WHERE role = 'admin')
     );
-    
-  CREATE POLICY "Event managers can manage their events"
-    ON events
-    FOR ALL
-    TO authenticated
-    USING (
-      event_manager_id = auth.uid()
-    );
+  
+  -- Check if the policy already exists before creating it
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'events' AND policyname = 'Event managers can manage their events'
+  ) THEN
+    CREATE POLICY "Event managers can manage their events"
+      ON events
+      FOR ALL
+      TO authenticated
+      USING (
+        event_manager_id = auth.uid()
+      );
+    RAISE NOTICE 'Created Event managers can manage their events policy';
+  ELSE
+    RAISE NOTICE 'Event managers can manage their events policy already exists';
+  END IF;
     
   RAISE NOTICE 'Updated RLS policies for events table';
 END $$;
