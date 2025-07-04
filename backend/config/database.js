@@ -1,7 +1,6 @@
-const { Pool } = require("pg");
 const { createClient } = require("@supabase/supabase-js");
 
-// Supabase client for admin operations
+// Supabase client for all operations
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -15,50 +14,24 @@ if (supabaseUrl && supabaseServiceKey) {
       }
     });
     console.log("✅ Supabase client initialized successfully");
+    
+    // Test the connection
+    supabase.from("users").select("count").limit(1).then(result => {
+      if (result.error) {
+        console.log("⚠️  Database tables may not be set up yet");
+      } else {
+        console.log("✅ Database connection verified");
+      }
+    });
   } catch (error) {
     console.error("❌ Failed to initialize Supabase client:", error.message);
   }
 } else {
-  console.warn("⚠️ Supabase credentials not found.");
+  console.error("❌ Missing Supabase credentials!");
 }
 
-// PostgreSQL connection using DATABASE_URL
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-});
-
-// Test database connection
-async function testConnection() {
-  try {
-    const client = await pool.connect();
-    console.log("✅ PostgreSQL Database connected successfully");
-    const result = await client.query("SELECT NOW()");
-    console.log("📅 Database time:", result.rows[0].now);
-    client.release();
-    return true;
-  } catch (error) {
-    console.error("❌ Database connection failed:", error.message);
-    return false;
-  }
-}
-
-testConnection();
-
-async function query(text, params) {
-  const client = await pool.connect();
-  try {
-    const result = await client.query(text, params);
-    return result;
-  } catch (error) {
-    console.error("Database query error:", error.message);
-    throw error;
-  } finally {
-    client.release();
-  }
-}
+// For backward compatibility with pg queries
+const pool = { connect: () => { throw new Error("Use Supabase client instead of direct pg connection"); } };
+const query = () => { throw new Error("Use Supabase client instead of direct pg connection"); };
 
 module.exports = { pool, query, supabase };
