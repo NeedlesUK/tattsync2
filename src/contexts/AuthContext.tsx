@@ -26,7 +26,12 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 let supabase: ReturnType<typeof createClient> | null = null;
 
-if (supabaseUrl && supabaseAnonKey) {
+// Only initialize Supabase if we have valid URL and key (not placeholder values)
+if (supabaseUrl && 
+    supabaseAnonKey && 
+    supabaseUrl !== 'your_supabase_project_url' && 
+    supabaseAnonKey !== 'your_supabase_anon_key' &&
+    supabaseUrl.startsWith('http')) {
   supabase = createClient(supabaseUrl, supabaseAnonKey);
 }
 
