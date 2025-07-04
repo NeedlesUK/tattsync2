@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Camera, Save, Edit, Shield, Calendar, Award, Eye, EyeOff, Lock } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Camera, Save, Edit, Shield, Calendar, Award, Eye, EyeOff, Lock, Instagram, Facebook, Globe } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, logout, supabase } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false); 
   const [formData, setFormData] = useState({
@@ -13,9 +13,15 @@ export function ProfilePage() {
     location: '',
     bio: '',
     website: '',
-    instagram: '',
+    instagram: '', // Will store username only, not full URL
+    facebook: '', // Will store username only, not full URL
+    tiktok: '', // Will store username only, not full URL
     experience: '',
-    specialties: [] as string[]
+    specialties: [] as string[],
+    showInstagram: true,
+    showFacebook: true,
+    showTiktok: true,
+    showWebsite: true
   });
 
   // Password change state
@@ -33,6 +39,7 @@ export function ProfilePage() {
   // Profile picture state
   const [profilePicture, setProfilePicture] = useState<string | undefined>(undefined);
   const [isUploading, setIsUploading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Debug user data
@@ -86,18 +93,66 @@ export function ProfilePage() {
       if (user.email === 'gary@tattscore.com') {
         console.log('Setting admin profile data for gary@tattscore.com');
         setFormData(prev => ({
-          ...prev,
+          ...formData,
           name: 'Gary Watts',
           email: 'gary@tattscore.com',
           phone: '+44 7700 900000',
           location: 'London, UK',
           bio: 'TattSync Master Administrator',
-          role: 'admin'
+          role: 'admin',
+          website: 'https://tattsync.com',
+          instagram: 'tattsync',
+          facebook: 'tattsync',
+          tiktok: 'tattsync',
+          showInstagram: true,
+          showFacebook: true,
+          showTiktok: true,
+          showWebsite: true
         }));
+        setProfilePicture('https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=128&h=128&dpr=2');
       } else {
-        // For other users, simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
-        console.log('Profile data loaded');
+        // For other users, try to fetch from Supabase
+        if (supabase) {
+          try {
+            const { data, error } = await supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('user_id', user.id)
+              .single();
+              
+            if (error) {
+              console.error('Error fetching profile data:', error);
+            } else if (data) {
+              console.log('Profile data loaded from Supabase:', data);
+              setFormData(prev => ({
+                ...prev,
+                phone: data.phone || '',
+                location: data.location || '',
+                bio: data.bio || '',
+                website: data.website || '',
+                instagram: data.instagram || '',
+                facebook: data.facebook || '',
+                tiktok: data.tiktok || '',
+                experience: data.experience || '',
+                specialties: data.specialties || [],
+                showInstagram: data.show_instagram !== false,
+                showFacebook: data.show_facebook !== false,
+                showTiktok: data.show_tiktok !== false,
+                showWebsite: data.show_website !== false
+              }));
+              
+              if (data.profile_picture) {
+                setProfilePicture(data.profile_picture);
+              }
+            }
+          } catch (dbError) {
+            console.error('Database error fetching profile:', dbError);
+          }
+        } else {
+          // Simulate API call if Supabase is not available
+          await new Promise(resolve => setTimeout(resolve, 500));
+          console.log('Profile data loaded (simulated)');
+        }
       }
       
       // Set loading to false without setting mock data
@@ -128,6 +183,7 @@ export function ProfilePage() {
 
   const handleSave = () => {
     console.log('Attempting to save profile:', formData);
+    setSaveSuccess(false);
     setIsLoading(true);
 
     // Special case for gary@tattscore.com
@@ -143,6 +199,7 @@ export function ProfilePage() {
       // Update the user context with the new data
       if (user) {
         user.name = updatedData.name;
+        user.avatar = profilePicture;
       }
       
       setFormData(updatedData);
@@ -150,17 +207,65 @@ export function ProfilePage() {
       setIsEditing(false);
       return;
     }
+
+    // Try to save to Supabase if available
+    if (supabase && user) {
+      const profileData = {
+        user_id: user.id,
+        name: formData.name,
+        phone: formData.phone,
+        location: formData.location,
+        bio: formData.bio,
+        website: formData.website,
+        instagram: formData.instagram,
+        facebook: formData.facebook,
+        tiktok: formData.tiktok,
+        experience: formData.experience,
+        specialties: formData.specialties,
+        profile_picture: profilePicture,
+        show_instagram: formData.showInstagram,
+        show_facebook: formData.showFacebook,
+        show_tiktok: formData.showTiktok,
+        show_website: formData.showWebsite,
+        updated_at: new Date().toISOString()
+      };
+      
+      supabase
+        .from('user_profiles')
+        .upsert(profileData)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error saving profile to Supabase:', error);
+          } else {
+            console.log('Profile saved to Supabase successfully');
+            setSaveSuccess(true);
+          }
+        })
+        .catch(error => {
+          console.error('Exception saving profile:', error);
+        })
+        .finally(() => {
+          // Update the user context with the new name
+          if (user) {
+            user.name = formData.name;
+            user.avatar = profilePicture;
+          }
+          setIsLoading(false);
+          setIsEditing(false);
+        });
+    } else {
     
-    // In a real implementation, this would save to the database
-    // For now, we'll just simulate saving
-    setTimeout(() => {
-      // Update the user context with the new name
-      if (user) {
-        user.name = formData.name;
-      }
-      setIsLoading(false);
-      setIsEditing(false);
-    }, 1000);
+      // Simulate saving if Supabase is not available
+      setTimeout(() => {
+        if (user) {
+          user.name = formData.name;
+          user.avatar = profilePicture;
+        }
+        setSaveSuccess(true);
+        setIsLoading(false);
+        setIsEditing(false);
+      }, 1000);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -222,36 +327,60 @@ export function ProfilePage() {
   const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
+    
     // Validate file type
     if (!file.type.startsWith('image/')) {
       alert('Please select an image file');
       return;
     }
-
+    
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       alert('File size should not exceed 5MB');
       return;
     }
-
+    
     try {
       setIsUploading(true);
-
+      
       // Create a temporary URL for preview
       const previewUrl = URL.createObjectURL(file);
       setProfilePicture(previewUrl);
-
-      // In a real implementation, you would upload the file to storage
-      // For now, we'll just simulate an API call
-      console.log('Uploading profile picture:', file);
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Success - in a real implementation, you would get the URL from the storage service
-      console.log('Profile picture uploaded successfully');
       
-      // Clean up the temporary URL when done
-      // URL.revokeObjectURL(previewUrl);
+      // If Supabase is available, upload the file
+      if (supabase && user) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `profile-pictures/${fileName}`;
+        
+        console.log('Uploading to Supabase storage:', filePath);
+        
+        // Upload to Supabase Storage
+        const { error: uploadError } = await supabase.storage
+          .from('profiles')
+          .upload(filePath, file);
+          
+        if (uploadError) {
+          console.error('Error uploading to Supabase:', uploadError);
+          // Keep using the preview URL even if upload fails
+        } else {
+          // Get the public URL
+          const { data } = supabase.storage
+            .from('profiles')
+            .getPublicUrl(filePath);
+            
+          if (data && data.publicUrl) {
+            console.log('File uploaded, public URL:', data.publicUrl);
+            // Update the profile picture URL to the Supabase URL
+            setProfilePicture(data.publicUrl);
+          }
+        }
+      } else {
+        // Simulate upload if Supabase is not available
+        console.log('Simulating profile picture upload');
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        console.log('Profile picture "uploaded" successfully');
+      }
     } catch (error) {
       console.error('Error uploading profile picture:', error);
       alert('Failed to upload profile picture. Please try again.');
@@ -427,46 +556,190 @@ export function ProfilePage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       Website
+                      <span className="ml-2">
+                        <label className="inline-flex items-center space-x-1 text-xs font-normal cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.showWebsite}
+                            onChange={(e) => handleInputChange('showWebsite', e.target.checked)}
+                            disabled={!isEditing}
+                            className="text-purple-600 focus:ring-purple-500 rounded"
+                          />
+                          <span className="text-gray-400">Show publicly</span>
+                        </label>
+                      </span>
                     </label>
-                    <input
-                      type="url"
-                      name="website"
-                      value={formData.website}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
-                    />
+                    <div className="relative">
+                      <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="url"
+                        name="website"
+                        value={formData.website}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                        placeholder="https://yourwebsite.com"
+                        className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                      />
+                    </div>
                   </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       Instagram
+                      <span className="ml-2">
+                        <label className="inline-flex items-center space-x-1 text-xs font-normal cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.showInstagram}
+                            onChange={(e) => handleInputChange('showInstagram', e.target.checked)}
+                            disabled={!isEditing}
+                            className="text-purple-600 focus:ring-purple-500 rounded"
+                          />
+                          <span className="text-gray-400">Show publicly</span>
+                        </label>
+                      </span>
                     </label>
-                    <input
-                      type="text"
-                      name="instagram"
-                      value={formData.instagram}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
-                    />
+                    <div className="relative">
+                      <Instagram className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <div className="flex">
+                        <div className="bg-white/10 text-gray-400 px-3 py-2 rounded-l-lg border border-white/20 border-r-0">
+                          @
+                        </div>
+                        <input
+                          type="text"
+                          name="instagram"
+                          value={formData.instagram}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          placeholder="username"
+                          className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-r-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                        />
+                      </div>
+                    </div>
+                    {formData.instagram && !isEditing && (
+                      <a 
+                        href={`https://instagram.com/${formData.instagram.replace('@', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-400 hover:text-purple-300 text-sm mt-1 inline-flex items-center"
+                      >
+                        <Instagram className="w-3 h-3 mr-1" />
+                        View Profile
+                      </a>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Facebook
+                      <span className="ml-2">
+                        <label className="inline-flex items-center space-x-1 text-xs font-normal cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.showFacebook}
+                            onChange={(e) => handleInputChange('showFacebook', e.target.checked)}
+                            disabled={!isEditing}
+                            className="text-purple-600 focus:ring-purple-500 rounded"
+                          />
+                          <span className="text-gray-400">Show publicly</span>
+                        </label>
+                      </span>
+                    </label>
+                    <div className="relative">
+                      <Facebook className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <div className="flex">
+                        <div className="bg-white/10 text-gray-400 px-3 py-2 rounded-l-lg border border-white/20 border-r-0 whitespace-nowrap">
+                          facebook.com/
+                        </div>
+                        <input
+                          type="text"
+                          name="facebook"
+                          value={formData.facebook}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          placeholder="username"
+                          className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-r-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                        />
+                      </div>
+                    </div>
+                    {formData.facebook && !isEditing && (
+                      <a 
+                        href={`https://facebook.com/${formData.facebook}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-400 hover:text-purple-300 text-sm mt-1 inline-flex items-center"
+                      >
+                        <Facebook className="w-3 h-3 mr-1" />
+                        View Profile
+                      </a>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      TikTok
+                      <span className="ml-2">
+                        <label className="inline-flex items-center space-x-1 text-xs font-normal cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.showTiktok}
+                            onChange={(e) => handleInputChange('showTiktok', e.target.checked)}
+                            disabled={!isEditing}
+                            className="text-purple-600 focus:ring-purple-500 rounded"
+                          />
+                          <span className="text-gray-400">Show publicly</span>
+                        </label>
+                      </span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9 12a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>
+                          <path d="M15 8a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
+                          <path d="M15 8v8a4 4 0 0 1-4 4"/>
+                          <line x1="9" y1="16" x2="9" y2="20"/>
+                        </svg>
+                      </div>
+                      <div className="flex">
+                        <div className="bg-white/10 text-gray-400 px-3 py-2 rounded-l-lg border border-white/20 border-r-0">
+                          @
+                        </div>
+                        <input
+                          type="text"
+                          name="tiktok"
+                          value={formData.tiktok}
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          placeholder="username"
+                          className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-r-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                        />
+                      </div>
+                    </div>
+                    {formData.tiktok && !isEditing && (
+                      <a 
+                        href={`https://tiktok.com/@${formData.tiktok.replace('@', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-400 hover:text-purple-300 text-sm mt-1 inline-flex items-center"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                          <path d="M9 12a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>
+                          <path d="M15 8a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
+                          <path d="M15 8v8a4 4 0 0 1-4 4"/>
+                          <line x1="9" y1="16" x2="9" y2="20"/>
+                        </svg>
+                        View Profile
+                      </a>
+                    )}
                   </div>
                 </div>
 
                 {isEditing && (
                   <div className="flex justify-end space-x-4">
                     <button
-                      onClick={() => {
-                        // Reset form data to original values
-                        if (user) {
-                          setFormData(prev => ({
-                            ...prev,
-                            name: user.name || '',
-                            email: user.email || ''
-                          }));
-                        }
-                        setIsEditing(false);
-                      }}
+                      onClick={() => setIsEditing(false)}
                       className="px-6 py-2 text-gray-300 hover:text-white transition-colors"
                     >
                       Cancel
@@ -478,6 +751,12 @@ export function ProfilePage() {
                       <Save className="w-4 h-4" />
                       <span>Save Changes</span>
                     </button>
+                  </div>
+                )}
+                
+                {saveSuccess && !isEditing && (
+                  <div className="mt-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
+                    <p className="text-green-400 text-sm">Profile saved successfully!</p>
                   </div>
                 )}
               </div>
@@ -592,10 +871,75 @@ export function ProfilePage() {
 
             {/* No Data Available Section */}
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Profile Information</h3>
-              <div className="text-center py-6">
-                <p className="text-gray-400">No additional profile data available</p>
-                <p className="text-gray-400 text-sm mt-2">Connect to the backend to see your profile statistics</p>
+              <h3 className="text-lg font-semibold text-white mb-4">Social Media Preview</h3>
+              <div className="p-4 bg-white/5 rounded-lg">
+                <h4 className="text-white font-medium mb-3">Public Profile Links</h4>
+                <div className="space-y-3">
+                  {formData.website && formData.showWebsite && (
+                    <div className="flex items-center space-x-2">
+                      <Globe className="w-5 h-5 text-gray-400" />
+                      <a 
+                        href={formData.website.startsWith('http') ? formData.website : `https://${formData.website}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-400 hover:text-purple-300"
+                      >
+                        {formData.website}
+                      </a>
+                    </div>
+                  )}
+                  
+                  {formData.instagram && formData.showInstagram && (
+                    <div className="flex items-center space-x-2">
+                      <Instagram className="w-5 h-5 text-gray-400" />
+                      <a 
+                        href={`https://instagram.com/${formData.instagram.replace('@', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-400 hover:text-purple-300"
+                      >
+                        @{formData.instagram.replace('@', '')}
+                      </a>
+                    </div>
+                  )}
+                  
+                  {formData.facebook && formData.showFacebook && (
+                    <div className="flex items-center space-x-2">
+                      <Facebook className="w-5 h-5 text-gray-400" />
+                      <a 
+                        href={`https://facebook.com/${formData.facebook}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-400 hover:text-purple-300"
+                      >
+                        facebook.com/{formData.facebook}
+                      </a>
+                    </div>
+                  )}
+                  
+                  {formData.tiktok && formData.showTiktok && (
+                    <div className="flex items-center space-x-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                        <path d="M9 12a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>
+                        <path d="M15 8a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/>
+                        <path d="M15 8v8a4 4 0 0 1-4 4"/>
+                        <line x1="9" y1="16" x2="9" y2="20"/>
+                      </svg>
+                      <a 
+                        href={`https://tiktok.com/@${formData.tiktok.replace('@', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-purple-400 hover:text-purple-300"
+                      >
+                        @{formData.tiktok.replace('@', '')}
+                      </a>
+                    </div>
+                  )}
+                  
+                  {!formData.website && !formData.instagram && !formData.facebook && !formData.tiktok && (
+                    <p className="text-gray-400 text-center">No social media links added yet</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
