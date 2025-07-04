@@ -5,8 +5,9 @@ import axios from 'axios';
 interface AuthUser {
   id: string;
   name: string;
-  email: string;
+  email: string; 
   role: 'admin' | 'artist' | 'piercer' | 'performer' | 'trader' | 'volunteer' | 'event_manager' | 'event_admin' | 'client' | 'studio_manager' | 'judge';
+  roles?: string[];
   avatar?: string;
 }
 
@@ -16,6 +17,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
+  updateUserEmail: (newEmail: string) => Promise<void>;
+  updateUserRoles: (roles: string[], primaryRole: string) => Promise<void>;
   supabase: ReturnType<typeof createClient> | null;
 }
 
@@ -46,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
 
   // Function to fetch user data from our database
   const fetchUserData = async (userId: string, userEmail: string) => {
@@ -59,27 +63,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: userId,
           name: 'Gary Watts',
           email: 'gary@tattscore.com',
-          role: 'admin'
+          role: 'admin',
+          roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge']
         };
       }
       
       // Try direct database query first
       if (supabase) {
         try {
-          console.log('🔍 Querying Supabase directly');
-          const { data, error } = await supabase
+          console.log('🔍 Querying Supabase for user data');
+          const { data: userData, error: userError } = await supabase
             .from('users')
             .select('id, name, email, role')
             .eq('id', userId)
             .single();
           
-          if (error) {
-            console.error('❌ Error fetching user data from Supabase:', error);
-            throw error;
+          if (userError) {
+            console.error('❌ Error fetching user data from Supabase:', userError);
+            throw userError;
           }
           
-          console.log('✅ User data from Supabase:', data);
-          return data;
+          // Fetch user roles
+          const { data: rolesData, error: rolesError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', userId);
+            
+          if (rolesError) {
+            console.error('❌ Error fetching user roles from Supabase:', rolesError);
+          }
+          
+          const roles = rolesData ? rolesData.map(r => r.role) : [userData.role];
+          
+          console.log('✅ User data from Supabase:', userData);
+          console.log('✅ User roles from Supabase:', roles);
+          
+          return {
+            ...userData,
+            roles
+          };
         } catch (error) {
           console.error('❌ Error fetching user data from Supabase:', error);
           // Fall through to the fallback
@@ -109,7 +131,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: userId,
           name: 'Gary Watts',
           email: 'gary@tattscore.com',
-          role: 'admin'
+          role: 'admin',
+          roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge']
         };
       }
       
@@ -117,7 +140,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: userId,
         name: userEmail?.split('@')[0] || 'User',
         email: userEmail || '',
-        role: 'artist' as const
+        role: 'artist' as const,
+        roles: ['artist']
       };
     } catch (error) {
       console.error('❌ Error fetching user data:', error);
@@ -129,7 +153,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: userId,
           name: 'Gary Watts',
           email: 'gary@tattscore.com',
-          role: 'admin'
+          role: 'admin',
+          roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge']
         };
       }
       
@@ -137,7 +162,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: userId,
         name: userEmail?.split('@')[0] || 'User',
         email: userEmail || '',
-        role: 'artist' as const
+        role: 'artist' as const,
+        roles: ['artist']
       };
     }
   };
@@ -155,6 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             name: 'Gary Watts',
             email: 'gary@tattscore.com',
             role: 'admin',
+            roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge'],
             avatar: undefined
           });
           return;
@@ -167,7 +194,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: userData.id,
           name: userData.name,
           email: userData.email,
-          role: userData.role || session.user.user_metadata?.role || 'artist',
+          role: userData.role || session.user.user_metadata?.role || 'artist', 
+          roles: userData.roles || [userData.role || session.user.user_metadata?.role || 'artist'],
           avatar: undefined
         });
       } catch (error) {
@@ -181,6 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             name: 'Gary Watts',
             email: 'gary@tattscore.com',
             role: 'admin',
+            roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge'],
             avatar: undefined
           });
           return;
@@ -191,7 +220,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: session.user.id,
           name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
-          role: session.user.user_metadata?.role || 'artist'
+          role: session.user.user_metadata?.role || 'artist',
+          roles: [session.user.user_metadata?.role || 'artist']
         });
       }
     } else {
@@ -291,8 +321,98 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Function to update user email
+  const updateUserEmail = async (newEmail: string) => {
+    if (!supabase || !user) {
+      throw new Error('Supabase not configured or user not logged in');
+    }
+
+    try {
+      // Update email in Supabase Auth
+      const { error: authError } = await supabase.auth.updateUser({
+        email: newEmail
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      // Update email in users table
+      const { error: dbError } = await supabase
+        .from('users')
+        .update({ email: newEmail, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+
+      if (dbError) {
+        throw dbError;
+      }
+
+      // Update local user state
+      setUser(prev => prev ? { ...prev, email: newEmail } : null);
+
+      return true;
+    } catch (error) {
+      console.error('Error updating email:', error);
+      throw error;
+    }
+  };
+
+  // Function to update user roles
+  const updateUserRoles = async (roles: string[], primaryRole: string) => {
+    if (!supabase || !user) {
+      throw new Error('Supabase not configured or user not logged in');
+    }
+
+    try {
+      // Call the set_primary_role function
+      const { error: primaryRoleError } = await supabase.rpc('set_primary_role', {
+        user_uuid: user.id,
+        primary_role: primaryRole
+      });
+
+      if (primaryRoleError) {
+        throw primaryRoleError;
+      }
+
+      // Add all roles
+      for (const role of roles) {
+        if (role !== primaryRole) {
+          const { error: addRoleError } = await supabase.rpc('add_user_role', {
+            user_uuid: user.id,
+            new_role: role
+          });
+
+          if (addRoleError) {
+            console.error(`Error adding role ${role}:`, addRoleError);
+          }
+        }
+      }
+
+      // Update local user state
+      setUser(prev => prev ? { 
+        ...prev, 
+        role: primaryRole as any,
+        roles: roles
+      } : null);
+
+      return true;
+    } catch (error) {
+      console.error('Error updating roles:', error);
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, login, logout, isLoading, supabase }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      login, 
+      logout, 
+      isLoading, 
+      supabase,
+      updateUserEmail,
+      updateUserRoles
+    }}>
       {children}
     </AuthContext.Provider>
   );
