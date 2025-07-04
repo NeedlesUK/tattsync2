@@ -178,8 +178,12 @@ export function Header() {
                   {user.avatar ? (
                     <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
                   ) : (
-                    <div className="w-8 h-8 bg-purple-500/30 rounded-full flex items-center justify-center">
-                      <User className="w-5 h-5 text-purple-400" />
+                    <div className="w-8 h-8 bg-purple-500/30 rounded-full flex items-center justify-center overflow-hidden">
+                      {user.name ? (
+                        <span className="text-white font-bold text-sm">{user.name.charAt(0).toUpperCase()}</span>
+                      ) : (
+                        <User className="w-5 h-5 text-purple-400" />
+                      )}
                     </div>
                   )}
                   <div className="hidden sm:block">

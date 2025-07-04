@@ -374,6 +374,19 @@ export function ProfilePage() {
       // In a real implementation, you would upload the file to storage
       // For now, we'll just simulate an API call
       console.log('Uploading profile picture:', file);
+     
+     // Update the user avatar in the auth context
+     if (user) {
+       user.avatar = previewUrl;
+     }
+     
+     // Update user data in context
+     updateUserProfile({
+       name: formData.name,
+       email: formData.email,
+       avatar: profilePicture
+     });
+     
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       // Success - in a real implementation, you would get the URL from the storage service

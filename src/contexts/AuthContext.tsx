@@ -23,6 +23,7 @@ interface AuthContextType {
   updateUserRoles: (roles: string[], primaryRole: string) => Promise<void>;
   isLoading: boolean;
   supabase: ReturnType<typeof createClient> | null;
+  updateUserProfile: (profileData: Partial<AuthUser>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,6 +47,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Function to update user profile data in the context
+  const updateUserProfile = (profileData: Partial<AuthUser>) => {
+    if (!user) return;
+    
+    setUser(prev => {
+      if (!prev) return null;
+      return { ...prev, ...profileData };
+    });
+  };
 
   // Function to fetch user data from our database
   const fetchUserData = async (userId: string, userEmail: string) => {
@@ -452,6 +463,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading, 
       updateUserEmail,
       updateUserRoles,
+     updateUserProfile,
       supabase
     }}>
       {children}
