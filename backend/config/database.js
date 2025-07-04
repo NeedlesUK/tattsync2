@@ -17,8 +17,9 @@ if (supabaseUrl &&
   try {
     supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        autoRefreshToken: false,
-        persistSession: false
+        autoRefreshToken: true,
+        persistSession: false,
+        detectSessionInUrl: false
       }
     });
     console.log("✅ Supabase public client initialized successfully");
@@ -30,6 +31,7 @@ if (supabaseUrl &&
   console.error("Required: SUPABASE_URL and SUPABASE_ANON_KEY");
   console.error("Current SUPABASE_URL:", supabaseUrl || "Not set");
   console.error("Anon key present:", !!supabaseAnonKey);
+  console.error("Please update your backend/.env file with actual Supabase credentials from your Supabase project dashboard");
 }
 
 // Initialize admin Supabase client (for admin operations)

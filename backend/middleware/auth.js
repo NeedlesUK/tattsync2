@@ -12,13 +12,18 @@ async function authenticateToken(req, res, next) {
   try {
     // Verify Supabase JWT token using public client
     if (supabase) {
-      const { data, error } = await supabase.auth.getUser(token);
-      const user = data?.user;
+      // Set the session with the provided token
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: token,
+        refresh_token: '' // Not needed for verification
+      });
       
-      if (error || !user) {
-        console.error('Supabase auth error:', error);
+      if (sessionError || !sessionData?.user) {
+        console.error('Supabase auth error:', sessionError);
         return res.status(403).json({ error: 'Invalid or expired token' });
       }
+      
+      const user = sessionData.user;
       
       // Get user data from the database using admin client for database queries
       const { data: userData, error: userError } = await supabaseAdmin
@@ -55,6 +60,9 @@ async function authenticateToken(req, res, next) {
       }
       
       console.log('Authenticated user:', req.user.name, 'with role:', req.user.role);
+      
+      // Clear the session after verification to avoid side effects
+      await supabase.auth.signOut();
     } else {
       return res.status(500).json({ error: 'Authentication service not configured' });
     }
