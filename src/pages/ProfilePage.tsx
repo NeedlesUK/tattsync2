@@ -3,7 +3,7 @@ import { User, Mail, Phone, MapPin, Camera, Save, Edit, Shield, Calendar, Award,
 import { useAuth } from '../contexts/AuthContext';
 
 export function ProfilePage() {
-  const { user, logout, supabase } = useAuth();
+  const { user, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false); 
   const [formData, setFormData] = useState({
@@ -38,6 +38,11 @@ export function ProfilePage() {
   // Debug user data
   useEffect(() => {
     console.log('Current user data:', user);
+    
+    // Special case for gary@tattscore.com
+    if (user?.email === 'gary@tattscore.com') {
+      console.log('Admin user detected:', user.email);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -51,8 +56,13 @@ export function ProfilePage() {
       
       // If user is gary@tattscore.com, ensure admin role
       if (user.email === 'gary@tattscore.com') {
-        console.log('Setting admin role for gary@tattscore.com');
-        setFormData(prev => ({ ...prev, role: 'admin' }));
+        console.log('Setting admin profile for gary@tattscore.com');
+        setFormData(prev => ({ 
+          ...prev, 
+          name: 'Gary Watts',
+          email: 'gary@tattscore.com',
+          role: 'admin'
+        }));
       }
       
       // Set profile picture if available
@@ -70,10 +80,25 @@ export function ProfilePage() {
     
     setIsLoading(true);
     try {
-      // In a real implementation, fetch from API
-      // For now, we'll just simulate loading
-      await new Promise(resolve => setTimeout(resolve, 500));
-      console.log('Profile data loaded');
+      console.log('Fetching profile data for:', user.id);
+      
+      // Special case for gary@tattscore.com
+      if (user.email === 'gary@tattscore.com') {
+        console.log('Setting admin profile data for gary@tattscore.com');
+        setFormData(prev => ({
+          ...prev,
+          name: 'Gary Watts',
+          email: 'gary@tattscore.com',
+          phone: '+44 7700 900000',
+          location: 'London, UK',
+          bio: 'TattSync Master Administrator',
+          role: 'admin'
+        }));
+      } else {
+        // For other users, simulate API call
+        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log('Profile data loaded');
+      }
       
       // Set loading to false without setting mock data
       setIsLoading(false);
@@ -104,6 +129,27 @@ export function ProfilePage() {
   const handleSave = () => {
     console.log('Attempting to save profile:', formData);
     setIsLoading(true);
+
+    // Special case for gary@tattscore.com
+    if (user?.email === 'gary@tattscore.com') {
+      console.log('Saving admin profile for gary@tattscore.com');
+      
+      // Ensure admin role is preserved
+      const updatedData = {
+        ...formData,
+        role: 'admin'
+      };
+      
+      // Update the user context with the new data
+      if (user) {
+        user.name = updatedData.name;
+      }
+      
+      setFormData(updatedData);
+      setIsLoading(false);
+      setIsEditing(false);
+      return;
+    }
     
     // In a real implementation, this would save to the database
     // For now, we'll just simulate saving
@@ -276,7 +322,9 @@ export function ProfilePage() {
                   <span>{isEditing ? 'Cancel' : 'Edit Profile'}</span>
                 </button>
               }</div>
-              <p className="text-purple-400 mb-2 capitalize">{user?.role === 'admin' ? 'Master Admin' : user?.role || 'User'}</p>
+              <p className="text-purple-400 mb-2 capitalize">
+                {user?.email === 'gary@tattscore.com' || user?.role === 'admin' ? 'Master Admin' : user?.role || 'User'}
+              </p>
               {formData.bio && <p className="text-gray-300">{formData.bio}</p>}
             </div>
           </div>
@@ -318,7 +366,7 @@ export function ProfilePage() {
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        disabled={!isEditing}
+                        disabled={!isEditing || user?.email === 'gary@tattscore.com'}
                         className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
                       />
                     </div>

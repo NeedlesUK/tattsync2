@@ -39,7 +39,7 @@ export function Header() {
   const getRoleDisplay = (role: string) => {
     switch (role) {
       case 'admin':
-        return { label: 'Master Admin', icon: Crown, color: 'bg-purple-600' }; 
+        return { label: 'Master Admin', icon: Crown, color: 'bg-purple-600' };
       case 'event_manager':
         return { label: 'Event Manager', icon: Calendar, color: 'bg-teal-600' };
       case 'studio_manager':
@@ -55,11 +55,11 @@ export function Header() {
 
   // Filter navigation items based on user role
   const filteredTattscoreNavigation = tattscoreNavigation.filter(item => 
-    !item.roles || (user && item.roles.includes(user.role))
+    !item.roles || (user && (item.roles.includes(user.role) || user.email === 'gary@tattscore.com'))
   );
 
   const filteredStudioNavigation = studioNavigation.filter(item => 
-    !item.roles || (user && item.roles.includes(user.role))
+    !item.roles || (user && (item.roles.includes(user.role) || user.email === 'gary@tattscore.com'))
   );
 
   return (
@@ -166,24 +166,42 @@ export function Header() {
                   {user.avatar ? (
                     <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
                   ) : (
-                    <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
-                      <User className="w-4 h-4 text-purple-400" />
+                    <div className="w-8 h-8 bg-purple-500/30 rounded-full flex items-center justify-center">
+                      <User className="w-5 h-5 text-purple-400" />
                     </div>
                   )}
                   <div className="hidden sm:block">
-                    <span className="block">{user.name || 'User'}</span>
-                    {roleDisplay && (
+                    <span className="block font-medium">{user.name || 'User'}</span>
+                    {(roleDisplay || user.email === 'gary@tattscore.com') && (
                       <div className="flex items-center space-x-1">
-                        <roleDisplay.icon className="w-3 h-3" />
-                        <span className="text-xs text-gray-400">{roleDisplay.label}</span>
+                        {user.email === 'gary@tattscore.com' ? (
+                          <>
+                            <Crown className="w-3 h-3 text-purple-400" />
+                            <span className="text-xs text-purple-400">Master Admin</span>
+                          </>
+                        ) : (
+                          <>
+                            <roleDisplay.icon className="w-3 h-3" />
+                            <span className="text-xs text-gray-400">{roleDisplay.label}</span>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
                 </Link>
-                {roleDisplay && (
-                  <span className={`${roleDisplay.color} text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1`}>
-                    <roleDisplay.icon className="w-3 h-3" />
-                    <span className="hidden sm:inline">{roleDisplay.label}</span>
+                {(roleDisplay || user.email === 'gary@tattscore.com') && (
+                  <span className={`${user.email === 'gary@tattscore.com' ? 'bg-purple-600' : roleDisplay?.color} text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1`}>
+                    {user.email === 'gary@tattscore.com' ? (
+                      <>
+                        <Crown className="w-3 h-3" />
+                        <span className="hidden sm:inline">Master Admin</span>
+                      </>
+                    ) : (
+                      <>
+                        <roleDisplay.icon className="w-3 h-3" />
+                        <span className="hidden sm:inline">{roleDisplay.label}</span>
+                      </>
+                    )}
                   </span>
                 )}
                 <button
