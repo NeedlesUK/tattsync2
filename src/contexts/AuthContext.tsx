@@ -6,7 +6,6 @@ interface AuthUser {
   name: string;
   email: string; 
   role: 'admin' | 'artist' | 'piercer' | 'performer' | 'trader' | 'volunteer' | 'event_manager' | 'event_admin' | 'client' | 'studio_manager' | 'judge';
-  roles?: { role: string; is_primary: boolean }[];
   roles?: string[];
   avatar?: string;
 }
@@ -20,7 +19,6 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>; 
   isLoading: boolean;
-  supabase: ReturnType<typeof createClient> | null;
   updateUserProfile: (profileData: Partial<AuthUser>) => void;
 }
 
@@ -50,9 +48,6 @@ if (supabaseUrl &&
   console.error("Please update your .env file with actual Supabase credentials from your Supabase project dashboard");
   supabase = null;
 }
-
-// Create admin client for direct database access
-const supabaseAdmin = supabase;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -177,10 +172,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (supabase) {
           try {
             const { data: rolesData, error: rolesError } = await supabase
-              .rpc('get_user_roles', { user_uuid: session.user.id });
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', session.user.id);
             
-            if (!rolesError && rolesData) {
-              setUserRoles(rolesData);
+            if (!rolesError && rolesData && rolesData.length > 0) {
+              const roles = rolesData.map(r => r.role);
+              // Update userData with roles
+              userData.roles = roles;
             }
           } catch (error) {
             console.error('Error fetching user roles:', error);
@@ -269,6 +268,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
       });
+
+      if (error) {
+        console.error('Login error:', error);
+        throw error;
+      }
 
       // Set authorization header immediately after successful login
       if (data.session?.access_token) {

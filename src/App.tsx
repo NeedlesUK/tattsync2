@@ -33,7 +33,7 @@ import { StudioDashboardPage } from './pages/StudioDashboardPage';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, supabase } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
