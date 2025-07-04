@@ -30,14 +30,7 @@ export function InitialSetupPage() {
 
   const checkSetupStatus = async () => {
     try {
-      // Check if admin exists by querying the users table
-      if (!supabase) {
-        console.error('Supabase client not initialized. Please check your environment variables.');
-        setError('Supabase client not initialized. Please check your .env file for proper configuration.');
-        setNeedsSetup(false);
-        return;
-      }
-      
+      if (!supabase || !supabase.from) {
       if (!supabase) {
         console.error('Supabase client not initialized. Please check your environment variables.');
         setError('Supabase client not initialized. Please check your .env file for proper configuration.');
@@ -117,8 +110,12 @@ export function InitialSetupPage() {
     setIsLoading(true);
 
     try {
-      if (!supabase || !supabase.auth) {
+      if (!supabase) {
         throw new Error('Supabase client not initialized');
+      }
+      
+      if (!supabase.auth) {
+        throw new Error('Supabase auth not available');
       }
       
       // Create user with Supabase Auth

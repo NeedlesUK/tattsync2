@@ -3,25 +3,38 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Validate Supabase credentials and log detailed information
-if (!supabaseUrl) {
-  console.error('VITE_SUPABASE_URL is missing in your environment variables');
-} else if (!supabaseAnonKey) {
-  console.error('VITE_SUPABASE_ANON_KEY is missing in your environment variables');
-} else if (supabaseUrl === 'https://your-project-id.supabase.co' || 
-           supabaseAnonKey === 'your-supabase-anon-key') {
-  console.error('Missing or invalid Supabase environment variables');
-  console.error('Please update your .env file with actual Supabase credentials');
+// Validate Supabase credentials
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase credentials in environment variables');
+  console.error('VITE_SUPABASE_URL:', supabaseUrl ? 'Present' : 'Missing');
+  console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Present' : 'Missing');
+} else if (supabaseUrl === 'https://your-project-id.supabase.co' || supabaseAnonKey === 'your-supabase-anon-key') {
+  console.error('Default placeholder Supabase credentials detected');
+  console.error('Please update your .env file with actual Supabase credentials from your project dashboard');
+} else {
+  console.log('Supabase credentials found in environment variables');
+  console.log('VITE_SUPABASE_URL:', supabaseUrl.substring(0, 15) + '...');
+  console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey.substring(0, 5) + '...');
 }
 
 // Create client only if we have valid credentials
-export const supabase = (supabaseUrl && 
-                         supabaseAnonKey && 
-                         supabaseUrl !== 'https://your-project-id.supabase.co' && 
-                         supabaseAnonKey !== 'your-supabase-anon-key' && 
-                         supabaseUrl.startsWith('https://')) 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+let supabase = null;
+
+try {
+  if (supabaseUrl && 
+      supabaseAnonKey && 
+      supabaseUrl !== 'https://your-project-id.supabase.co' && 
+      supabaseAnonKey !== 'your-supabase-anon-key' && 
+      supabaseUrl.startsWith('https://')) {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    console.log('✅ Supabase client created successfully');
+  }
+} catch (error) {
+  console.error('❌ Error creating Supabase client:', error);
+  supabase = null;
+}
+
+export { supabase };
 
 // Database types
 export interface Database {
