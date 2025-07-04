@@ -8,6 +8,32 @@ router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     
+    // Users can only access their own data unless they're admin
+    if (req.user.userId !== id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    const result = await query(
+      'SELECT id, name, email, role, created_at, updated_at FROM users WHERE id = $1',
+      [id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+// Get user by ID
+router.get('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
     // Check if the requesting user is accessing their own data or is an admin
     if (req.user.userId !== id) {
       // Check if user is admin
