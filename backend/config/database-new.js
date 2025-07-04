@@ -21,3 +21,16 @@ if (supabaseUrl && supabaseServiceKey) {
 } else {
   console.warn("⚠️ Supabase credentials not found. Some features may not work.");
 }
+
+// PostgreSQL connection configuration
+const dbConfig = {
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER || "postgres",
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME || "postgres",
+  port: process.env.DB_PORT || 5432,
+  ssl: { rejectUnauthorized: false }, // ALWAYS use SSL for Supabase
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+};
