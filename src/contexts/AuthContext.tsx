@@ -69,16 +69,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  // Function to update user profile data in the context
-  const updateUserProfile = (profileData: Partial<AuthUser>) => {
-    if (!user) return;
-    
-    setUser(prev => {
-      if (!prev) return null;
-      return { ...prev, ...profileData };
-    });
-  };
-
   // Function to fetch user data from our database
   const fetchUserData = async (userId: string, userEmail: string) => {
     try {
