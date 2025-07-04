@@ -3,7 +3,7 @@ import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import axios from 'axios';
+import { api } from '../lib/api';
 
 export function RegistrationPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -30,10 +30,10 @@ export function RegistrationPage() {
         return;
       }
       
-      const response = await axios.get('/api/auth/setup-status');
-      setNeedsSetup(response.data.needsInitialSetup);
+      const response = await api.get('/api/auth/setup-status');
+      setNeedsSetup(response.needsInitialSetup);
       
-      if (response.data.needsInitialSetup) {
+      if (response.needsInitialSetup) {
         // Redirect to setup page if initial setup is needed
         navigate('/setup');
       }

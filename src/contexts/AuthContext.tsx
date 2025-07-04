@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
-import axios from 'axios';
+import { api } from '../lib/api';
 
 interface AuthUser {
   id: string;
@@ -303,7 +303,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     if (!supabase) {
       throw new Error('Supabase not configured. Please check your environment variables.');
-    }
+      const response = await api.post('/api/auth/login', {
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -311,9 +311,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       });
 
-      if (error) {
-        throw error;
-      }
+      if (response.session && response.user) {
+        setUser(response.user);
+        setSession(response.session);
 
       // Set authorization header immediately after successful login
       if (data.session?.access_token) {
