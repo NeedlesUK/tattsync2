@@ -49,12 +49,25 @@ if (supabaseUrl &&
     });
     console.log("✅ Supabase admin client initialized successfully");
     
-    // Test the connection
+    // Test the connection with better error handling
     supabaseAdmin.from("users").select("count").limit(1).then(result => {
       if (result.error) {
-        console.log("⚠️  Database tables may not be set up yet");
+        if (result.error.code === '42P01') {
+          console.log("⚠️  Database tables may not be set up yet");
+        } else if (result.error.message.includes('JWT') || result.error.message.includes('permission')) {
+          console.error("❌ Service Role Key authentication failed!");
+          console.error("Please verify your SUPABASE_SERVICE_ROLE_KEY is correct and has proper permissions");
+          console.error("Error:", result.error.message);
+        } else {
+          console.error("❌ Database connection test failed:", result.error.message);
+        }
       } else {
         console.log("✅ Database connection verified");
+      }
+    }).catch(error => {
+      console.error("❌ Failed to test database connection:", error.message);
+      if (error.message.includes('403') || error.message.includes('Forbidden')) {
+        console.error("This suggests your SUPABASE_SERVICE_ROLE_KEY may be incorrect or lacks permissions");
       }
     });
   } catch (error) {
@@ -68,8 +81,47 @@ if (supabaseUrl &&
   console.error("Please update your backend/.env file with actual Supabase credentials");
 }
 
+// Helper function to check if Supabase is properly configured
+const isSupabaseConfigured = () => {
+  return !!(supabase && supabaseAdmin);
+};
+
+// Helper function to handle Supabase errors gracefully
+const handleSupabaseError = (error, operation = 'database operation') => {
+  console.error(`❌ Supabase error during ${operation}:`, error);
+  
+  if (error.message.includes('403') || error.message.includes('Forbidden')) {
+    return {
+      error: 'Database authentication failed. Please check your Supabase service role key configuration.',
+      code: 'SUPABASE_AUTH_ERROR',
+      statusCode: 500
+    };
+  }
+  
+  if (error.message.includes('JWT') || error.message.includes('permission')) {
+    return {
+      error: 'Database permission denied. Please verify your Supabase credentials.',
+      code: 'SUPABASE_PERMISSION_ERROR', 
+      statusCode: 500
+    };
+  }
+  
+  return {
+    error: 'Database operation failed. Please try again later.',
+    code: 'SUPABASE_ERROR',
+    statusCode: 500
+  };
+};
+
 // For backward compatibility with pg queries
 const pool = { connect: () => { throw new Error("Use Supabase client instead of direct pg connection"); } };
 const query = () => { throw new Error("Use Supabase client instead of direct pg connection"); };
 
-module.exports = { pool, query, supabase, supabaseAdmin };
+module.exports = { 
+  pool, 
+  query, 
+  supabase, 
+  supabaseAdmin, 
+  isSupabaseConfigured, 
+  handleSupabaseError 
+};
