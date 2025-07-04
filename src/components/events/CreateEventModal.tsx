@@ -54,97 +54,12 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
         location: formData.location,
         venue: formData.venue,
         max_attendees: parseInt(formData.maxAttendees) || 500,
-        status: 'draft'
+        status: 'draft',
         max_attendees: parseInt(formData.maxAttendees) || 500,
         status: 'draft'
       };
       
       console.log('Submitting event data:', eventData);
-      // Create event directly with Supabase
-      if (!supabase) {
-        throw new Error('Supabase client not initialized');
-      }
-      
-      // First create the event
-      const { data: eventResult, error: eventError } = await supabase
-        .from('events')
-        .insert(eventData)
-        .select('id')
-        .single();
-      
-      if (eventError) {
-        throw eventError;
-      }
-      
-      // Now handle the event manager
-      // First check if the user exists
-      const { data: existingUser, error: userCheckError } = await supabase
-        .from('users')
-        .select('id, role')
-        .eq('email', formData.eventManagerEmail)
-        .maybeSingle();
-      
-      if (userCheckError) {
-        throw userCheckError;
-      }
-      
-      let eventManagerId;
-      
-      if (existingUser) {
-        // User exists, update role if needed
-        eventManagerId = existingUser.id;
-        
-        if (existingUser.role !== 'event_manager' && existingUser.role !== 'admin') {
-          const { error: updateRoleError } = await supabase
-            .from('users')
-            .update({ 
-              role: 'event_manager', 
-              updated_at: new Date().toISOString() 
-            })
-            .eq('id', existingUser.id);
-            
-          if (updateRoleError) {
-            throw updateRoleError;
-          }
-        }
-      } else {
-        // Create new user with event_manager role
-        // This would normally be done through auth.admin.createUser
-        // But we'll just show a message that this would be done
-        setSuccess('Event created successfully! A new account would be created for the event manager and they would receive an email with login instructions.');
-        setIsSubmitting(false);
-        
-        // Reset form after successful submission
-        setTimeout(() => {
-          setFormData({
-            name: '',
-            description: '',
-            event_slug: '',
-            startDate: '',
-            endDate: '',
-            location: '',
-            venue: '',
-            maxAttendees: '',
-            image: '',
-            eventManagerName: '',
-            eventManagerEmail: ''
-          });
-          onClose();
-        }, 2000);
-        
-        return;
-      }
-      
-      // Update the event with the event manager
-      const { error: updateEventError } = await supabase
-        .from('events')
-        .update({ 
-          event_manager_id: eventManagerId,
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', eventResult.id);
-        
-      if (updateEventError) {
       // Create event directly with Supabase
       if (!supabase) {
         throw new Error('Supabase client not initialized');
@@ -260,6 +175,7 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
       console.error('Error creating event:', err);
       setError(err.message || err.error_description || 'Failed to create event. Please try again.');
       setError(err.message || err.error_description || 'Failed to create event. Please try again.');
+    }
     // Auto-generate slug from name
     if (name === 'name') {
       const slug = value
