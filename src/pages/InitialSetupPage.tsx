@@ -38,6 +38,7 @@ export function InitialSetupPage() {
         return;
       }
       
+     const { data, error } = await supabase
         .from('users')
         .select('id')
         .eq('role', 'admin')
