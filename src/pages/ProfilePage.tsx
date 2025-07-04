@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Mail, Phone, MapPin, Camera, Save, Edit, Shield, Calendar, Award, Eye, EyeOff, Lock, Instagram, Facebook, Globe, Plus, Trash2, CheckCircle, AlertCircle, EyeOff as EyeSlash } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { Link } from 'react-router-dom';
 import { QRCodeSVG } from "qrcode.react";
 
 export function ProfilePage() {
@@ -49,7 +48,7 @@ export function ProfilePage() {
   const [saveError, setSaveError] = useState('');
 
   // Roles state
-  const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [userRoles, setUserRoles] = useState<string[]>(user?.roles || [user?.role || 'artist']);
   const [primaryRole, setPrimaryRole] = useState<string>('');
   const [availableRoles, setAvailableRoles] = useState([
     { value: 'admin', label: 'Master Admin' },
@@ -69,13 +68,16 @@ export function ProfilePage() {
   // Fetch user profile data
   useEffect(() => {
     if (user) {
+      console.log('User data:', user);
       fetchUserProfile();
       
       // Set roles from user object
       if (user.roles) {
+        console.log('Setting roles from user.roles:', user.roles);
         setUserRoles(user.roles);
         setPrimaryRole(user.role);
       } else if (user.role) {
+        console.log('Setting roles from user.role:', user.role);
         setUserRoles([user.role]);
         setPrimaryRole(user.role);
       }
@@ -85,6 +87,7 @@ export function ProfilePage() {
   const fetchUserProfile = async () => {
     if (!supabase || !user) return;
     
+    console.log('Fetching user profile for:', user.id);
     try {
       // Fetch user profile from database
       const { data, error } = await supabase
@@ -94,6 +97,7 @@ export function ProfilePage() {
         .single();
       
       if (error) {
+        console.log('Error fetching profile:', error);
         console.error('Error fetching profile:', error);
         return;
       }
@@ -101,6 +105,7 @@ export function ProfilePage() {
       if (data) {
         setFormData(prev => ({
           ...prev,
+          // Keep user data from auth
           name: user.name,
           email: user.email,
           phone: data.phone || prev.phone,
@@ -124,6 +129,7 @@ export function ProfilePage() {
         }
       }
     } catch (error) {
+      console.log('Error in fetchUserProfile:', error);
       console.error('Error fetching profile:', error);
     }
   };
@@ -156,6 +162,7 @@ export function ProfilePage() {
   const handleSave = async () => {
     if (!supabase || !user) return;
     
+    console.log('Saving profile...');
     setIsSaving(true);
     setSaveSuccess('');
     setSaveError('');
@@ -167,6 +174,7 @@ export function ProfilePage() {
       });
       
       if (nameError) {
+        console.log('Error updating name:', nameError);
         console.error('Error updating name:', nameError);
         setSaveError('Failed to update name. Please try again.');
         setIsSaving(false);
@@ -180,6 +188,7 @@ export function ProfilePage() {
         .eq('id', user.id);
       
       if (userError) {
+        console.log('Error updating user:', userError);
         console.error('Error updating user:', userError);
         setSaveError('Failed to update user. Please try again.');
         setIsSaving(false);
@@ -187,6 +196,7 @@ export function ProfilePage() {
       }
       
       // Update or insert user profile
+      console.log('Updating user profile...');
       const { error: profileError } = await supabase
         .from('user_profiles')
         .upsert({
@@ -210,6 +220,7 @@ export function ProfilePage() {
         });
       
       if (profileError) {
+        console.log('Error updating profile:', profileError);
         console.error('Error updating profile:', profileError);
         setSaveError('Failed to update profile. Please try again.');
         setIsSaving(false);
@@ -219,6 +230,7 @@ export function ProfilePage() {
       // Update email if changed
       if (user.email !== formData.email) {
         try {
+          console.log('Updating email from', user.email, 'to', formData.email);
           await updateUserEmail(formData.email);
         } catch (emailError) {
           console.error('Error updating email:', emailError);
@@ -229,9 +241,11 @@ export function ProfilePage() {
       }
       
       // Success
+      console.log('Profile updated successfully!');
       setSaveSuccess('Profile updated successfully!');
       setIsEditing(false);
     } catch (error) {
+      console.log('Error saving profile:', error);
       console.error('Error saving profile:', error);
       setSaveError('Failed to update profile. Please try again.');
     } finally {
@@ -345,10 +359,12 @@ export function ProfilePage() {
   const handleAddRole = async () => {
     if (!newRole || !supabase || !user) return;
     
+    console.log('Adding role:', newRole);
     try {
       await updateUserRoles([...userRoles, newRole], primaryRole);
       setUserRoles(prev => [...prev, newRole]);
       setNewRole('');
+      console.log('Role added successfully');
     } catch (error) {
       console.error('Error adding role:', error);
     }
@@ -357,10 +373,12 @@ export function ProfilePage() {
   const handleRemoveRole = async (role: string) => {
     if (role === primaryRole || !supabase || !user) return;
     
+    console.log('Removing role:', role);
     try {
       const updatedRoles = userRoles.filter(r => r !== role);
       await updateUserRoles(updatedRoles, primaryRole);
       setUserRoles(updatedRoles);
+      console.log('Role removed successfully');
     } catch (error) {
       console.error('Error removing role:', error);
     }
@@ -369,9 +387,11 @@ export function ProfilePage() {
   const handleSetPrimaryRole = async (role: string) => {
     if (!supabase || !user) return;
     
+    console.log('Setting primary role:', role);
     try {
       await updateUserRoles(userRoles, role);
       setPrimaryRole(role);
+      console.log('Primary role set successfully');
     } catch (error) {
       console.error('Error setting primary role:', error);
     }
@@ -743,6 +763,75 @@ export function ProfilePage() {
                     </p>
                   </div>
                 )}
+
+              {/* User Roles Section */}
+              {user && (
+                <div className="mt-6 p-6 bg-white/5 rounded-lg border border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-4">User Roles</h3>
+                  
+                  <div className="mb-4">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {userRoles.map(role => (
+                        <div 
+                          key={role} 
+                          className={`px-3 py-1 rounded-full text-sm flex items-center space-x-2 ${
+                            role === primaryRole 
+                              ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' 
+                              : 'bg-white/10 text-gray-300 border border-white/20'
+                          }`}
+                        >
+                          <span>{role}</span>
+                          {role !== primaryRole && (
+                            <button 
+                              onClick={() => handleRemoveRole(role)}
+                              className="text-gray-400 hover:text-red-400 ml-1"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                          {role !== primaryRole && (
+                            <button 
+                              onClick={() => handleSetPrimaryRole(role)}
+                              className="text-gray-400 hover:text-purple-400 ml-1"
+                            >
+                              <CheckCircle className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 mt-4">
+                      <select
+                        value={newRole}
+                        onChange={(e) => setNewRole(e.target.value)}
+                        className="bg-white/5 border border-white/20 rounded-lg text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option value="">Select a role to add</option>
+                        {availableRoles
+                          .filter(role => !userRoles.includes(role.value))
+                          .map(role => (
+                            <option key={role.value} value={role.value}>
+                              {role.label}
+                            </option>
+                          ))
+                        }
+                      </select>
+                      <button
+                        onClick={handleAddRole}
+                        disabled={!newRole}
+                        className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                    
+                    <p className="text-gray-400 text-xs mt-2">
+                      Primary role is highlighted and cannot be removed. You can set any role as primary.
+                    </p>
+                  </div>
+                </div>
+              )}
 
                 {isEditing && (
                   <div className="flex justify-end space-x-4">
