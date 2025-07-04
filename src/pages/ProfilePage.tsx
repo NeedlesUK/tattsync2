@@ -3,7 +3,7 @@ import { User, Mail, Phone, MapPin, Camera, Save, Edit, Shield, Calendar, Award,
 import { useAuth } from '../contexts/AuthContext';
 
 export function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, logout, supabase } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false); 
   const [formData, setFormData] = useState({
@@ -35,6 +35,11 @@ export function ProfilePage() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Debug user data
+  useEffect(() => {
+    console.log('Current user data:', user);
+  }, [user]);
+
   useEffect(() => {
     // Initialize form data with user info
     if (user) {
@@ -43,6 +48,12 @@ export function ProfilePage() {
         name: user.name || '',
         email: user.email || ''
       }));
+      
+      // If user is gary@tattscore.com, ensure admin role
+      if (user.email === 'gary@tattscore.com') {
+        console.log('Setting admin role for gary@tattscore.com');
+        setFormData(prev => ({ ...prev, role: 'admin' }));
+      }
       
       // Set profile picture if available
       if (user.avatar) {
@@ -62,6 +73,7 @@ export function ProfilePage() {
       // In a real implementation, fetch from API
       // For now, we'll just simulate loading
       await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('Profile data loaded');
       
       // Set loading to false without setting mock data
       setIsLoading(false);
@@ -90,9 +102,19 @@ export function ProfilePage() {
   };
 
   const handleSave = () => {
-    // Handle save logic
-    console.log('Saving profile:', formData);
-    setIsEditing(false);
+    console.log('Attempting to save profile:', formData);
+    setIsLoading(true);
+    
+    // In a real implementation, this would save to the database
+    // For now, we'll just simulate saving
+    setTimeout(() => {
+      // Update the user context with the new name
+      if (user) {
+        user.name = formData.name;
+      }
+      setIsLoading(false);
+      setIsEditing(false);
+    }, 1000);
   };
 
   const handleChangePassword = async () => {
@@ -246,15 +268,15 @@ export function ProfilePage() {
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-2xl font-bold text-white">{formData.name || user?.name || 'User'}</h2>
-                <button
+                {!isLoading && <button
                   onClick={() => setIsEditing(!isEditing)}
                   className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
                 >
                   <Edit className="w-4 h-4" />
                   <span>{isEditing ? 'Cancel' : 'Edit Profile'}</span>
                 </button>
-              </div>
-              <p className="text-purple-400 mb-2 capitalize">{user?.role || 'User'}</p>
+              }</div>
+              <p className="text-purple-400 mb-2 capitalize">{user?.role === 'admin' ? 'Master Admin' : user?.role || 'User'}</p>
               {formData.bio && <p className="text-gray-300">{formData.bio}</p>}
             </div>
           </div>
@@ -386,7 +408,17 @@ export function ProfilePage() {
                 {isEditing && (
                   <div className="flex justify-end space-x-4">
                     <button
-                      onClick={() => setIsEditing(false)}
+                      onClick={() => {
+                        // Reset form data to original values
+                        if (user) {
+                          setFormData(prev => ({
+                            ...prev,
+                            name: user.name || '',
+                            email: user.email || ''
+                          }));
+                        }
+                        setIsEditing(false);
+                      }}
                       className="px-6 py-2 text-gray-300 hover:text-white transition-colors"
                     >
                       Cancel
@@ -510,8 +542,14 @@ export function ProfilePage() {
             {/* Stats */}
             {/* Stats section removed - would be populated from API */}
 
-            {/* Recent Events */}
-            {/* Recent Events section removed - would be populated from API */}
+            {/* No Data Available Section */}
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Profile Information</h3>
+              <div className="text-center py-6">
+                <p className="text-gray-400">No additional profile data available</p>
+                <p className="text-gray-400 text-sm mt-2">Connect to the backend to see your profile statistics</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

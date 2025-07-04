@@ -39,7 +39,7 @@ export function Header() {
   const getRoleDisplay = (role: string) => {
     switch (role) {
       case 'admin':
-        return { label: 'Master Admin', icon: Crown, color: 'bg-purple-600' };
+        return { label: 'Master Admin', icon: Crown, color: 'bg-purple-600' }; 
       case 'event_manager':
         return { label: 'Event Manager', icon: Calendar, color: 'bg-teal-600' };
       case 'studio_manager':
@@ -166,7 +166,9 @@ export function Header() {
                   {user.avatar ? (
                     <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
                   ) : (
-                    <User className="w-6 h-6" />
+                    <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-purple-400" />
+                    </div>
                   )}
                   <div className="hidden sm:block">
                     <span className="block">{user.name || 'User'}</span>

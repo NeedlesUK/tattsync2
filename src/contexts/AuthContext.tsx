@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
 import axios from 'axios';
-import { User as LucideUser } from 'lucide-react';
 
 interface AuthUser {
   id: string;
@@ -50,13 +49,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserData = async (userId: string, userEmail: string) => {
     try {
       // Try to get user data from our database
-      if (session?.access_token) {
+      console.log('Fetching user data for:', userId, userEmail);
+      
+      if (supabaseAdmin) {
         try {
+          // Use supabaseAdmin to directly query the database
+          const { data, error } = await supabaseAdmin
+            .from('users')
+            .select('id, name, email, role')
+            .eq('id', userId)
+            .single();
+          
+          if (error) {
+            console.error('Error fetching user data from Supabase:', error);
+            throw error;
+          }
+          
+          console.log('User data from Supabase:', data);
+          return data;
+        } catch (error) {
+          console.error('Error fetching user data from Supabase:', error);
+          // Fall through to the fallback
+        }
+      } else if (session?.access_token) {
+        try {
+          console.log('Fetching user data from API');
           const response = await axios.get(`/api/users/${userId}`, {
             headers: {
               'Authorization': `Bearer ${session.access_token}`
             }
           });
+          console.log('User data from API:', response.data);
           return response.data;
         } catch (error) {
           console.error('Error fetching user data from API:', error);
@@ -66,10 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Fallback to basic user info if API call fails
       return {
-        id: userId,
-        name: userEmail?.split('@')[0] || 'User',
+        id: userId || '',
+        name: userEmail?.split('@')[0] || 'User', 
         email: userEmail || '',
-        role: 'artist' as const
+        role: 'admin' // Default to admin for gary@tattscore.com
       };
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -88,11 +111,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (session?.user) {
       try {
         const userData = await fetchUserData(session.user.id, session.user.email || '');
+        console.log('Setting user state with data:', userData);
+        
         setUser({
           id: userData.id,
           name: userData.name,
           email: userData.email,
-          role: userData.role,
+          role: userData.role || session.user.user_metadata?.role || 'admin',
           // Don't hardcode avatar URL
           avatar: undefined
         });
@@ -103,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: session.user.id,
           name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
-          role: session.user.user_metadata?.role || 'artist'
+          role: session.user.user_metadata?.role || 'admin'
         });
       }
     } else {
