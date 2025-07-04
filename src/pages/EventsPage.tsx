@@ -3,11 +3,10 @@ import { Plus, Search, Filter, Calendar, MapPin, Users } from 'lucide-react';
 import { EventCard } from '../components/events/EventCard';
 import { CreateEventModal } from '../components/events/CreateEventModal';
 import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
 
 export function EventsPage() {
   const { user } = useAuth();
-  const { supabase } = useAuth();
+  const supabase = useAuth().supabase;
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,7 +56,7 @@ export function EventsPage() {
             venue: event.venue,
             attendees: 0, // This would need to be calculated from applications or tickets
             maxAttendees: event.max_attendees,
-            status: event.status,
+            status: event.status || 'draft',
             image: 'https://images.pexels.com/photos/1002638/pexels-photo-1002638.jpeg?auto=compress&cs=tinysrgb&w=400', // Placeholder
             event_manager_name: event.users?.name,
             event_manager_email: event.users?.email
@@ -68,10 +67,10 @@ export function EventsPage() {
       } else {
         // Fallback to API if Supabase is not available
         try {
-          const response = await axios.get('/api/events');
-          setEvents(response.data);
+          console.error('Supabase client not available');
+          setEvents([]);
         } catch (apiError) {
-          console.error('Error fetching events from API:', apiError);
+          console.error('Error fetching events:', apiError);
           setEvents([]);
         }
       }
