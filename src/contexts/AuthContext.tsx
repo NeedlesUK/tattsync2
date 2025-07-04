@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
+import axios from 'axios';
 import { api } from '../lib/api';
 
 interface AuthUser {
