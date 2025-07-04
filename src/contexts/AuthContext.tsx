@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
 import axios from 'axios';
-
 interface AuthUser {
   id: string;
   name: string;
@@ -19,7 +18,7 @@ interface AuthContextType {
   updateUserEmail: (newEmail: string) => Promise<void>;
   updateUserRoles: (roles: string[], primaryRole: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => Promise<void>; 
   isLoading: boolean;
   supabase: ReturnType<typeof createClient> | null;
   updateUserProfile: (profileData: Partial<AuthUser>) => void;
@@ -56,7 +55,7 @@ const supabaseAdmin = supabase;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<Session | null>(null); 
   const [isLoading, setIsLoading] = useState(true);
 
   // Function to update user profile data in the context
@@ -73,18 +72,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserData = async (userId: string, userEmail: string) => {
     try {
       console.log('🔍 Fetching user data for:', userId, userEmail);
-      
-      // Special case for gary@tattscore.com - always admin
-      if (userEmail === 'gary@tattscore.com') {
-        console.log('👑 Setting admin role for gary@tattscore.com');
-        return {
-          id: userId,
-          name: 'Gary Watts',
-          email: 'gary@tattscore.com',
-          role: 'admin',
-          roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge']
-        };
-      }
       
       // Try direct database query first
       if (supabase) {
@@ -168,17 +155,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('❌ Error fetching user data:', error);
       // Fallback to basic user info if API call fails
       
-      // Special case for gary@tattscore.com - always admin
-      if (userEmail === 'gary@tattscore.com' || userEmail === 'admin@tattsync.com') {
-        return {
-          id: userId,
-          name: 'Gary Watts',
-          email: 'gary@tattscore.com',
-          role: 'admin',
-          roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge']
-        };
-      }
-      
       return {
         id: userId,
         name: userEmail?.split('@')[0] || 'User',
@@ -192,22 +168,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user state with complete data
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
-      console.log('🔄 Updating user state for session:', session.user.email);
+      console.log('🔄 Updating user state for session:', session.user.email); 
       try {
-        // Special case for gary@tattscore.com - always admin
-        if (session.user.email === 'gary@tattscore.com' || session.user.email === 'admin@tattsync.com') {
-          console.log('👑 Setting admin user for gary@tattscore.com');
-          setUser({
-            id: session.user.id,
-            name: 'Gary Watts',
-            email: 'gary@tattscore.com',
-            role: 'admin',
-            roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge'],
-            avatar: undefined
-          });
-          return;
-        }
-        
         const userData = await fetchUserData(session.user.id, session.user.email || '');
         
         // Fetch user roles if supabase is available
@@ -236,20 +198,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('❌ Error updating user state:', error);
         
-        // Special case for gary@tattscore.com - always admin
-        if (session.user.email === 'gary@tattscore.com') {
-          console.log('👑 Setting admin user for gary@tattscore.com');
-          setUser({
-            id: session.user.id,
-            name: 'Gary Watts',
-            email: 'gary@tattscore.com',
-            role: 'admin',
-            roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge'],
-            avatar: undefined
-          });
-          return;
-        }
-        
         // Fallback to basic user info from session
         setUser({
           id: session.user.id,
@@ -268,20 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!supabase) {
-      console.warn('⚠️ Supabase not configured. Using mock data.');
-      
-      // Create a mock user for development
-      if (process.env.NODE_ENV === 'development') {
-        setUser({
-          id: '123',
-          name: 'Demo User',
-          email: 'demo@example.com',
-          role: 'admin',
-          roles: ['admin', 'artist'],
-          avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=128&h=128&dpr=2'
-        });
-      }
-      
+      console.warn('⚠️ Supabase not configured. Please check your environment variables.');
       setIsLoading(false);
       return;
     }
