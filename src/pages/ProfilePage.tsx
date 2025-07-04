@@ -3,9 +3,11 @@ import { User, Mail, Phone, MapPin, Camera, Save, Edit, Shield, Calendar, Award,
 import { useAuth } from '../contexts/AuthContext';
 import { QRCodeSVG } from "qrcode.react";
 
+
 export function ProfilePage() {
   const { user, logout, updateUserEmail, updateUserRoles, supabase } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [profileDbId, setProfileDbId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -103,6 +105,9 @@ export function ProfilePage() {
       }
       
       if (data) {
+        // Store the profile ID for updates
+        setProfileDbId(data.id);
+        
         setFormData(prev => ({
           ...prev,
           // Keep user data from auth
@@ -197,7 +202,8 @@ export function ProfilePage() {
       
       // Update or insert user profile
       console.log('Updating user profile...');
-      console.log('Profile data:', {
+      console.log('Profile data with ID:', {
+        id: profileDbId,
         user_id: user.id,
         phone: formData.phone,
         location: formData.location,
@@ -220,6 +226,7 @@ export function ProfilePage() {
       const { error: profileError } = await supabase
         .from('user_profiles')
         .upsert({
+          id: profileDbId, // Include the ID for updates
           user_id: user.id,
           phone: formData.phone,
           location: formData.location,
