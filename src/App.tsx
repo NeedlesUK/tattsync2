@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { HomePage } from './pages/HomePage';
@@ -44,7 +44,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
         try {
           // Only check if we're not already on the setup page
           if (location.pathname !== '/setup') {
-            const { supabase } = useAuth();
+            const authContext = useAuth();
+            const supabase = authContext.supabase;
             
             if (supabase) {
               // Check if any admin users exist
