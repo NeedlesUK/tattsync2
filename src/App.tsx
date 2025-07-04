@@ -13,7 +13,6 @@ import { RegistrationFormPage } from './pages/RegistrationFormPage';
 import { RegistrationSuccessPage } from './pages/RegistrationSuccessPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { DealsPage } from './pages/DealsPage';
-import { ConsentPage } from './pages/ConsentPage';
 import { EventApplicationPage } from './pages/EventApplicationPage';
 import { EventSettingsPage } from './pages/EventSettingsPage';
 import { AttendeeProfilePage } from './pages/AttendeeProfilePage';
@@ -21,6 +20,7 @@ import { RegistrationManagementPage } from './components/registration/Registrati
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ConsentFormsPage } from './pages/ConsentFormsPage';
 import { ClientConsentPage } from './pages/ClientConsentPage';
+import { ConsentPage } from './pages/ConsentPage';
 import { ArtistConsentPage } from './pages/ArtistConsentPage';
 import { ConsentScanPage } from './pages/ConsentScanPage';
 import { ArtistBookingPage } from './pages/ArtistBookingPage';
@@ -34,6 +34,46 @@ import { StudioDashboardPage } from './pages/StudioDashboardPage';
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check if we need to redirect to setup page
+  useEffect(() => {
+    const checkSetupNeeded = async () => {
+      if (!isLoading && !user && location.pathname !== '/setup') {
+        try {
+          // Only check if we're not already on the setup page
+          if (location.pathname !== '/setup') {
+            const { supabase } = useAuth();
+            
+            if (supabase) {
+              // Check if any admin users exist
+              const { data, error } = await supabase
+                .from('users')
+                .select('id')
+                .eq('role', 'admin')
+                .limit(1);
+                
+              if (error) {
+                console.error('Error checking for admin users:', error);
+                return;
+              }
+              
+              // If no admin users exist, redirect to setup
+              if (!data || data.length === 0) {
+                navigate('/setup');
+                return;
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error checking setup status:', error);
+        }
+      }
+    };
+    
+    checkSetupNeeded();
+  }, [isLoading, user, location.pathname, navigate]);
 
   if (isLoading) {
     return (

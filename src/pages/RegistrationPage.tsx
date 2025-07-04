@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { api } from '../lib/api';
 
+
 export function RegistrationPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -14,53 +15,7 @@ export function RegistrationPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const { login } = useAuth();
-  const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    checkSetupStatus();
-  }, []);
-
-  const checkSetupStatus = async () => {
-    try {
-      // Skip API call if Supabase is not configured
-      try {
-        if (!supabase) {
-          console.error('Supabase not configured. Please update your .env file with actual Supabase credentials');
-          setNeedsSetup(false); // Default to false if check fails
-          return;
-        }
-        
-        // Check if admin exists by querying the users table
-        const { data, error } = await supabase
-          .from('users')
-          .select('id')
-          .eq('role', 'admin')
-          .limit(1);
-          
-        if (error) {
-          console.error('Error checking for admin users:', error);
-          setNeedsSetup(false);
-          return;
-        }
-        
-        // If no admin users exist, we need setup
-        const needsInitialSetup = !data || data.length === 0;
-        setNeedsSetup(needsInitialSetup);
-        
-        if (needsInitialSetup) {
-          // Redirect to setup page if initial setup is needed
-          navigate('/setup');
-        }
-      } catch (error) {
-        console.error('Error checking setup status:', error);
-        setNeedsSetup(false); // Default to false if check fails
-      }
-    } catch (error) {
-      console.error('Error checking setup status:', error);
-      setNeedsSetup(false); // Default to false if check fails
-    }
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -105,23 +60,6 @@ export function RegistrationPage() {
       setIsLoading(false);
     }
   };
-
-  // Show loading while checking setup status
-  if (needsSetup === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Redirect to setup page if needed
-  if (needsSetup === true) {
-    return <Navigate to="/setup" replace />;
-  }
 
   return (
     <div className="min-h-screen pt-16">

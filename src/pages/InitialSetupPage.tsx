@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Settings, User, Calendar, CreditCard, Users, MessageSquare, Award, Building2 } from 'lucide-react';
 
 export function InitialSetupPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, supabase } = useAuth();
+  const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
   const [setupData, setSetupData] = useState({
     organizationName: '',
@@ -30,6 +32,48 @@ export function InitialSetupPage() {
     { id: 'tattscore', label: 'TattScore Judging', icon: Award, description: 'Competition judging and scoring' },
     { id: 'studio', label: 'Studio Management', icon: Building2, description: 'Multi-studio management tools' }
   ];
+
+  useEffect(() => {
+    checkSetupStatus();
+  }, []);
+
+  const checkSetupStatus = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Skip API call if Supabase is not configured
+      if (!supabase) {
+        console.error('Supabase not configured. Please update your .env file with actual Supabase credentials');
+        setNeedsSetup(false); // Default to false if check fails
+        setIsLoading(false);
+        return;
+      }
+      
+      // Check if admin exists by querying the users table
+      const { data, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('role', 'admin')
+        .limit(1);
+        
+      if (error) {
+        console.error('Error checking for admin users:', error);
+        setNeedsSetup(false);
+        setIsLoading(false);
+        return;
+      }
+      
+      // If admin users exist, we don't need setup
+      const needsInitialSetup = !data || data.length === 0;
+      setNeedsSetup(needsInitialSetup);
+      
+    } catch (error) {
+      console.error('Error checking setup status:', error);
+      setNeedsSetup(false); // Default to false if check fails
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const eventTypeOptions = [
     'artist', 'piercer', 'performer', 'trader', 'volunteer', 'caterer'
@@ -72,6 +116,23 @@ export function InitialSetupPage() {
         : [...prev.eventTypes, eventType]
     }));
   };
+
+  // Show loading while checking setup status
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login page if setup is not needed
+  if (needsSetup === false) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
