@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
 import axios from 'axios';
+import { User as LucideUser } from 'lucide-react';
 
 interface AuthUser {
   id: string;
