@@ -46,7 +46,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userRoles, setUserRoles] = useState<string[]>([]);
-  const [userRoles, setUserRoles] = useState<string[]>([]);
 
   // Function to fetch user data from our database
   const fetchUserData = async (userId: string, userEmail: string) => {
