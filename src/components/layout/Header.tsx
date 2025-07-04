@@ -2,11 +2,23 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, User, LogOut, Settings, Crown, Calendar, Award, Building } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useState, useEffect } from 'react';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+  
+  useEffect(() => {
+    if (user?.roles) {
+      setUserRoles(user.roles);
+    } else if (user?.role) {
+      setUserRoles([user.role]);
+    } else {
+      setUserRoles([]);
+    }
+  }, [user]);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard' },
@@ -20,7 +32,8 @@ export function Header() {
   // For Master Admin, direct links instead of dropdowns
   const adminDirectLinks = [
     { name: 'TattScore', href: '/tattscore/admin' },
-    { name: 'Studio', href: '/studio/dashboard' }
+    { name: 'Studio', href: '/studio/dashboard' },
+    { name: 'Tickets', href: '/ticket-management' }
   ];
 
   // TattScore navigation items - filter based on role
@@ -55,11 +68,11 @@ export function Header() {
 
   // Filter navigation items based on user role
   const filteredTattscoreNavigation = tattscoreNavigation.filter(item => 
-    !item.roles || (user && (item.roles.includes(user.role) || user.email === 'gary@tattscore.com'))
+    !item.roles || (user && (userRoles.some(role => item.roles.includes(role)) || user.email === 'gary@tattscore.com'))
   );
 
   const filteredStudioNavigation = studioNavigation.filter(item => 
-    !item.roles || (user && (item.roles.includes(user.role) || user.email === 'gary@tattscore.com'))
+    !item.roles || (user && (userRoles.some(role => item.roles.includes(role)) || user.email === 'gary@tattscore.com'))
   );
 
   return (
@@ -82,7 +95,7 @@ export function Header() {
               {navigation.map((item) => (
                 <Link
                   key={item.name}
-                  to={item.href}
+                  to={item.href} 
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive(item.href)
                       ? 'text-purple-400 bg-purple-400/10'
@@ -94,7 +107,7 @@ export function Header() {
               ))}
               
               {/* For Master Admin, show direct links */}
-              {user.role === 'admin' && adminDirectLinks.map((item) => (
+              {(user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
@@ -109,7 +122,7 @@ export function Header() {
               ))}
               
               {/* TattScore Navigation - only for non-admin users */}
-              {user.role !== 'admin' && filteredTattscoreNavigation.length > 0 && (
+              {!userRoles.includes('admin') && filteredTattscoreNavigation.length > 0 && (
                 <div className="relative group">
                   <button className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors flex items-center space-x-1">
                     <span>TattScore</span>
@@ -132,7 +145,7 @@ export function Header() {
               )}
               
               {/* Studio Navigation - only for non-admin users */}
-              {user.role !== 'admin' && filteredStudioNavigation.length > 0 && (
+              {!userRoles.includes('admin') && filteredStudioNavigation.length > 0 && (
                 <div className="relative group">
                   <button className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors flex items-center space-x-1">
                     <span>Studio</span>
@@ -235,7 +248,7 @@ export function Header() {
               {navigation.map((item) => (
                 <Link
                   key={item.name}
-                  to={item.href}
+                  to={item.href} 
                   className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
                     isActive(item.href)
                       ? 'text-purple-400 bg-purple-400/10'
@@ -248,7 +261,7 @@ export function Header() {
               ))}
               
               {/* For Master Admin, show direct links in mobile menu too */}
-              {user.role === 'admin' && adminDirectLinks.map((item) => (
+              {(user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
@@ -264,7 +277,7 @@ export function Header() {
               ))}
               
               {/* TattScore Mobile Navigation - only for non-admin users */}
-              {user.role !== 'admin' && filteredTattscoreNavigation.length > 0 && (
+              {!userRoles.includes('admin') && filteredTattscoreNavigation.length > 0 && (
                 <>
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     TattScore
@@ -283,7 +296,7 @@ export function Header() {
               )}
               
               {/* Studio Mobile Navigation - only for non-admin users */}
-              {user.role !== 'admin' && filteredStudioNavigation.length > 0 && (
+              {!userRoles.includes('admin') && filteredStudioNavigation.length > 0 && (
                 <>
                   <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     Studio

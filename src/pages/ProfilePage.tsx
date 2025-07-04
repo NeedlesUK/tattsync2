@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Camera, Save, Edit, Shield, Calendar, Award, Eye, EyeOff, Lock, Instagram, Facebook, Globe } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Camera, Save, Edit, Shield, Calendar, Award, Eye, EyeOff, Lock, Instagram, Facebook, Globe, Plus, Trash2, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export function ProfilePage() {
-  const { user, logout, supabase } = useAuth();
+  const { user, logout, supabase, updateUserEmail, updateUserRoles } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false); 
   const [formData, setFormData] = useState({
@@ -24,6 +24,24 @@ export function ProfilePage() {
     showWebsite: true
   });
 
+  // Roles management
+  const [availableRoles, setAvailableRoles] = useState([
+    { value: 'admin', label: 'Master Admin' },
+    { value: 'artist', label: 'Tattoo Artist' },
+    { value: 'piercer', label: 'Piercer' },
+    { value: 'performer', label: 'Performer' },
+    { value: 'trader', label: 'Trader' },
+    { value: 'volunteer', label: 'Volunteer' },
+    { value: 'event_manager', label: 'Event Manager' },
+    { value: 'event_admin', label: 'Event Admin' },
+    { value: 'client', label: 'Client' },
+    { value: 'studio_manager', label: 'Studio Manager' },
+    { value: 'judge', label: 'Judge' }
+  ]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [primaryRole, setPrimaryRole] = useState<string>('');
+  const [isEditingRoles, setIsEditingRoles] = useState(false);
+
   // Password change state
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -40,6 +58,7 @@ export function ProfilePage() {
   const [profilePicture, setProfilePicture] = useState<string | undefined>(undefined);
   const [isUploading, setIsUploading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Debug user data
@@ -58,8 +77,17 @@ export function ProfilePage() {
       setFormData(prevData => ({
         ...prevData,
         name: user.name || '',
-        email: user.email || ''
+        email: user.email || '',
       }));
+      
+      // Set roles
+      if (user.roles) {
+        setSelectedRoles(user.roles);
+        setPrimaryRole(user.role);
+      } else {
+        setSelectedRoles([user.role]);
+        setPrimaryRole(user.role);
+      }
       
       // If user is gary@tattscore.com, ensure admin role
       if (user.email === 'gary@tattscore.com') {
@@ -163,10 +191,14 @@ export function ProfilePage() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | string, value?: any) => {
+    // Handle both event and direct value updates
+    const field = typeof e === 'string' ? e : e.target.name;
+    const newValue = typeof e === 'string' ? value : e.target.value;
+    
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [field]: newValue
     }));
   };
 
@@ -181,9 +213,51 @@ export function ProfilePage() {
     setPasswordChangeSuccess('');
   };
 
+  const handleRoleToggle = (role: string) => {
+    // Don't allow removing the last role
+    if (selectedRoles.includes(role) && selectedRoles.length === 1) {
+      return;
+    }
+    
+    // Toggle the role
+    if (selectedRoles.includes(role)) {
+      // If removing the primary role, set a new primary role
+      if (role === primaryRole) {
+        const newRoles = selectedRoles.filter(r => r !== role);
+        setPrimaryRole(newRoles[0]);
+      }
+      setSelectedRoles(prev => prev.filter(r => r !== role));
+    } else {
+      setSelectedRoles(prev => [...prev, role]);
+    }
+  };
+
+  const handleSetPrimaryRole = (role: string) => {
+    // Ensure the role is selected
+    if (!selectedRoles.includes(role)) {
+      setSelectedRoles(prev => [...prev, role]);
+    }
+    setPrimaryRole(role);
+  };
+
+  const handleSaveRoles = async () => {
+    if (!user) return;
+    
+    try {
+      await updateUserRoles(selectedRoles, primaryRole);
+      setIsEditingRoles(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error('Error updating roles:', error);
+      setSaveError('Failed to update roles. Please try again.');
+    }
+  };
+
   const handleSave = () => {
     console.log('Attempting to save profile:', formData);
     setSaveSuccess(false);
+    setSaveError('');
     setIsLoading(true);
 
     // Special case for gary@tattscore.com
@@ -199,12 +273,25 @@ export function ProfilePage() {
       // Update the user context with the new data
       if (user) {
         user.name = updatedData.name;
+        
+        // Update email if changed
+        if (user.email !== updatedData.email) {
+          try {
+            updateUserEmail(updatedData.email);
+          } catch (error) {
+            console.error('Error updating email:', error);
+            setSaveError('Failed to update email. Please try again.');
+          }
+        }
+        
         user.avatar = profilePicture;
       }
       
       setFormData(updatedData);
       setIsLoading(false);
       setIsEditing(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
       return;
     }
 
@@ -238,11 +325,24 @@ export function ProfilePage() {
             console.error('Error saving profile to Supabase:', error);
           } else {
             console.log('Profile saved to Supabase successfully');
+            
+            // Update email if changed
+            if (user.email !== formData.email) {
+              try {
+                await updateUserEmail(formData.email);
+              } catch (error) {
+                console.error('Error updating email:', error);
+                setSaveError('Profile saved but email update failed. Please try again.');
+              }
+            }
+            
             setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 3000);
           }
         })
         .catch(error => {
           console.error('Exception saving profile:', error);
+          setSaveError('Failed to save profile. Please try again.');
         })
         .finally(() => {
           // Update the user context with the new name
@@ -259,9 +359,21 @@ export function ProfilePage() {
       setTimeout(() => {
         if (user) {
           user.name = formData.name;
+          
+          // Update email if changed
+          if (user && user.email !== formData.email) {
+            try {
+              await updateUserEmail(formData.email);
+            } catch (error) {
+              console.error('Error updating email:', error);
+              setSaveError('Profile saved but email update failed. Please try again.');
+            }
+          }
+          
           user.avatar = profilePicture;
         }
         setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
         setIsLoading(false);
         setIsEditing(false);
       }, 1000);
@@ -469,7 +581,7 @@ export function ProfilePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Full Name
+                      Full Name <span className="text-red-400">*</span>
                     </label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -486,7 +598,7 @@ export function ProfilePage() {
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Email
+                      Email <span className="text-red-400">*</span>
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -495,7 +607,7 @@ export function ProfilePage() {
                         name="email"
                         value={formData.email}
                         onChange={handleInputChange}
-                        disabled={!isEditing || user?.email === 'gary@tattscore.com'}
+                        disabled={!isEditing}
                         className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
                       />
                     </div>
@@ -755,9 +867,116 @@ export function ProfilePage() {
                 )}
                 
                 {saveSuccess && !isEditing && (
-                  <div className="mt-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
+                  <div className="mt-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg flex items-center space-x-2">
+                    <Check className="w-5 h-5 text-green-400" />
                     <p className="text-green-400 text-sm">Profile saved successfully!</p>
                   </div>
+                )}
+                
+                {saveError && (
+                  <div className="mt-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                    <p className="text-red-400 text-sm">{saveError}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Roles Management Section */}
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-white">Roles & Permissions</h3>
+                <button
+                  onClick={() => setIsEditingRoles(!isEditingRoles)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>{isEditingRoles ? 'Cancel' : 'Edit Roles'}</span>
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="bg-white/5 rounded-lg p-4">
+                  <h4 className="text-white font-medium mb-3">Current Roles</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedRoles.map(role => {
+                      const roleInfo = availableRoles.find(r => r.value === role);
+                      const isPrimary = role === primaryRole;
+                      
+                      return (
+                        <div 
+                          key={role} 
+                          className={`px-3 py-1 rounded-lg flex items-center space-x-2 ${
+                            isPrimary 
+                              ? 'bg-purple-500/30 text-purple-300 border border-purple-500/50' 
+                              : 'bg-white/10 text-gray-300 border border-white/20'
+                          }`}
+                        >
+                          <span>{roleInfo?.label || role}</span>
+                          {isPrimary && <span className="text-xs">(Primary)</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                {isEditingRoles && (
+                  <>
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <h4 className="text-white font-medium mb-3">Manage Roles</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {availableRoles.map(role => (
+                          <div 
+                            key={role.value} 
+                            className={`p-3 border rounded-lg flex items-center justify-between cursor-pointer ${
+                              selectedRoles.includes(role.value)
+                                ? 'border-purple-500 bg-purple-500/20'
+                                : 'border-white/20 bg-white/5 hover:bg-white/10'
+                            }`}
+                            onClick={() => handleRoleToggle(role.value)}
+                          >
+                            <span className="text-white">{role.label}</span>
+                            <div className="flex items-center space-x-2">
+                              {selectedRoles.includes(role.value) && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSetPrimaryRole(role.value);
+                                  }}
+                                  className={`px-2 py-1 rounded text-xs ${
+                                    primaryRole === role.value
+                                      ? 'bg-purple-600 text-white'
+                                      : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                                  }`}
+                                >
+                                  {primaryRole === role.value ? 'Primary' : 'Set Primary'}
+                                </button>
+                              )}
+                              <div className="w-5 h-5 rounded-full border flex items-center justify-center">
+                                {selectedRoles.includes(role.value) && <Check className="w-3 h-3 text-purple-400" />}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
+                      <p className="text-blue-300 text-sm">
+                        <strong>Primary Role:</strong> The primary role determines your main permissions and how you appear to others.
+                        You can have multiple roles but only one primary role.
+                      </p>
+                    </div>
+                    
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleSaveRoles}
+                        className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all flex items-center space-x-2"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>Save Roles</span>
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
@@ -872,7 +1091,7 @@ export function ProfilePage() {
             {/* No Data Available Section */}
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-white mb-4">Social Media Preview</h3>
-              <div className="p-4 bg-white/5 rounded-lg">
+              <div className="p-4 bg-white/5 rounded-lg space-y-4">
                 <h4 className="text-white font-medium mb-3">Public Profile Links</h4>
                 <div className="space-y-3">
                   {formData.website && formData.showWebsite && (
@@ -937,8 +1156,32 @@ export function ProfilePage() {
                   )}
                   
                   {!formData.website && !formData.instagram && !formData.facebook && !formData.tiktok && (
-                    <p className="text-gray-400 text-center">No social media links added yet</p>
+                    <p className="text-gray-400 text-center py-2">No social media links added yet</p>
                   )}
+                </div>
+                
+                <div className="border-t border-white/10 pt-4">
+                  <h4 className="text-white font-medium mb-3">Roles</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedRoles.map(role => {
+                      const roleInfo = availableRoles.find(r => r.value === role);
+                      const isPrimary = role === primaryRole;
+                      
+                      return (
+                        <div 
+                          key={role} 
+                          className={`px-3 py-1 rounded-lg text-sm ${
+                            isPrimary 
+                              ? 'bg-purple-500/30 text-purple-300' 
+                              : 'bg-white/10 text-gray-300'
+                          }`}
+                        >
+                          {roleInfo?.label || role}
+                          {isPrimary && <span className="ml-1 text-xs">(Primary)</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
