@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
 import axios from 'axios';
+
 interface AuthUser {
   id: string;
   name: string;
@@ -50,7 +51,8 @@ if (supabaseUrl && supabaseAnonKey) {
 } else {
   console.warn('⚠️ Supabase credentials missing. Using mock data.');
   console.warn('Missing:', {
-    url: !supabaseUrl ? 'VITE_SUPABASE_URL' : null,
+    url: !supabaseUrl ? 'VITE_SUPABASE_URL' : null
+  });
   supabase = null;
 }
 
