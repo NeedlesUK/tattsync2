@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Mail, Phone, MapPin, Camera, Save, Edit, Shield, Calendar, Award, Eye, EyeOff, Lock, Instagram, Facebook, Globe, Plus, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Camera, Save, Edit, Shield, Calendar, Award, Eye, EyeOff, Lock, Instagram, Facebook, Globe, Plus, Trash2, CheckCircle, AlertCircle, EyeSlash } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export function ProfilePage() {
@@ -14,13 +14,14 @@ export function ProfilePage() {
     website: 'https://example.com',
     instagram: '@artist_handle',
     facebook: '@artist.page',
-    tiktok: '@artist_tiktok',
+    tiktok: '@artist_tiktok', 
     experience: '8 years',
     specialties: ['Traditional', 'Neo-Traditional', 'Black & Grey'],
     show_instagram: true,
     show_facebook: true,
     show_tiktok: true,
-    show_website: true
+    show_website: true,
+    show_profile: true
   });
 
   // Password change state
@@ -103,16 +104,17 @@ export function ProfilePage() {
           phone: data.phone || prev.phone,
           location: data.location || prev.location,
           bio: data.bio || prev.bio,
-          website: data.website || prev.website,
-          instagram: data.instagram || prev.instagram,
-          facebook: data.facebook || prev.facebook,
-          tiktok: data.tiktok || prev.tiktok,
+          website: data.website || prev.website, 
+          instagram: data.instagram || prev.instagram, 
+          facebook: data.facebook || prev.facebook, 
+          tiktok: data.tiktok || prev.tiktok, 
           experience: data.experience || prev.experience,
           specialties: data.specialties || prev.specialties,
           show_instagram: data.show_instagram !== null ? data.show_instagram : true,
           show_facebook: data.show_facebook !== null ? data.show_facebook : true,
           show_tiktok: data.show_tiktok !== null ? data.show_tiktok : true,
-          show_website: data.show_website !== null ? data.show_website : true
+          show_website: data.show_website !== null ? data.show_website : true,
+          show_profile: data.show_profile !== null ? data.show_profile : true
         }));
         
         if (data.profile_picture) {
@@ -200,7 +202,8 @@ export function ProfilePage() {
           show_instagram: formData.show_instagram,
           show_facebook: formData.show_facebook,
           show_tiktok: formData.show_tiktok,
-          show_website: formData.show_website,
+          show_website: formData.show_website, 
+          show_profile: formData.show_profile,
           updated_at: new Date().toISOString()
         });
       
@@ -495,7 +498,7 @@ export function ProfilePage() {
               <p className="text-gray-300">{formData.bio}</p>
               
               {/* User roles */}
-              {userRoles.length > 0 && (
+              {userRoles && userRoles.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   {userRoles.map(role => (
                     <span 
@@ -535,6 +538,41 @@ export function ProfilePage() {
           <div className="lg:col-span-2">
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
               <h3 className="text-xl font-semibold text-white mb-6">Profile Information</h3>
+              
+              {/* Master Privacy Switch */}
+              <div className="mb-6 p-4 bg-white/5 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    {formData.show_profile ? (
+                      <Eye className="w-5 h-5 text-purple-400" />
+                    ) : (
+                      <EyeSlash className="w-5 h-5 text-gray-400" />
+                    )}
+                    <div>
+                      <h4 className="text-white font-medium">Profile Privacy</h4>
+                      <p className="text-gray-400 text-sm">Control the visibility of your entire profile</p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      name="show_profile"
+                      checked={formData.show_profile}
+                      onChange={handleCheckboxChange}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                  </label>
+                </div>
+                <div className="mt-2 text-sm text-gray-400">
+                  <p>This setting will be automatically overridden when:</p>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    <li>You apply for events</li>
+                    <li>A client books with you</li>
+                    <li>You're part of studio management</li>
+                  </ul>
+                </div>
+              </div>
               
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -642,7 +680,7 @@ export function ProfilePage() {
                     {isEditing && (
                       <div className="flex items-center mt-1">
                         <input
-                          type="checkbox"
+                          type="checkbox" 
                           name="show_website"
                           checked={formData.show_website}
                           onChange={handleCheckboxChange}
@@ -672,7 +710,7 @@ export function ProfilePage() {
                     {isEditing && (
                       <div className="flex items-center mt-1">
                         <input
-                          type="checkbox"
+                          type="checkbox" 
                           name="show_instagram"
                           checked={formData.show_instagram}
                           onChange={handleCheckboxChange}
@@ -704,7 +742,7 @@ export function ProfilePage() {
                     {isEditing && (
                       <div className="flex items-center mt-1">
                         <input
-                          type="checkbox"
+                          type="checkbox" 
                           name="show_facebook"
                           checked={formData.show_facebook}
                           onChange={handleCheckboxChange}
@@ -747,7 +785,7 @@ export function ProfilePage() {
                     {isEditing && (
                       <div className="flex items-center mt-1">
                         <input
-                          type="checkbox"
+                          type="checkbox" 
                           name="show_tiktok"
                           checked={formData.show_tiktok}
                           onChange={handleCheckboxChange}
@@ -796,72 +834,82 @@ export function ProfilePage() {
               <div className="space-y-4">
                 <p className="text-gray-300 text-sm">This is how your social media links will appear on your public profile:</p>
                 
-                <div className="bg-white/5 rounded-lg p-4 space-y-3">
-                  {formData.show_website && formData.website && (
-                    <a 
-                      href={formatSocialMediaUrl('website', formData.website)} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center space-x-2 text-purple-400 hover:text-purple-300 transition-colors"
-                    >
-                      <Globe className="w-5 h-5" />
-                      <span>{formData.website}</span>
-                    </a>
-                  )}
-                  
-                  {formData.show_instagram && formData.instagram && (
-                    <a 
-                      href={formatSocialMediaUrl('instagram', formData.instagram)} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center space-x-2 text-purple-400 hover:text-purple-300 transition-colors"
-                    >
-                      <Instagram className="w-5 h-5" />
-                      <span>{formData.instagram}</span>
-                    </a>
-                  )}
-                  
-                  {formData.show_facebook && formData.facebook && (
-                    <a 
-                      href={formatSocialMediaUrl('facebook', formData.facebook)} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center space-x-2 text-purple-400 hover:text-purple-300 transition-colors"
-                    >
-                      <Facebook className="w-5 h-5" />
-                      <span>{formData.facebook}</span>
-                    </a>
-                  )}
-                  
-                  {formData.show_tiktok && formData.tiktok && (
-                    <a 
-                      href={formatSocialMediaUrl('tiktok', formData.tiktok)} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center space-x-2 text-purple-400 hover:text-purple-300 transition-colors"
-                    >
-                      <svg 
-                        className="w-5 h-5" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="2" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round"
+                {formData.show_profile ? (
+                  <div className="bg-white/5 rounded-lg p-4 space-y-3">
+                    {formData.show_website && formData.website && (
+                      <a 
+                        href={formatSocialMediaUrl('website', formData.website)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center space-x-2 text-purple-400 hover:text-purple-300 transition-colors"
                       >
-                        <path d="M9 12a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"></path>
-                        <path d="M15 8a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
-                        <path d="M15 8v8a4 4 0 0 1-4 4"></path>
-                        <path d="M15 8h-4"></path>
-                      </svg>
-                      <span>{formData.tiktok}</span>
-                    </a>
-                  )}
-                  
-                  {!formData.show_website && !formData.show_instagram && !formData.show_facebook && !formData.show_tiktok && (
-                    <p className="text-gray-400 text-sm italic">No social media links will be displayed on your public profile.</p>
-                  )}
-                </div>
+                        <Globe className="w-5 h-5" />
+                        <span>{formData.website}</span>
+                      </a>
+                    )}
+                    
+                    {formData.show_instagram && formData.instagram && (
+                      <a 
+                        href={formatSocialMediaUrl('instagram', formData.instagram)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center space-x-2 text-purple-400 hover:text-purple-300 transition-colors"
+                      >
+                        <Instagram className="w-5 h-5" />
+                        <span>{formData.instagram}</span>
+                      </a>
+                    )}
+                    
+                    {formData.show_facebook && formData.facebook && (
+                      <a 
+                        href={formatSocialMediaUrl('facebook', formData.facebook)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center space-x-2 text-purple-400 hover:text-purple-300 transition-colors"
+                      >
+                        <Facebook className="w-5 h-5" />
+                        <span>{formData.facebook}</span>
+                      </a>
+                    )}
+                    
+                    {formData.show_tiktok && formData.tiktok && (
+                      <a 
+                        href={formatSocialMediaUrl('tiktok', formData.tiktok)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center space-x-2 text-purple-400 hover:text-purple-300 transition-colors"
+                      >
+                        <svg 
+                          className="w-5 h-5" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                        >
+                          <path d="M9 12a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"></path>
+                          <path d="M15 8a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
+                          <path d="M15 8v8a4 4 0 0 1-4 4"></path>
+                          <path d="M15 8h-4"></path>
+                        </svg>
+                        <span>{formData.tiktok}</span>
+                      </a>
+                    )}
+                    
+                    {!formData.show_website && !formData.show_instagram && !formData.show_facebook && !formData.show_tiktok && (
+                      <p className="text-gray-400 text-sm italic">No social media links will be displayed on your public profile.</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-white/5 rounded-lg p-4 flex items-center justify-center">
+                    <div className="text-center">
+                      <EyeSlash className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-400 text-sm">Your profile is currently set to private.</p>
+                      <p className="text-gray-500 text-xs mt-1">No information will be visible to others.</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1062,20 +1110,15 @@ export function ProfilePage() {
 
             {/* Recent Events */}
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Recent Events</h3>
-              <div className="space-y-3">
-                {recentEvents.map((event) => (
-                  <div key={event.id} className="border border-white/10 rounded-lg p-3">
-                    <h4 className="text-white font-medium text-sm">{event.name}</h4>
-                    <p className="text-gray-400 text-xs">{event.date}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-purple-400 text-xs">{event.role}</span>
-                      <span className="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">
-                        {event.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Recent Events</h3>
+                <Link to="/events" className="text-purple-400 hover:text-purple-300 text-sm transition-colors">
+                  View All
+                </Link>
+              </div>
+              <div className="text-center py-8">
+                <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-300">No recent events found</p>
               </div>
             </div>
           </div>
