@@ -1,34 +1,53 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
-const { v4: uuidv4 } = require('uuid');
-const { query, supabase } = require('../config/database');
+const { supabase } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Get all events
 router.get('/', async (req, res) => {
   try {
-    const result = await query(`
-      SELECT 
-        e.id,
-        e.name,
-        e.description,
-        e.event_slug,
-        e.start_date,
-        e.end_date,
-        e.location,
-        e.venue,
-        e.max_attendees,
-        e.status,
-        e.created_at,
-        u.name as event_manager_name,
-        u.email as event_manager_email
-      FROM events e
-      LEFT JOIN users u ON e.event_manager_id = u.id
-      ORDER BY e.start_date DESC
-    `);
+    const { data, error } = await supabase
+      .from('events')
+      .select(`
+        id,
+        name,
+        description,
+        event_slug,
+        start_date,
+        end_date,
+        location,
+        venue,
+        max_attendees,
+        status,
+        created_at,
+        event_manager_id,
+        users:event_manager_id (name, email)
+      `)
+      .order('start_date', { ascending: false });
 
-    res.json(result.rows);
+    if (error) {
+      console.error('Error fetching events:', error);
+      return res.status(500).json({ error: 'Failed to fetch events' });
+    }
+
+    // Format the response to match the expected structure
+    const formattedData = data.map(event => ({
+      id: event.id,
+      name: event.name,
+      description: event.description,
+      event_slug: event.event_slug,
+      start_date: event.start_date,
+      end_date: event.end_date,
+      location: event.location,
+      venue: event.venue,
+      max_attendees: event.max_attendees,
+      status: event.status,
+      created_at: event.created_at,
+      event_manager_name: event.users?.name,
+      event_manager_email: event.users?.email
+    }));
+
+    res.json(formattedData);
   } catch (error) {
     console.error('Error fetching events:', error);
     res.status(500).json({ error: 'Failed to fetch events' });
@@ -40,31 +59,53 @@ router.get('/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
     
-    const result = await query(`
-      SELECT 
-        e.id,
-        e.name,
-        e.description,
-        e.event_slug,
-        e.start_date,
-        e.end_date,
-        e.location,
-        e.venue,
-        e.max_attendees,
-        e.status,
-        e.created_at,
-        u.name as event_manager_name,
-        u.email as event_manager_email
-      FROM events e
-      LEFT JOIN users u ON e.event_manager_id = u.id
-      WHERE e.event_slug = $1
-    `, [slug]);
+    const { data, error } = await supabase
+      .from('events')
+      .select(`
+        id,
+        name,
+        description,
+        event_slug,
+        start_date,
+        end_date,
+        location,
+        venue,
+        max_attendees,
+        status,
+        created_at,
+        event_manager_id,
+        users:event_manager_id (name, email)
+      `)
+      .eq('event_slug', slug)
+      .single();
 
-    if (result.rows.length === 0) {
+    if (error) {
+      console.error('Error fetching event:', error);
+      return res.status(500).json({ error: 'Failed to fetch event' });
+    }
+
+    if (!data) {
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    res.json(result.rows[0]);
+    // Format the response to match the expected structure
+    const formattedData = {
+      id: data.id,
+      name: data.name,
+      description: data.description,
+      event_slug: data.event_slug,
+      start_date: data.start_date,
+      end_date: data.end_date,
+      location: data.location,
+      venue: data.venue,
+      max_attendees: data.max_attendees,
+      status: data.status,
+      created_at: data.created_at,
+      event_manager_name: data.users?.name,
+      event_manager_email: data.users?.email
+    };
+
+    res.json(formattedData);
   } catch (error) {
     console.error('Error fetching event:', error);
     res.status(500).json({ error: 'Failed to fetch event' });
@@ -106,10 +147,8 @@ router.post('/', authenticateToken, async (req, res) => {
       });
     }
 
-    // Check if user is Master Admin using req.user.role directly
-    const userRole = req.user.role;
-
-    if (userRole !== 'admin') {
+    // Check if user is Master Admin
+    if (req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Only Master Admins can create events' });
     }
 
@@ -129,27 +168,55 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 
     // Check if slug already exists
-    const existingEvent = await query('SELECT id FROM events WHERE event_slug = $1', [event_slug]);
+    const { data: existingEvent, error: slugCheckError } = await supabase
+      .from('events')
+      .select('id')
+      .eq('event_slug', event_slug)
+      .maybeSingle();
+      
+    if (slugCheckError) {
+      console.error('Error checking existing event:', slugCheckError);
+      return res.status(500).json({ error: 'Failed to check if event exists' });
+    }
 
-    if (existingEvent.rows.length > 0) {
+    if (existingEvent) {
       return res.status(400).json({ error: 'Event slug already exists' });
     }
 
     let eventManagerId = null;
 
     // Check if Event Manager already exists
-    const existingManager = await query('SELECT id, role FROM users WHERE email = $1', [eventManagerEmail]);
+    const { data: existingManager, error: managerCheckError } = await supabase
+      .from('users')
+      .select('id, role')
+      .eq('email', eventManagerEmail)
+      .maybeSingle();
+      
+    if (managerCheckError) {
+      console.error('Error checking existing manager:', managerCheckError);
+      return res.status(500).json({ error: 'Failed to check if manager exists' });
+    }
 
-    if (existingManager.rows.length > 0) {
+    if (existingManager) {
       // User exists, update their role to event_manager if needed
-      const existingUser = existingManager.rows[0];
-      eventManagerId = existingUser.id;
+      eventManagerId = existingManager.id;
 
-      if (existingUser.role !== 'event_manager' && existingUser.role !== 'admin') {
-        await query('UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2', ['event_manager', existingUser.id]);
+      if (existingManager.role !== 'event_manager' && existingManager.role !== 'admin') {
+        const { error: updateRoleError } = await supabase
+          .from('users')
+          .update({ 
+            role: 'event_manager', 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', existingManager.id);
+          
+        if (updateRoleError) {
+          console.error('Error updating manager role:', updateRoleError);
+          return res.status(500).json({ error: 'Failed to update manager role' });
+        }
       }
       
-      console.log(`✅ Using existing user as Event Manager: ${eventManagerEmail}, ID: ${eventManagerId}`);
+      console.log(`✅ Using existing user as Event Manager: ${eventManagerEmail}, ID: ${existingManager.id}`);
     } else {
       // Create new Event Manager user
       console.log('🔄 Creating new Event Manager user...');
@@ -191,7 +258,7 @@ router.post('/', authenticateToken, async (req, res) => {
           throw new Error(`Supabase user creation failed: ${error.message}`);
         }
 
-        if (!data.user || !data.user.id) {
+        if (!data?.user?.id) {
           throw new Error('Supabase user creation returned no user data');
         }
 
@@ -200,15 +267,28 @@ router.post('/', authenticateToken, async (req, res) => {
 
         // Insert into our users table
         try {
-          await query(`
-            INSERT INTO users (id, name, email, role, created_at, updated_at) 
-            VALUES ($1, $2, $3, 'event_manager', NOW(), NOW())
-            ON CONFLICT (id) DO UPDATE SET
-              name = EXCLUDED.name,
-              email = EXCLUDED.email,
-              role = EXCLUDED.role,
-              updated_at = NOW()
-          `, [eventManagerId, eventManagerName, eventManagerEmail]);
+          const { error: insertError } = await supabase
+            .from('users')
+            .upsert({
+              id: eventManagerId,
+              name: eventManagerName,
+              email: eventManagerEmail,
+              role: 'event_manager',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+            
+          if (insertError) {
+            console.error('Error inserting into users table:', insertError);
+            // Try to clean up the Supabase user if database insert fails
+            try {
+              await supabase.auth.admin.deleteUser(eventManagerId);
+              console.log('🧹 Cleaned up Supabase user after database error');
+            } catch (cleanupError) {
+              console.error('❌ Failed to cleanup Supabase user:', cleanupError);
+            }
+            throw new Error(`Database user creation failed: ${insertError.message}`);
+          }
           
           console.log(`✅ Successfully inserted user into users table: ${eventManagerId}`);
         } catch (dbError) {
@@ -250,21 +330,45 @@ router.post('/', authenticateToken, async (req, res) => {
     // Insert new event with Event Manager
     try {
       console.log(`📅 Inserting new event with Event Manager ID: ${eventManagerId}`);
-      const result = await query(`
-        INSERT INTO events (
-          name, description, event_slug, start_date, end_date, 
-          location, venue, max_attendees, event_manager_id, status, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'draft', NOW(), NOW())
-        RETURNING id
-      `, [name, description, event_slug, start_date, end_date, location, venue, max_attendees || 500, eventManagerId]);
+      
+      const { data: newEvent, error: insertError } = await supabase
+        .from('events')
+        .insert({
+          name,
+          description,
+          event_slug,
+          start_date,
+          end_date,
+          location,
+          venue,
+          max_attendees: max_attendees || 500,
+          event_manager_id: eventManagerId,
+          status: 'draft',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select('id')
+        .single();
+        
+      if (insertError) {
+        console.error('Error inserting event:', insertError);
+        
+        if (insertError.code === '23505') { // Unique constraint violation
+          return res.status(400).json({ 
+            error: 'Event with this slug already exists' 
+          });
+        }
+        
+        throw new Error(`Event creation failed: ${insertError.message}`);
+      }
 
-      console.log(`🎉 Successfully created event with ID: ${result.rows[0].id}`);
+      console.log(`🎉 Successfully created event with ID: ${newEvent.id}`);
 
       res.status(201).json({
         message: 'Event created successfully',
-        eventId: result.rows[0].id,
+        eventId: newEvent.id,
         eventManagerId: eventManagerId,
-        note: existingManager.rows.length > 0 ? 
+        note: existingManager ? 
           'Event assigned to existing Event Manager' : 
           'New Event Manager account created. They will receive login credentials via email.'
       });

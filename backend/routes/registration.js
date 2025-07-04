@@ -1,5 +1,5 @@
 const express = require('express');
-const { query } = require('../config/database');
+const { supabase } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
@@ -9,40 +9,80 @@ router.get('/:token', async (req, res) => {
     const { token } = req.params;
 
     // Validate token and get registration data
-    const result = await query(`
-      SELECT 
-        rt.token,
-        rt.expires_at,
-        rt.used_at,
-        a.id as application_id,
-        a.applicant_name,
-        a.applicant_email,
-        a.application_type,
-        a.event_id,
-        e.name as event_name,
-        rr.requires_payment,
-        rr.payment_amount,
-        rr.agreement_text,
-        rr.profile_deadline_days,
-        ps.cash_enabled,
-        ps.cash_details,
-        ps.bank_transfer_enabled,
-        ps.bank_details,
-        ps.stripe_enabled,
-        ps.allow_installments
-      FROM registration_tokens rt
-      JOIN applications a ON a.id = rt.application_id
-      JOIN events e ON e.id = a.event_id
-      LEFT JOIN registration_requirements rr ON rr.event_id = a.event_id AND rr.application_type = a.application_type
-      LEFT JOIN payment_settings ps ON ps.event_id = a.event_id
-      WHERE rt.token = $1
-    `, [token]);
-
-    if (result.rows.length === 0) {
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('registration_tokens')
+      .select(`
+        token,
+        expires_at,
+        used_at,
+        application_id,
+        applications!inner(
+          id,
+          applicant_name,
+          applicant_email,
+          application_type,
+          event_id,
+          events!inner(
+            name
+          )
+        )
+      `)
+      .eq('token', token)
+      .single();
+      
+    if (tokenError) {
+      console.error('Error fetching registration token:', tokenError);
       return res.status(404).json({ error: 'Invalid or expired registration token' });
     }
+    
+    if (!tokenData) {
+      return res.status(404).json({ error: 'Invalid or expired registration token' });
+    }
+    
+    // Get registration requirements
+    const { data: requirementsData, error: requirementsError } = await supabase
+      .from('registration_requirements')
+      .select('*')
+      .eq('event_id', tokenData.applications.event_id)
+      .eq('application_type', tokenData.applications.application_type)
+      .maybeSingle();
+      
+    if (requirementsError) {
+      console.error('Error fetching registration requirements:', requirementsError);
+    }
+    
+    // Get payment settings
+    const { data: paymentSettings, error: paymentError } = await supabase
+      .from('payment_settings')
+      .select('*')
+      .eq('event_id', tokenData.applications.event_id)
+      .maybeSingle();
+      
+    if (paymentError) {
+      console.error('Error fetching payment settings:', paymentError);
+    }
 
-    const registration = result.rows[0];
+    const registration = {
+      token: tokenData.token,
+      expires_at: tokenData.expires_at,
+      used_at: tokenData.used_at,
+      application_id: tokenData.application_id,
+      applicant_name: tokenData.applications.applicant_name,
+      applicant_email: tokenData.applications.applicant_email,
+      application_type: tokenData.applications.application_type,
+      event_id: tokenData.applications.event_id,
+      event_name: tokenData.applications.events.name,
+      requires_payment: requirementsData?.requires_payment || false,
+      payment_amount: requirementsData?.payment_amount || 0,
+      agreement_text: requirementsData?.agreement_text || '',
+      profile_deadline_days: requirementsData?.profile_deadline_days || 30,
+      cash_enabled: paymentSettings?.cash_enabled || false,
+      cash_details: paymentSettings?.cash_details || '',
+      bank_transfer_enabled: paymentSettings?.bank_transfer_enabled || false,
+      bank_details: paymentSettings?.bank_details || '',
+      stripe_enabled: paymentSettings?.stripe_enabled || false,
+      allow_installments: paymentSettings?.allow_installments || false
+    };
 
     // Check if token has expired
     if (new Date() > new Date(registration.expires_at)) {
@@ -96,109 +136,133 @@ router.post('/complete', async (req, res) => {
     } = req.body;
 
     // Validate token
-    const tokenResult = await query(`
-      SELECT rt.*, a.user_id, a.event_id, a.application_type
-      FROM registration_tokens rt
-      JOIN applications a ON a.id = rt.application_id
-      WHERE rt.token = $1 AND rt.expires_at > NOW() AND rt.used_at IS NULL
-    `, [token]);
-
-    if (tokenResult.rows.length === 0) {
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('registration_tokens')
+      .select(`
+        *,
+        applications!inner(
+          user_id,
+          event_id,
+          application_type
+        )
+      `)
+      .eq('token', token)
+      .gt('expires_at', new Date().toISOString())
+      .is('used_at', null)
+      .single();
+      
+    if (tokenError) {
+      console.error('Error validating token:', tokenError);
       return res.status(400).json({ error: 'Invalid or expired registration token' });
     }
 
-    const tokenData = tokenResult.rows[0];
+    if (!tokenData) {
+      return res.status(400).json({ error: 'Invalid or expired registration token' });
+    }
 
-    // Start transaction
-    await query('BEGIN');
-
+    // Create a transaction-like sequence of operations
     try {
       // Create or update client record
-      let clientId = tokenData.user_id;
+      let clientId = tokenData.applications.user_id;
       
-      if (tokenData.user_id) {
+      if (clientId) {
         // Update existing client record
-        await query(`
-          INSERT INTO clients (
-            id, name, email, emergency_contact_name, emergency_contact_phone,
-            medical_conditions, allergies, medications, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-          ON CONFLICT (id) DO UPDATE SET
-            emergency_contact_name = EXCLUDED.emergency_contact_name,
-            emergency_contact_phone = EXCLUDED.emergency_contact_phone,
-            medical_conditions = EXCLUDED.medical_conditions,
-            allergies = EXCLUDED.allergies,
-            medications = EXCLUDED.medications,
-            updated_at = NOW()
-        `, [
-          tokenData.user_id,
-          registration_data.applicant_name || '',
-          registration_data.applicant_email || '',
-          registration_data.emergency_contact_name,
-          registration_data.emergency_contact_phone,
-          registration_data.medical_conditions || '',
-          registration_data.allergies || '',
-          registration_data.medications || ''
-        ]);
+        const { error: clientError } = await supabase
+          .from('clients')
+          .upsert({
+            id: clientId,
+            name: registration_data.applicant_name || '',
+            email: registration_data.applicant_email || '',
+            emergency_contact_name: registration_data.emergency_contact_name,
+            emergency_contact_phone: registration_data.emergency_contact_phone,
+            medical_conditions: registration_data.medical_conditions || '',
+            allergies: registration_data.allergies || '',
+            medications: registration_data.medications || '',
+            updated_at: new Date().toISOString()
+          });
+          
+        if (clientError) {
+          console.error('Error updating client record:', clientError);
+          throw new Error('Failed to update client record');
+        }
       }
 
       // Create registration submission
-      const registrationResult = await query(`
-        INSERT INTO registration_submissions (
-          application_id, client_id, confirmed_details, agreement_accepted,
-          agreement_accepted_at, payment_method, payment_amount, submitted_at,
-          profile_deadline
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8)
-        RETURNING id
-      `, [
-        tokenData.application_id,
-        clientId,
-        JSON.stringify(registration_data),
-        registration_data.agreement_accepted,
-        registration_data.agreement_accepted ? new Date() : null,
-        registration_data.payment_method,
-        0, // Payment amount will be set based on requirements
-        new Date(Date.now() + (30 * 24 * 60 * 60 * 1000)) // 30 days from now
-      ]);
-
-      const registrationId = registrationResult.rows[0].id;
+      const profileDeadline = new Date();
+      profileDeadline.setDate(profileDeadline.getDate() + 30); // 30 days from now
+      
+      const { data: registrationData, error: registrationError } = await supabase
+        .from('registration_submissions')
+        .insert({
+          application_id: tokenData.application_id,
+          client_id: clientId,
+          confirmed_details: registration_data,
+          agreement_accepted: registration_data.agreement_accepted,
+          agreement_accepted_at: registration_data.agreement_accepted ? new Date().toISOString() : null,
+          payment_method: registration_data.payment_method,
+          payment_amount: 0, // Payment amount will be set based on requirements
+          submitted_at: new Date().toISOString(),
+          profile_deadline: profileDeadline.toISOString()
+        })
+        .select('id')
+        .single();
+        
+      if (registrationError) {
+        console.error('Error creating registration submission:', registrationError);
+        throw new Error('Failed to create registration submission');
+      }
 
       // Create ticket entry
-      await query(`
-        INSERT INTO tickets (event_id, client_id, ticket_type, price_gbp, purchase_date, status)
-        VALUES ($1, $2, $3, $4, NOW(), 'active')
-      `, [
-        tokenData.event_id,
-        clientId,
-        tokenData.application_type,
-        0 // Price will be updated based on payment
-      ]);
+      const { error: ticketError } = await supabase
+        .from('tickets')
+        .insert({
+          event_id: tokenData.applications.event_id,
+          client_id: clientId,
+          ticket_type: tokenData.applications.application_type,
+          price_gbp: 0, // Price will be updated based on payment
+          purchase_date: new Date().toISOString(),
+          status: 'active'
+        });
+        
+      if (ticketError) {
+        console.error('Error creating ticket:', ticketError);
+        throw new Error('Failed to create ticket');
+      }
 
       // Mark token as used
-      await query(`
-        UPDATE registration_tokens 
-        SET used_at = NOW() 
-        WHERE id = $1
-      `, [tokenData.id]);
+      const { error: tokenUpdateError } = await supabase
+        .from('registration_tokens')
+        .update({
+          used_at: new Date().toISOString()
+        })
+        .eq('id', tokenData.id);
+        
+      if (tokenUpdateError) {
+        console.error('Error updating token:', tokenUpdateError);
+        throw new Error('Failed to update token');
+      }
 
       // Update application status
-      await query(`
-        UPDATE applications 
-        SET registration_completed = NOW()
-        WHERE id = $1
-      `, [tokenData.application_id]);
-
-      // Commit transaction
-      await query('COMMIT');
+      const { error: applicationError } = await supabase
+        .from('applications')
+        .update({
+          registration_completed: new Date().toISOString()
+        })
+        .eq('id', tokenData.application_id);
+        
+      if (applicationError) {
+        console.error('Error updating application:', applicationError);
+        throw new Error('Failed to update application');
+      }
 
       res.json({
         message: 'Registration completed successfully',
-        registration_id: registrationId
+        registration_id: registrationData.id
       });
 
-    } catch (error) {
-      await query('ROLLBACK');
-      throw error;
+    } catch (transactionError) {
+      console.error('Transaction error:', transactionError);
+      return res.status(500).json({ error: transactionError.message || 'Failed to complete registration' });
     }
 
   } catch (error) {

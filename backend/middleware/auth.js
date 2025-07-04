@@ -1,5 +1,4 @@
-const jwt = require('jsonwebtoken');
-const { supabase, query } = require('../config/database');
+const { supabase } = require('../config/database');
 
 // Middleware to authenticate Supabase JWT tokens
 async function authenticateToken(req, res, next) {
@@ -20,36 +19,43 @@ async function authenticateToken(req, res, next) {
         return res.status(403).json({ error: 'Invalid or expired token' });
       }
       
-      console.log('Supabase user data:', user);
+      // Get user data from the database using Supabase
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, name, email, role')
+        .eq('id', user.id)
+        .single();
       
-      // Always query the database for the user's role to ensure consistency
-      let role = 'artist'; // Default fallback
-      try {
-        const userResult = await query('SELECT role FROM users WHERE id = $1', [user.id]);
-        if (userResult.rows.length > 0) {
-          role = userResult.rows[0].role;
-          console.log('Role from database:', role);
-        } else {
-          console.log('User not found in database, using default role:', role);
-        }
-      } catch (dbError) {
-        console.error('Error fetching user role from database:', dbError);
-        // Use metadata as fallback only if database query fails
-        role = user.user_metadata?.role || 'artist';
-        console.log('Using metadata role as fallback:', role);
+      if (userError) {
+        console.error('Error fetching user data from Supabase:', userError);
+        // Use metadata as fallback if database query fails
+        req.user = {
+          userId: user.id,
+          email: user.email,
+          name: user.user_metadata?.name || 'User',
+          role: user.user_metadata?.role || 'artist'
+        };
+      } else if (userData) {
+        // Use data from the database
+        req.user = {
+          userId: userData.id,
+          email: userData.email,
+          name: userData.name,
+          role: userData.role
+        };
+      } else {
+        // Fallback to metadata if user not found in database
+        req.user = {
+          userId: user.id,
+          email: user.email,
+          name: user.user_metadata?.name || 'User',
+          role: user.user_metadata?.role || 'artist'
+        };
       }
       
-      req.user = {
-        userId: user.id,
-        email: user.email,
-        role: role
-      };
-      
-      console.log('Authenticated user:', req.user);
+      console.log('Authenticated user:', req.user.name, 'with role:', req.user.role);
     } else {
-      // Fallback to JWT verification if Supabase is not configured
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = decoded;
+      return res.status(500).json({ error: 'Authentication service not configured' });
     }
     
     next();

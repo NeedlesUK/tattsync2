@@ -1,5 +1,5 @@
 const express = require('express');
-const { query } = require('../config/database');
+const { supabase } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
@@ -9,18 +9,18 @@ router.get('/conversations', authenticateToken, async (req, res) => {
     const userId = req.user.userId;
 
     // This is a simplified version - in a real app you'd have a more complex conversation system
-    const result = await query(`
-      SELECT DISTINCT
-        u.id,
-        u.name,
-        u.role,
-        u.email
-      FROM users u
-      WHERE u.id != $1
-      ORDER BY u.name
-    `, [userId]);
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, role, email')
+      .neq('id', userId)
+      .order('name');
+      
+    if (error) {
+      console.error('Error fetching conversations:', error);
+      return res.status(500).json({ error: 'Failed to fetch conversations' });
+    }
 
-    res.json(result.rows);
+    res.json(data);
   } catch (error) {
     console.error('Error fetching conversations:', error);
     res.status(500).json({ error: 'Failed to fetch conversations' });

@@ -1,5 +1,5 @@
 const express = require('express');
-const { query } = require('../config/database');
+const { supabase } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
@@ -8,52 +8,29 @@ router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Users can only access their own data unless they're admin
-    if (req.user.userId !== id && req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-    
-    const result = await query(
-      'SELECT id, name, email, role, created_at, updated_at FROM users WHERE id = $1',
-      [id]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ error: 'Failed to fetch user' });
-  }
-});
-
-// Get user by ID
-router.get('/:id', authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    
     // Check if the requesting user is accessing their own data or is an admin
     if (req.user.userId !== id) {
-      // Check if user is admin
-      const userResult = await query('SELECT role FROM users WHERE id = $1', [req.user.userId]);
-      if (userResult.rows.length === 0 || userResult.rows[0].role !== 'admin') {
+      if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Access denied' });
       }
     }
     
-    const result = await query(`
-      SELECT id, name, email, role, created_at, updated_at
-      FROM users 
-      WHERE id = $1
-    `, [id]);
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, email, role, created_at, updated_at')
+      .eq('id', id)
+      .single();
 
-    if (result.rows.length === 0) {
+    if (error) {
+      console.error('Error fetching user:', error);
+      return res.status(500).json({ error: 'Failed to fetch user' });
+    }
+
+    if (!data) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json(result.rows[0]);
+    res.json(data);
   } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ error: 'Failed to fetch user' });
@@ -63,26 +40,21 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Get all users (admin only)
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    // Check if user is admin
-    const userResult = await query('SELECT role FROM users WHERE id = $1', [req.user.userId]);
-    
-    if (userResult.rows.length === 0) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-    
-    const userRole = userResult.rows[0]?.role;
-
-    if (userRole !== 'admin') {
+    if (req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Only admins can view all users' });
     }
 
-    const result = await query(`
-      SELECT id, name, email, role, created_at, updated_at
-      FROM users 
-      ORDER BY created_at DESC
-    `);
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, email, role, created_at, updated_at')
+      .order('created_at', { ascending: false });
 
-    res.json(result.rows);
+    if (error) {
+      console.error('Error fetching users:', error);
+      return res.status(500).json({ error: 'Failed to fetch users' });
+    }
+
+    res.json(data);
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
@@ -95,16 +67,7 @@ router.patch('/:id/role', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const { role } = req.body;
     
-    // Check if user is admin
-    const userResult = await query('SELECT role FROM users WHERE id = $1', [req.user.userId]);
-    
-    if (userResult.rows.length === 0) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-    
-    const userRole = userResult.rows[0]?.role;
-
-    if (userRole !== 'admin') {
+    if (req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Only admins can update user roles' });
     }
 
@@ -114,18 +77,26 @@ router.patch('/:id/role', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Invalid role' });
     }
 
-    const result = await query(`
-      UPDATE users 
-      SET role = $1, updated_at = NOW()
-      WHERE id = $2
-      RETURNING id, name, email, role, updated_at
-    `, [role, id]);
+    const { data, error } = await supabase
+      .from('users')
+      .update({ 
+        role: role, 
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', id)
+      .select('id, name, email, role, updated_at')
+      .single();
 
-    if (result.rows.length === 0) {
+    if (error) {
+      console.error('Error updating user role:', error);
+      return res.status(500).json({ error: 'Failed to update user role' });
+    }
+
+    if (!data) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json(result.rows[0]);
+    res.json(data);
   } catch (error) {
     console.error('Error updating user role:', error);
     res.status(500).json({ error: 'Failed to update user role' });
