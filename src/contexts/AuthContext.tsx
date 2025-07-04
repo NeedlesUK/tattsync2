@@ -15,6 +15,7 @@ interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
+  supabase: ReturnType<typeof createClient> | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUserEmail: (newEmail: string) => Promise<void>;
@@ -456,15 +457,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ 
-      user, 
-      session, 
-      login, 
-      logout, 
-      isLoading, 
+      user,
+      session,
+      supabase,
+      login,
+      logout,
+      isLoading,
       updateUserEmail,
       updateUserRoles,
-     updateUserProfile,
-      supabase
+      updateUserProfile
     }}>
       {children}
     </AuthContext.Provider>
