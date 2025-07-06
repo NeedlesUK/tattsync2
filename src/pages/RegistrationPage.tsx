@@ -14,6 +14,11 @@ export function RegistrationPage() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // Clear any error messages when component mounts
+    setErrorMessage('');
+  }, []);
+
   // Redirect if already logged in
   useEffect(() => {
     if (user) {

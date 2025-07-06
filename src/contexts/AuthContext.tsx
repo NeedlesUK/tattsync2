@@ -176,7 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           roles: userData.roles || [userData.role || session.user.user_metadata?.role || 'artist'],
           avatar: undefined
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Error updating user state:', error);
         
         // Fallback to basic user info from session
