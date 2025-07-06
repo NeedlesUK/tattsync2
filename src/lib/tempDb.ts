@@ -8,20 +8,8 @@
 // Simple in-memory storage
 const storage: Record<string, any[]> = {
   users: [
-    {
-      id: '3',
-      name: 'Gary Watts',
-      email: 'gary@tattscore.com',
-      role: 'admin',
-      created_at: new Date().toISOString()
-    },
-    {
-      id: '4',
-      name: 'Gary Watts',
-      email: 'gary@gwts.co.uk',
-      role: 'admin',
-      created_at: new Date().toISOString()
-    }
+    { id: '3', name: 'Gary Watts', email: 'gary@tattscore.com', role: 'admin', created_at: new Date().toISOString() },
+    { id: '4', name: 'Gary Watts', email: 'gary@gwts.co.uk', role: 'admin', created_at: new Date().toISOString() }
   ],
   events: [
     {
@@ -41,52 +29,71 @@ const storage: Record<string, any[]> = {
   ],
   applications: [],
   user_profiles: [],
-  user_roles: [
-    {
-      id: 1,
-      user_id: '1',
-      role: 'artist',
-      is_primary: true,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 2,
-      user_id: '2',
-      role: 'event_manager',
-      is_primary: true,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 3,
-      user_id: '2',
-      role: 'artist',
-      is_primary: false,
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 4,
-      user_id: '3',
-      role: 'admin',
-      is_primary: true,
-      created_at: new Date().toISOString()
-    }
-  ]
+  user_roles: []
 };
 
 // Add all roles to admin user
 const allRoles = ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge'];
-let roleId = 5;
-allRoles.forEach(role => {
-  if (role !== 'admin') {
+
+// Add roles for both admin users
+let roleId = 1;
+['3', '4'].forEach(userId => {
+  allRoles.forEach(role => {
     storage.user_roles.push({
       id: roleId++,
-      user_id: '3',
+      user_id: userId,
       role,
-      is_primary: false,
+      is_primary: role === 'admin',
       created_at: new Date().toISOString()
     });
-  }
+  });
 });
+
+// Add profiles for admin users
+storage.user_profiles = [
+  {
+    id: 1,
+    user_id: '3',
+    phone: '+44 7700 900000',
+    location: 'London, UK',
+    bio: 'TattSync Master Administrator',
+    website: 'https://tattsync.com',
+    instagram: 'tattsync',
+    facebook: 'tattsync',
+    tiktok: 'tattsync',
+    experience: '10 years',
+    specialties: ['Administration', 'Event Management', 'System Design'],
+    profile_picture: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=128&h=128&dpr=2',
+    show_instagram: true,
+    show_facebook: true,
+    show_tiktok: true,
+    show_website: true,
+    show_profile: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 2,
+    user_id: '4',
+    phone: '+44 7700 900001',
+    location: 'London, UK',
+    bio: 'TattSync Administrator',
+    website: 'https://tattsync.com',
+    instagram: 'tattsync',
+    facebook: 'tattsync',
+    tiktok: 'tattsync',
+    experience: '10 years',
+    specialties: ['Administration', 'Event Management', 'System Design'],
+    profile_picture: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=128&h=128&dpr=2',
+    show_instagram: true,
+    show_facebook: true,
+    show_tiktok: true,
+    show_website: true,
+    show_profile: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
 
 // Simple authentication storage
 const authStorage: Record<string, any> = {
@@ -499,20 +506,15 @@ export const tempDb = {
 
 // Helper function to check if temp DB should be used
 export const shouldUseTempDb = () => {
-  // Check if Supabase URL is missing or invalid
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-  
-  return !supabaseUrl || 
-         !supabaseAnonKey || 
-         supabaseUrl === 'your_supabase_project_url' || 
-         supabaseAnonKey === 'your_supabase_anon_key' ||
-         !supabaseUrl.startsWith('https://');
+  // Always use temp DB for now to ensure consistent behavior
+  return true;
 };
 
 // Export a function to get either the real Supabase client or the temp DB
 export const getDbClient = (realSupabase: any) => {
-  if (shouldUseTempDb() || !realSupabase) {
+  const useTempDb = shouldUseTempDb() || !realSupabase;
+  
+  if (useTempDb) {
     console.log('⚠️ Using temporary in-memory database for development or testing');
     console.log('Available accounts:');
     console.log('- gary@tattscore.com / password123');

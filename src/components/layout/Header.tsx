@@ -207,7 +207,7 @@ export function Header() {
                 </Link>
                 {(roleDisplay || user.email === 'gary@tattscore.com') && (
                   <span className={`${user.email === 'gary@tattscore.com' ? 'bg-purple-600' : roleDisplay?.color} text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1`}>
-                    {user.email === 'gary@tattscore.com' ? (
+                    {user.email === 'gary@tattscore.com' || user.email === 'gary@gwts.co.uk' ? (
                       <>
                         <Crown className="w-3 h-3" />
                         <span className="hidden sm:inline">Master Admin</span>
@@ -222,9 +222,9 @@ export function Header() {
                 )}
                 <button
                   onClick={logout}
-                  className="text-gray-300 hover:text-white transition-colors"
+                  className="text-gray-300 hover:text-white transition-colors flex items-center"
                 >
-                  <LogOut className="w-5 h-5" />
+                  <LogOut className="w-5 h-5" title="Logout" />
                 </button>
               </div>
             ) : (

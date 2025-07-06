@@ -1,30 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 import { getDbClient } from './tempDb';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-// Initialize a basic client that will be replaced by the real one or temp DB
-let supabase = createClient(supabaseUrl || 'https://example.com', supabaseAnonKey || 'dummy-key');
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase credentials in environment variables');
-  console.error('VITE_SUPABASE_URL:', supabaseUrl ? 'Present' : 'Missing');
-  console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Present' : 'Missing');
-} else if (supabaseUrl === 'https://your-project-id.supabase.co' || supabaseAnonKey === 'your-supabase-anon-key') {
-  console.error('Default placeholder Supabase credentials detected');
-  console.error('Please update your .env file with actual Supabase credentials from your project dashboard');
-} else {
-  console.log('Supabase credentials found in environment variables');
-}
+// Get Supabase credentials from environment
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Initialize a basic client
-let supabase = null; 
+let supabase = null;
 
 try {
   if (supabaseUrl && 
       supabaseAnonKey && 
-      supabaseUrl !== 'your_supabase_project_url' && 
-      supabaseAnonKey !== 'your_supabase_anon_key' && 
+      supabaseUrl !== 'your_supabase_project_url' &&
+      supabaseAnonKey !== 'your_supabase_anon_key' &&
       supabaseUrl.startsWith('https://')) {
     supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
@@ -35,13 +23,13 @@ try {
     });
     console.log('✅ Supabase client created successfully');
   } else {
-    console.warn('⚠️ Invalid Supabase credentials, falling back to temporary database');
+    console.warn('⚠️ Invalid or missing Supabase credentials, falling back to temporary database');
   }
 } catch (error) {
   console.error('❌ Error creating Supabase client:', error);
 }
 
-// Get the appropriate client (real or temp)
+// Always use the temp database for consistent behavior
 supabase = getDbClient(supabase);
 
 // Log available accounts
