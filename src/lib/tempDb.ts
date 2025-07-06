@@ -23,6 +23,14 @@ const storage: Record<string, any[]> = {
       role: 'event_manager',
       roles: ['event_manager'],
       created_at: new Date().toISOString()
+    },
+    {
+      id: '3',
+      name: 'Gary Watts',
+      email: 'gary@tattscore.com',
+      role: 'admin',
+      roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge'],
+      created_at: new Date().toISOString()
     }
   ],
   events: [
@@ -56,6 +64,10 @@ const authStorage: Record<string, any> = {
     'manager@example.com': {
       password: 'password123',
       user: storage.users[1]
+    },
+    'gary@tattscore.com': {
+      password: 'password123',
+      user: storage.users[2]
     }
   }
 };
@@ -65,15 +77,18 @@ export const tempDb = {
   // Auth methods
   auth: {
     signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
-      const user = authStorage.users[email];
+      console.log('TempDB: Attempting login with', email);
+      const user = authStorage.users[email.toLowerCase()];
       
       if (!user || user.password !== password) {
+        console.log('TempDB: Invalid credentials for', email);
         return {
           data: { session: null, user: null },
           error: { message: 'Invalid login credentials' }
         };
       }
       
+      console.log('TempDB: Login successful for', email);
       const session = {
         access_token: `mock_token_${Date.now()}`,
         user: user.user
@@ -90,6 +105,7 @@ export const tempDb = {
       };
     },
     signOut: async () => {
+      console.log('TempDB: Signing out');
       return { error: null };
     },
     getSession: async () => {
@@ -110,8 +126,32 @@ export const tempDb = {
       
       // Return mock unsubscribe function
       return {
-        unsubscribe: () => {}
+        data: {
+          subscription: {
+            unsubscribe: () => {}
+          }
+        }
       };
+    },
+    setSession: async ({ access_token }: { access_token: string }) => {
+      const session = authStorage.sessions[access_token];
+      
+      if (!session) {
+        return {
+          data: { session: null, user: null },
+          error: { message: 'Invalid or expired token' }
+        };
+      }
+      
+      return {
+        data: { session: { access_token, user: session.user }, user: session.user },
+        error: null
+      };
+    },
+    updateUser: async (updates: any) => {
+      // Mock updating user
+      console.log('TempDB: Updating user with', updates);
+      return { error: null };
     }
   },
   
@@ -392,7 +432,7 @@ export const shouldUseTempDb = () => {
 
 // Export a function to get either the real Supabase client or the temp DB
 export const getDbClient = (realSupabase: any) => {
-  if (shouldUseTempDb()) {
+  if (shouldUseTempDb() || !realSupabase) {
     console.log('⚠️ Using temporary in-memory database for development');
     return tempDb;
   }

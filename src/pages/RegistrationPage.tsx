@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase, shouldUseTempDb } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { api } from '../lib/api';
 
 
@@ -34,12 +34,6 @@ export function RegistrationPage() {
     setErrorMessage('');
 
     // Check if Supabase is configured
-    if (!supabase && !shouldUseTempDb()) {
-      setErrorMessage('Authentication service not configured. Please check your environment variables.');
-      setIsLoading(false);
-      return;
-    }
-
     try {
       await login(formData.email, formData.password);
       navigate('/dashboard');

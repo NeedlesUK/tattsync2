@@ -13,6 +13,7 @@ const storage = {
       name: 'Test User',
       email: 'test@example.com',
       role: 'artist',
+      roles: ['artist'],
       created_at: new Date().toISOString()
     },
     {
@@ -20,6 +21,15 @@ const storage = {
       name: 'Event Manager',
       email: 'manager@example.com',
       role: 'event_manager',
+      roles: ['event_manager'],
+      created_at: new Date().toISOString()
+    },
+    {
+      id: '3',
+      name: 'Gary Watts',
+      email: 'gary@tattscore.com',
+      role: 'admin',
+      roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge'],
       created_at: new Date().toISOString()
     }
   ],
@@ -54,6 +64,10 @@ const authStorage = {
     'manager@example.com': {
       password: 'password123',
       user: storage.users[1]
+    },
+    'gary@tattscore.com': {
+      password: 'password123',
+      user: storage.users[2]
     }
   }
 };
@@ -65,7 +79,7 @@ const tempDb = {
     admin: {
       createUser: async ({ email, password, user_metadata, email_confirm }) => {
         // Check if user already exists
-        if (authStorage.users[email]) {
+        if (authStorage.users[email.toLowerCase()]) {
           return {
             data: { user: null },
             error: { message: 'User already registered' }
@@ -79,7 +93,7 @@ const tempDb = {
           created_at: new Date().toISOString()
         };
         
-        authStorage.users[email] = {
+        authStorage.users[email.toLowerCase()] = {
           password,
           user: newUser
         };
@@ -104,15 +118,18 @@ const tempDb = {
       }
     },
     signInWithPassword: async ({ email, password }) => {
-      const user = authStorage.users[email];
+      console.log('TempDB: Attempting login with', email);
+      const user = authStorage.users[email.toLowerCase()];
       
       if (!user || user.password !== password) {
+        console.log('TempDB: Invalid credentials for', email);
         return {
           data: { session: null, user: null },
           error: { message: 'Invalid login credentials' }
         };
       }
       
+      console.log('TempDB: Login successful for', email);
       const session = {
         access_token: `mock_token_${Date.now()}`,
         user: user.user
@@ -129,6 +146,7 @@ const tempDb = {
       };
     },
     signOut: async () => {
+      console.log('TempDB: Signing out');
       return { error: null };
     },
     setSession: async ({ access_token }) => {
@@ -345,7 +363,7 @@ const shouldUseTempDb = () => {
 
 // Export a function to get either the real Supabase client or the temp DB
 const getDbClient = (realSupabase, realSupabaseAdmin) => {
-  if (shouldUseTempDb()) {
+  if (shouldUseTempDb() || !realSupabase) {
     console.log('⚠️ Using temporary in-memory database for development');
     return { supabase: tempDb, supabaseAdmin: tempDb };
   }

@@ -1,10 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
-import { getDbClient, shouldUseTempDb } from './tempDb';
+import { getDbClient } from './tempDb';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Validate Supabase credentials
+// Initialize a basic client that will be replaced by the real one or temp DB
+let supabase = createClient(supabaseUrl || 'https://example.com', supabaseAnonKey || 'dummy-key');
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase credentials in environment variables');
   console.error('VITE_SUPABASE_URL:', supabaseUrl ? 'Present' : 'Missing');
@@ -21,21 +22,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Create client only if we have valid credentials
 let supabase = null;
 
-if (shouldUseTempDb()) {
-  console.log('⚠️ Using temporary in-memory database for development');
-  supabase = getDbClient(null);
-} else {
-  try {
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
-    console.log('✅ Supabase client created successfully');
-  } catch (error) {
-    console.error('❌ Error creating Supabase client:', error);
-    console.log('⚠️ Falling back to temporary in-memory database');
-    supabase = getDbClient(null);
-  }
-}
+// Get the appropriate client (real or temp)
+supabase = getDbClient(supabase);
 
-export { supabase, shouldUseTempDb };
+export { supabase };
 
 // Database types
 export interface Database {

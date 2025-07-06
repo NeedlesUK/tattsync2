@@ -1,5 +1,5 @@
 const { createClient } = require("@supabase/supabase-js");
-const { getDbClient, shouldUseTempDb } = require("../lib/tempDb");
+const tempDb = require("../lib/tempDb");
 
 // Supabase configuration
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -10,9 +10,9 @@ let supabase = null;
 let supabaseAdmin = null;
 
 // Check if we should use the temporary database
-if (shouldUseTempDb()) {
+if (tempDb.shouldUseTempDb()) {
   console.log("⚠️ Using temporary in-memory database for development");
-  const tempDbClients = getDbClient(null, null);
+  const tempDbClients = tempDb.getDbClient(null, null);
   supabase = tempDbClients.supabase;
   supabaseAdmin = tempDbClients.supabaseAdmin;
 } else if (supabaseUrl && supabaseAnonKey) {
@@ -33,7 +33,7 @@ if (shouldUseTempDb()) {
   console.error("❌ Missing or invalid Supabase public credentials!");
   console.error("Required: SUPABASE_URL and SUPABASE_ANON_KEY");
   console.error("Anon key present:", !!supabaseAnonKey); 
-  console.error("Anon key present:", !!supabaseAnonKey);
+  console.error("Current SUPABASE_URL:", supabaseUrl || "Not set");
 }
 
 if (supabaseUrl && supabaseServiceKey) {
@@ -79,7 +79,7 @@ if (supabaseUrl && supabaseServiceKey) {
     
   // Use temporary database as fallback
   console.log("⚠️ Falling back to temporary in-memory database");
-  const tempDbClients = getDbClient(null, null);
+  const tempDbClients = tempDb.getDbClient(null, null);
   supabase = tempDbClients.supabase;
   supabaseAdmin = tempDbClients.supabaseAdmin;
   console.error("Please update your backend/.env file with actual Supabase credentials");
