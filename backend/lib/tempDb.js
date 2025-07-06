@@ -9,23 +9,16 @@
 const storage = {
   users: [
     {
-      id: '1',
-      name: 'Test User',
-      email: 'test@example.com',
-      role: 'artist',
-      created_at: new Date().toISOString()
-    },
-    {
-      id: '2',
-      name: 'Event Manager',
-      email: 'manager@example.com',
-      role: 'event_manager',
-      created_at: new Date().toISOString()
-    },
-    {
       id: '3',
       name: 'Gary Watts',
       email: 'gary@tattscore.com',
+      role: 'admin',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: '4',
+      name: 'Gary Watts',
+      email: 'gary@gwts.co.uk',
       role: 'admin',
       created_at: new Date().toISOString()
     }
@@ -99,17 +92,13 @@ allRoles.forEach(role => {
 const authStorage = {
   sessions: {},
   users: {
-    'test@example.com': {
+    'gary@tattscore.com': {
       password: 'password123',
       user: storage.users[0]
     },
-    'manager@example.com': {
+    'gary@gwts.co.uk': {
       password: 'password123',
       user: storage.users[1]
-    },
-    'gary@tattscore.com': {
-      password: 'password123',
-      user: storage.users[2]
     }
   }
 };
@@ -525,10 +514,9 @@ const shouldUseTempDb = () => {
 const getDbClient = (realSupabase, realSupabaseAdmin) => {
   if (shouldUseTempDb() || !realSupabase) {
     console.log('⚠️ Using temporary in-memory database for development or testing');
-    console.log('Available test accounts:');
-    console.log('- test@example.com / password123 (Artist)');
-    console.log('- manager@example.com / password123 (Event Manager)');
-    console.log('- gary@tattscore.com / password123 (Admin)');
+    console.log('Available accounts:');
+    console.log('- gary@tattscore.com / password123');
+    console.log('- gary@gwts.co.uk / password123');
     return { supabase: tempDb, supabaseAdmin: tempDb };
   }
   

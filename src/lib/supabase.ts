@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { getDbClient } from './tempDb';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 // Initialize a basic client that will be replaced by the real one or temp DB
 let supabase = createClient(supabaseUrl || 'https://example.com', supabaseAnonKey || 'dummy-key');
@@ -15,15 +15,37 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Please update your .env file with actual Supabase credentials from your project dashboard');
 } else {
   console.log('Supabase credentials found in environment variables');
-  console.log('VITE_SUPABASE_URL:', supabaseUrl.substring(0, 15) + '...');
-  console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey.substring(0, 5) + '...');
-}
+// Initialize a basic client
+let supabase = null; 
 
-// Create client only if we have valid credentials
-let supabase = null;
+try {
+  if (supabaseUrl && 
+      supabaseAnonKey && 
+      supabaseUrl !== 'your_supabase_project_url' && 
+      supabaseAnonKey !== 'your_supabase_anon_key' && 
+      supabaseUrl.startsWith('https://')) {
+    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false
+      }
+    });
+    console.log('✅ Supabase client created successfully');
+  } else {
+    console.warn('⚠️ Invalid Supabase credentials, falling back to temporary database');
+  }
+} catch (error) {
+  console.error('❌ Error creating Supabase client:', error);
+}
 
 // Get the appropriate client (real or temp)
 supabase = getDbClient(supabase);
+
+// Log available accounts
+console.log('Available accounts:');
+console.log('- gary@tattscore.com / password123');
+console.log('- gary@gwts.co.uk / password123');
 
 export { supabase };
 

@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
-import { api } from '../lib/api';
-
 
 export function RegistrationPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -21,32 +18,16 @@ export function RegistrationPage() {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
-    }));
-    // Clear error message when user starts typing
-    if (errorMessage) {
-      setErrorMessage('');
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage('');
 
     // Check if Supabase is configured
-      // Extract error message from response
-      let message = 'Authentication failed. Please try again.';
-      
-      if (error.response?.data?.error) { 
-      console.error('Authentication error:', error.message || error);
-      } else if (error.message) {
-        message = error.message;
-      }
-      
-      setErrorMessage(message);
+      // Set error message
+      setErrorMessage(error.message || 'Authentication failed. Please try again.');
     } finally {
       setIsLoading(false);
-      if (error.response?.data?.error) { 
     }
   };
 
@@ -145,21 +126,12 @@ export function RegistrationPage() {
               <p className="text-blue-200 text-sm mb-2">
                 Accounts are created by administrators or through event applications. 
                 Contact your event organizer for access.
-              </p>
+              </p>              
               <div className="text-blue-200 text-sm mt-4 bg-blue-500/30 p-2 rounded">
-                <p><strong>Test credentials:</strong></p>
+                <p><strong>Available accounts:</strong></p>
                 <ul className="list-disc pl-5 mt-1 space-y-1">
-                  <li>Artist: test@example.com / password123</li>
-                  <li>Manager: manager@example.com / password123</li>
                   <li>Admin: gary@tattscore.com / password123</li>
-                </ul>
-              </div>
-              <div className="text-blue-200 text-sm mt-4 bg-blue-500/30 p-2 rounded">
-                <p><strong>Test credentials:</strong></p>
-                <ul className="list-disc pl-5 mt-1 space-y-1">
-                  <li>Artist: test@example.com / password123</li>
-                  <li>Manager: manager@example.com / password123</li>
-                  <li>Admin: gary@tattscore.com / password123</li>
+                  <li>Admin: gary@gwts.co.uk / password123</li>
                 </ul>
               </div>
             </div>
