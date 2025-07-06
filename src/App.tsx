@@ -33,7 +33,7 @@ import { StudioDashboardPage } from './pages/StudioDashboardPage';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading, supabase } = useAuth();
+  const { user, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -41,37 +41,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkSetupNeeded = async () => {
       if (!isLoading && !user && location.pathname !== '/setup') {
-        try {
-          // Only check if we're not already on the setup page
-          if (location.pathname !== '/setup') {
-            if (supabase) {
-              // Check if any admin users exist
-              const { data, error } = await supabase
-                .from('users')
-                .select('id')
-                .eq('role', 'admin')
-                .limit(1);
-                
-              if (error) {
-                console.error('Error checking for admin users:', error);
-                return;
-              }
-              
-              // If no admin users exist, redirect to setup
-              if (!data || data.length === 0) {
-                navigate('/setup');
-                return;
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error checking setup status:', error);
-        }
+        // Redirect to login page if not authenticated
+        navigate('/login');
+        return;
       }
     };
     
     checkSetupNeeded();
-  }, [isLoading, user, location.pathname, navigate, supabase]);
+  }, [isLoading, user, location.pathname, navigate]);
 
   if (isLoading) {
     return (
