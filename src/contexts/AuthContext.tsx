@@ -247,16 +247,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      console.log('🔐 Attempting login for:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        console.error('Login error:', error);
+        console.error('❌ Login error:', error);
+        
+        // Provide more specific error messages
+        if (error.message.includes('Invalid login credentials')) {
+          throw new Error('Invalid email or password. Please check your credentials and try again.');
+        } else if (error.message.includes('Email not confirmed')) {
+          throw new Error('Please check your email and click the confirmation link before signing in.');
+        } else if (error.message.includes('Too many requests')) {
+          throw new Error('Too many login attempts. Please wait a few minutes before trying again.');
+        }
+        
         throw error;
       }
 
+      console.log('✅ Login successful for:', email);
+      
       // Set authorization header immediately after successful login
       if (data.session?.access_token) {
         axios.defaults.headers.common['Authorization'] = `Bearer ${data.session.access_token}`;
@@ -264,7 +278,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // User state will be updated by the auth state change listener
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ Login failed:', error);
       throw error;
     }
   };

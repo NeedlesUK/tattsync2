@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogIn, AlertCircle, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { LogIn, AlertCircle, Mail, Lock, Eye, EyeOff, Info, UserPlus } from 'lucide-react';
 
 export function RegistrationPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -11,7 +11,8 @@ export function RegistrationPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const { login } = useAuth();
+  const [showTestCredentials, setShowTestCredentials] = useState(false);
+  const { login, supabase } = useAuth();
   const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,6 +29,7 @@ export function RegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setErrorMessage('');
 
     try {
       await login(formData.email, formData.password);
@@ -35,19 +37,33 @@ export function RegistrationPage() {
     } catch (error: any) {
       console.error('Authentication error:', error);
       
-      // Extract error message from response
-      let message = 'Authentication failed. Please try again.';
+      // Handle different types of authentication errors
+      let message = 'Authentication failed. Please check your credentials and try again.';
       
-      if (error.response?.data?.error) {
-        message = error.response.data.error;
-      } else if (error.message) {
-        message = error.message;
+      if (error.message) {
+        if (error.message.includes('Invalid login credentials')) {
+          message = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (error.message.includes('Email not confirmed')) {
+          message = 'Please check your email and click the confirmation link before signing in.';
+        } else if (error.message.includes('Too many requests')) {
+          message = 'Too many login attempts. Please wait a few minutes before trying again.';
+        } else {
+          message = error.message;
+        }
       }
       
       setErrorMessage(message);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Function to fill in test credentials
+  const useTestCredentials = () => {
+    setFormData({
+      email: 'admin@tattsync.com',
+      password: 'admin123'
+    });
   };
 
   return (
@@ -62,11 +78,52 @@ export function RegistrationPage() {
             <p className="text-gray-300">Sign in to access your TattSync dashboard</p>
           </div>
 
+          {/* Development Notice */}
+          <div className="mb-6 p-4 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-blue-300 font-medium mb-1">Development Environment</h4>
+                <p className="text-blue-200 text-sm mb-3">
+                  This is a development version. You'll need valid Supabase credentials to sign in.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowTestCredentials(!showTestCredentials)}
+                  className="text-blue-300 hover:text-blue-200 text-sm underline"
+                >
+                  {showTestCredentials ? 'Hide' : 'Show'} test credentials
+                </button>
+                {showTestCredentials && (
+                  <div className="mt-3 p-3 bg-blue-600/20 rounded border border-blue-500/40">
+                    <p className="text-blue-200 text-xs mb-2">Test credentials (if available):</p>
+                    <p className="text-blue-100 text-xs font-mono">Email: admin@tattsync.com</p>
+                    <p className="text-blue-100 text-xs font-mono">Password: admin123</p>
+                    <button
+                      type="button"
+                      onClick={useTestCredentials}
+                      className="mt-2 text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition-colors"
+                    >
+                      Use Test Credentials
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Error Message */}
           {errorMessage && (
             <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center space-x-3">
               <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-              <p className="text-red-400 text-sm">{errorMessage}</p>
+              <div>
+                <p className="text-red-400 text-sm">{errorMessage}</p>
+                {errorMessage.includes('Invalid email or password') && (
+                  <p className="text-red-300 text-xs mt-1">
+                    Make sure you have an account in the Supabase Authentication panel.
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
@@ -140,12 +197,19 @@ export function RegistrationPage() {
           </div>
 
           <div className="mt-8 pt-6 border-t border-white/10 text-center">
-            <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
-              <h4 className="text-blue-300 font-medium mb-2">Need an Account?</h4>
-              <p className="text-blue-200 text-sm">
-                Accounts are created by administrators or through event applications. 
-                Contact your event organizer for access.
-              </p>
+            <div className="bg-amber-500/20 border border-amber-500/30 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <UserPlus className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-amber-300 font-medium mb-2">Need an Account?</h4>
+                  <p className="text-amber-200 text-sm mb-3">
+                    For development: Create a user in your Supabase Authentication panel.
+                  </p>
+                  <p className="text-amber-200 text-sm">
+                    For production: Accounts are created by administrators or through event applications.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
