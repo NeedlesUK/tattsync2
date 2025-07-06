@@ -115,11 +115,10 @@ export function RegistrationPage() {
                     <p className="text-blue-200 text-xs mb-2">Test credentials (if available):</p>
                     <p className="text-blue-100 text-xs font-mono">Email: gary@tattscore.com</p>
                     <p className="text-blue-100 text-xs font-mono">Password: password123</p>
-                    <h4 className="text-amber-300 font-medium mb-2">Using the Admin Account</h4>
-                      type="button"
+                    <p className="text-amber-300 text-xs font-medium mt-2">
                       The default admin account (gary@tattscore.com) has been pre-configured in the database.
                       Use this account to access all features of the application.
-                    </button>
+                    </p>
                   </div>
                 )}
               </div>
