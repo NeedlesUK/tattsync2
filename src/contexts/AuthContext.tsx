@@ -128,8 +128,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Fallback to basic user info
       console.log('⚠️ Using fallback user data');
-            
-      }
       
       return {
         id: userId,
