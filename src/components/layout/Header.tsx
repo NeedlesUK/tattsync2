@@ -207,10 +207,10 @@ export function Header() {
                 </Link>
                 {(roleDisplay || user.email === 'gary@tattscore.com') && (
                   <span className={`${user.email === 'gary@tattscore.com' ? 'bg-purple-600' : roleDisplay?.color} text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1`}>
-                    {user.email === 'gary@tattscore.com' || user.email === 'gary@gwts.co.uk' ? (
+                    {user.role === 'admin' ? (
                       <>
                         <Crown className="w-3 h-3" />
-                        <span className="hidden sm:inline">Master Admin</span>
+                        <span className="hidden sm:inline">{roleDisplay?.label || 'Master Admin'}</span>
                       </>
                     ) : (
                       <>
