@@ -34,17 +34,11 @@ export function RegistrationPage() {
     setErrorMessage('');
 
     // Check if Supabase is configured
-    try {
-      await login(formData.email, formData.password);
-      navigate('/dashboard');
-    } catch (error: any) {
-      console.error('Authentication error:', error.message || error);
-      
       // Extract error message from response
       let message = 'Authentication failed. Please try again.';
       
       if (error.response?.data?.error) { 
-        message = error.response.data.error;
+      console.error('Authentication error:', error.message || error);
       } else if (error.message) {
         message = error.message;
       }
@@ -52,7 +46,7 @@ export function RegistrationPage() {
       setErrorMessage(message);
     } finally {
       setIsLoading(false);
-    }
+      if (error.response?.data?.error) { 
   };
 
   return (
@@ -151,6 +145,14 @@ export function RegistrationPage() {
                 Accounts are created by administrators or through event applications. 
                 Contact your event organizer for access.
               </p>
+              <div className="text-blue-200 text-sm mt-4 bg-blue-500/30 p-2 rounded">
+                <p><strong>Test credentials:</strong></p>
+                <ul className="list-disc pl-5 mt-1 space-y-1">
+                  <li>Artist: test@example.com / password123</li>
+                  <li>Manager: manager@example.com / password123</li>
+                  <li>Admin: gary@tattscore.com / password123</li>
+                </ul>
+              </div>
               <div className="text-blue-200 text-sm mt-4 bg-blue-500/30 p-2 rounded">
                 <p><strong>Test credentials:</strong></p>
                 <ul className="list-disc pl-5 mt-1 space-y-1">

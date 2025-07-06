@@ -9,11 +9,24 @@
 const storage = {
   users: [
     {
+      id: '1',
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'artist',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: '2',
+      name: 'Event Manager',
+      email: 'manager@example.com',
+      role: 'event_manager',
+      created_at: new Date().toISOString()
+    },
+    {
       id: '3',
       name: 'Gary Watts',
       email: 'gary@tattscore.com',
       role: 'admin',
-      roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge'],
       created_at: new Date().toISOString()
     }
   ],
@@ -34,16 +47,69 @@ const storage = {
     }
   ],
   applications: [],
-  user_profiles: []
+  user_profiles: [],
+  user_roles: [
+    {
+      id: 1,
+      user_id: '1',
+      role: 'artist',
+      is_primary: true,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 2,
+      user_id: '2',
+      role: 'event_manager',
+      is_primary: true,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 3,
+      user_id: '2',
+      role: 'artist',
+      is_primary: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 4,
+      user_id: '3',
+      role: 'admin',
+      is_primary: true,
+      created_at: new Date().toISOString()
+    }
+  ]
 };
+
+// Add all roles to admin user
+const allRoles = ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge'];
+let roleId = 5;
+allRoles.forEach(role => {
+  if (role !== 'admin') {
+    storage.user_roles.push({
+      id: roleId++,
+      user_id: '3',
+      role,
+      is_primary: false,
+      created_at: new Date().toISOString()
+    });
+  }
+});
 
 // Simple authentication storage
 const authStorage = {
   sessions: {},
-  users: {    
-    'gary@tattscore.com': {
+  users: {
+    'test@example.com': {
       password: 'password123',
       user: storage.users[0]
+    },
+    'manager@example.com': {
+      password: 'password123',
+      user: storage.users[1]
+    },
+    'gary@tattscore.com': {
+      password: 'password123',
+      user: storage.users[2]
     }
   }
 };
@@ -101,7 +167,7 @@ const tempDb = {
         console.log('TempDB: User not found:', email);
         return {
           data: { session: null, user: null },
-          error: { message: 'User not found' }
+          error: { message: 'Invalid login credentials' }
         };
       }
       
@@ -133,6 +199,31 @@ const tempDb = {
       console.log('TempDB: Signing out');
       return { error: null };
     },
+    getSession: async () => {
+      // Return a mock session for testing
+      const mockSession = {
+        access_token: 'mock_token',
+        user: storage.users[0]
+      };
+      
+      return {
+        data: { session: mockSession },
+        error: null
+      };
+    },
+    onAuthStateChange: (callback) => {
+      // Immediately invoke callback with mock session
+      callback('SIGNED_IN', { session: { user: storage.users[0] } });
+      
+      // Return mock unsubscribe function
+      return {
+        data: {
+          subscription: {
+            unsubscribe: () => {}
+          }
+        }
+      };
+    },
     setSession: async ({ access_token }) => {
       const session = authStorage.sessions[access_token];
       
@@ -147,6 +238,11 @@ const tempDb = {
         data: { session: { access_token, user: session.user }, user: session.user },
         error: null
       };
+    },
+    updateUser: async (updates) => {
+      // Mock updating user
+      console.log('TempDB: Updating user with', updates);
+      return { error: null };
     }
   },
   
@@ -179,15 +275,30 @@ const tempDb = {
                   data: items,
                   error: null
                 };
+              },
+              order: (orderColumn, { ascending = true } = {}) => {
+                const items = (storage[table] || [])
+                  .filter(item => item[column] === value)
+                  .sort((a, b) => {
+                    if (ascending) {
+                      return a[orderColumn] > b[orderColumn] ? 1 : -1;
+                    } else {
+                      return a[orderColumn] < b[orderColumn] ? 1 : -1;
+                    }
+                  });
+                return {
+                  data: items,
+                  error: null
+                };
               }
             };
           },
-          order: (orderColumn, { ascending = true } = {}) => {
+          order: (column, { ascending = true } = {}) => {
             const items = [...(storage[table] || [])].sort((a, b) => {
               if (ascending) {
-                return a[orderColumn] > b[orderColumn] ? 1 : -1;
+                return a[column] > b[column] ? 1 : -1;
               } else {
-                return a[orderColumn] < b[orderColumn] ? 1 : -1;
+                return a[column] < b[column] ? 1 : -1;
               }
             });
             return {
@@ -244,7 +355,17 @@ const tempDb = {
             
             return {
               data: storage[table][index],
-              error: null
+              error: null,
+              select: (columns = '*') => {
+                return {
+                  single: () => {
+                    return {
+                      data: storage[table][index],
+                      error: null
+                    };
+                  }
+                };
+              }
             };
           }
         };
@@ -327,6 +448,62 @@ const tempDb = {
       return { data: false, error: { message: 'User not found' } };
     }
     
+    if (functionName === 'add_user_role') {
+      const { user_uuid, new_role } = params;
+      
+      if (!storage.user_roles) {
+        storage.user_roles = [];
+      }
+      
+      // Check if role already exists
+      const exists = storage.user_roles.some(
+        role => role.user_id === user_uuid && role.role === new_role
+      );
+      
+      if (!exists) {
+        storage.user_roles.push({
+          id: Date.now(),
+          user_id: user_uuid,
+          role: new_role,
+          is_primary: false,
+          created_at: new Date().toISOString()
+        });
+      }
+      
+      return { data: true, error: null };
+    }
+    
+    if (functionName === 'remove_user_role') {
+      const { user_uuid, role_to_remove } = params;
+      
+      if (!storage.user_roles) {
+        return { data: false, error: { message: 'No roles found' } };
+      }
+      
+      // Check if this is the primary role
+      const isPrimary = storage.user_roles.some(
+        role => role.user_id === user_uuid && role.role === role_to_remove && role.is_primary
+      );
+      
+      if (isPrimary) {
+        return { data: false, error: { message: 'Cannot remove primary role' } };
+      }
+      
+      // Count user's roles
+      const userRoles = storage.user_roles.filter(role => role.user_id === user_uuid);
+      
+      if (userRoles.length <= 1) {
+        return { data: false, error: { message: 'Cannot remove the only role' } };
+      }
+      
+      // Remove the role
+      storage.user_roles = storage.user_roles.filter(
+        role => !(role.user_id === user_uuid && role.role === role_to_remove)
+      );
+      
+      return { data: true, error: null };
+    }
+    
     return { data: null, error: { message: 'Function not implemented' } };
   }
 };
@@ -349,9 +526,9 @@ const getDbClient = (realSupabase, realSupabaseAdmin) => {
   if (shouldUseTempDb() || !realSupabase) {
     console.log('⚠️ Using temporary in-memory database for development or testing');
     console.log('Available test accounts:');
-    console.log('- gary@tattscore.com / password123 (Admin)');
     console.log('- test@example.com / password123 (Artist)');
     console.log('- manager@example.com / password123 (Event Manager)');
+    console.log('- gary@tattscore.com / password123 (Admin)');
     return { supabase: tempDb, supabaseAdmin: tempDb };
   }
   

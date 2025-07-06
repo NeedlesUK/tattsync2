@@ -9,11 +9,24 @@
 const storage: Record<string, any[]> = {
   users: [
     {
+      id: '1',
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'artist',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: '2',
+      name: 'Event Manager',
+      email: 'manager@example.com',
+      role: 'event_manager',
+      created_at: new Date().toISOString()
+    },
+    {
       id: '3',
       name: 'Gary Watts',
       email: 'gary@tattscore.com',
       role: 'admin',
-      roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge'],
       created_at: new Date().toISOString()
     }
   ],
@@ -34,16 +47,69 @@ const storage: Record<string, any[]> = {
     }
   ],
   applications: [],
-  user_profiles: []
+  user_profiles: [],
+  user_roles: [
+    {
+      id: 1,
+      user_id: '1',
+      role: 'artist',
+      is_primary: true,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 2,
+      user_id: '2',
+      role: 'event_manager',
+      is_primary: true,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 3,
+      user_id: '2',
+      role: 'artist',
+      is_primary: false,
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 4,
+      user_id: '3',
+      role: 'admin',
+      is_primary: true,
+      created_at: new Date().toISOString()
+    }
+  ]
 };
+
+// Add all roles to admin user
+const allRoles = ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge'];
+let roleId = 5;
+allRoles.forEach(role => {
+  if (role !== 'admin') {
+    storage.user_roles.push({
+      id: roleId++,
+      user_id: '3',
+      role,
+      is_primary: false,
+      created_at: new Date().toISOString()
+    });
+  }
+});
 
 // Simple authentication storage
 const authStorage: Record<string, any> = {
   sessions: {},
-  users: {    
-    'gary@tattscore.com': {
+  users: {
+    'test@example.com': {
       password: 'password123',
       user: storage.users[0]
+    },
+    'manager@example.com': {
+      password: 'password123',
+      user: storage.users[1]
+    },
+    'gary@tattscore.com': {
+      password: 'password123',
+      user: storage.users[2]
     }
   }
 };
@@ -60,7 +126,7 @@ export const tempDb = {
         console.log('TempDB: User not found:', email);
         return {
           data: { session: null, user: null },
-          error: { message: 'User not found' }
+          error: { message: 'Invalid login credentials' }
         };
       }
       
@@ -136,6 +202,47 @@ export const tempDb = {
       // Mock updating user
       console.log('TempDB: Updating user with', updates);
       return { error: null };
+    },
+    admin: {
+      createUser: async ({ email, password, user_metadata, email_confirm }: any) => {
+        // Check if user already exists
+        if (authStorage.users[email.toLowerCase()]) {
+          return {
+            data: { user: null },
+            error: { message: 'User already registered' }
+          };
+        }
+        
+        const newUser = {
+          id: `user_${Date.now()}`,
+          email,
+          user_metadata,
+          created_at: new Date().toISOString()
+        };
+        
+        authStorage.users[email.toLowerCase()] = {
+          password,
+          user: newUser
+        };
+        
+        return {
+          data: { user: newUser },
+          error: null
+        };
+      },
+      deleteUser: async (userId: string) => {
+        // Find user by ID and remove
+        const userEmail = Object.keys(authStorage.users).find(
+          email => authStorage.users[email].user.id === userId
+        );
+        
+        if (userEmail) {
+          delete authStorage.users[userEmail];
+          return { error: null };
+        }
+        
+        return { error: { message: 'User not found' } };
+      }
     }
   },
   
@@ -419,9 +526,9 @@ export const getDbClient = (realSupabase: any) => {
   if (shouldUseTempDb() || !realSupabase) {
     console.log('⚠️ Using temporary in-memory database for development or testing');
     console.log('Available test accounts:');
-    console.log('- gary@tattscore.com / password123 (Admin)');
     console.log('- test@example.com / password123 (Artist)');
     console.log('- manager@example.com / password123 (Event Manager)');
+    console.log('- gary@tattscore.com / password123 (Admin)');
     return tempDb;
   }
   
