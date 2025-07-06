@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { supabase, shouldUseTempDb } from '../lib/supabase';
 import { api } from '../lib/api';
 
 
@@ -34,7 +34,7 @@ export function RegistrationPage() {
     setErrorMessage('');
 
     // Check if Supabase is configured
-    if (!supabase) {
+    if (!supabase && !shouldUseTempDb()) {
       setErrorMessage('Authentication service not configured. Please check your environment variables.');
       setIsLoading(false);
       return;
@@ -44,12 +44,12 @@ export function RegistrationPage() {
       await login(formData.email, formData.password);
       navigate('/dashboard');
     } catch (error: any) {
-      console.error('Authentication error:', error);
+      console.error('Authentication error:', error.message || error);
       
       // Extract error message from response
       let message = 'Authentication failed. Please try again.';
       
-      if (error.response?.data?.error) {
+      if (error.response?.data?.error) { 
         message = error.response.data.error;
       } else if (error.message) {
         message = error.message;
@@ -156,6 +156,9 @@ export function RegistrationPage() {
               <p className="text-blue-200 text-sm mb-2">
                 Accounts are created by administrators or through event applications. 
                 Contact your event organizer for access.
+              </p>
+              <p className="text-blue-200 text-sm">
+                <strong>Test credentials:</strong> test@example.com / password123
               </p>
             </div>
           </div>

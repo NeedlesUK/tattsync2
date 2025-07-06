@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
 import axios from 'axios';
+import { getDbClient, shouldUseTempDb } from '../lib/tempDb';
+
 interface AuthUser {
   id: string;
   name: string;
@@ -31,11 +33,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 let supabase: ReturnType<typeof createClient> | null = null;
 
 // Only initialize Supabase if we have valid URL and key (not placeholder values)
-if (supabaseUrl && 
-    supabaseAnonKey && 
-    supabaseUrl !== 'your_supabase_project_url' &&
-    supabaseAnonKey !== 'your_supabase_anon_key' &&
-    supabaseUrl.startsWith('https://')) {
+if (!shouldUseTempDb()) {
   try {
     supabase = createClient(supabaseUrl, supabaseAnonKey);
     console.log('✅ Supabase client initialized');
@@ -51,8 +49,11 @@ if (supabaseUrl &&
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null); 
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Get the appropriate database client (real or temp)
+  const dbClient = getDbClient(supabase);
 
   // Function to update user profile data in the context
   function updateUserProfile(profileData: Partial<AuthUser>) {
@@ -70,10 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('🔍 Fetching user data for:', userId, userEmail);
       
       // Try direct database query first
-      if (supabase) {
+      if (dbClient) {
         try {
           console.log('🔍 Querying Supabase for user data');
-          const { data: userData, error: userError } = await supabase
+          const { data: userData, error: userError } = await dbClient
             .from('users')
             .select('id, name, email, role')
             .eq('id', userId)
@@ -85,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           
           // Fetch user roles
-          const { data: rolesData, error: rolesError } = await supabase
+          const { data: rolesData, error: rolesError } = await dbClient
             .from('user_roles')
             .select('role')
             .eq('user_id', userId);
@@ -153,14 +154,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user state with complete data
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
-      console.log('🔄 Updating user state for session:', session.user.email); 
+      console.log('🔄 Updating user state for session:', session.user.email);
       try {
         const userData = await fetchUserData(session.user.id, session.user.email || '');
         
         // Fetch user roles if supabase is available
-        if (supabase) {
+        if (dbClient) {
           try {
-            const { data: rolesData, error: rolesError } = await supabase
+            const { data: rolesData, error: rolesError } = await dbClient
               .from('user_roles')
               .select('role')
               .eq('user_id', session.user.id);
@@ -204,7 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    if (!supabase) {
+    if (!dbClient) {
       console.warn('⚠️ Supabase not configured. Please check your environment variables.');
       setIsLoading(false);
       setUser(null);
@@ -213,7 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    dbClient.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       
       console.log('🔍 Initial session check:', session?.user?.email);
@@ -230,7 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = dbClient.auth.onAuthStateChange(async (_event, session) => {
       console.log('🔄 Auth state changed:', session?.user?.email);
       setSession(session);
       
@@ -250,12 +251,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    if (!supabase) {
+    if (!dbClient) {
       throw new Error('Supabase not configured. Please check your environment variables.');
     }
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await dbClient.auth.signInWithPassword({
         email,
         password,
       });
@@ -278,12 +279,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    if (!supabase) {
+    if (!dbClient) {
       throw new Error('Supabase not configured');
     }
 
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await dbClient.auth.signOut();
       if (error) {
         throw error;
       }
@@ -298,13 +299,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Function to update user email
   const updateUserEmail = async (newEmail: string) => {
-    if (!supabase || !user) {
+    if (!dbClient || !user) {
       throw new Error('Supabase not configured or user not logged in');
     }
 
     try {
       // Update email in Supabase Auth
-      const { error: authError } = await supabase.auth.updateUser({
+      const { error: authError } = await dbClient.auth.updateUser({
         email: newEmail
       });
 
@@ -313,7 +314,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Update email in users table
-      const { error: dbError } = await supabase
+      const { error: dbError } = await dbClient
         .from('users')
         .update({ email: newEmail, updated_at: new Date().toISOString() })
         .eq('id', user.id);
@@ -334,7 +335,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Function to update user roles
   const updateUserRoles = async (roles: string[], primaryRole: string) => {
-    if (!supabase || !user) {
+    if (!dbClient || !user) {
       throw new Error('Supabase not configured or user not logged in');
     }
     
@@ -342,7 +343,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       // Call the set_primary_role function
-      const { error: primaryRoleError } = await supabase.rpc('set_primary_role', {
+      const { error: primaryRoleError } = await dbClient.rpc('set_primary_role', {
         user_uuid: user.id,
         primary_role: primaryRole
       });
@@ -353,7 +354,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Add all roles
       // First, get current roles
-      const { data: currentRoles } = await supabase
+      const { data: currentRoles } = await dbClient
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id);
@@ -365,7 +366,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       for (const existingRole of existingRoles) {
         if (!roles.includes(existingRole) && existingRole !== primaryRole) {
           console.log('Removing role:', existingRole);
-          const { error: removeRoleError } = await supabase.rpc('remove_user_role', {
+          const { error: removeRoleError } = await dbClient.rpc('remove_user_role', {
             user_uuid: user.id,
             role_to_remove: existingRole
           });
@@ -380,7 +381,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       for (const role of roles) {
         if (!existingRoles.includes(role)) {
           console.log('Adding role:', role);
-          const { error: addRoleError } = await supabase.rpc('add_user_role', {
+          const { error: addRoleError } = await dbClient.rpc('add_user_role', {
             user_uuid: user.id,
             new_role: role
           });
@@ -409,7 +410,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{ 
       user,
       session,
-      supabase,
+      supabase: dbClient,
       login,
       logout,
       isLoading,
