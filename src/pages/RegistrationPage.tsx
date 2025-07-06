@@ -47,6 +47,7 @@ export function RegistrationPage() {
     } finally {
       setIsLoading(false);
       if (error.response?.data?.error) { 
+    }
   };
 
   return (
@@ -160,7 +161,7 @@ export function RegistrationPage() {
                   <li>Manager: manager@example.com / password123</li>
                   <li>Admin: gary@tattscore.com / password123</li>
                 </ul>
-              </p>
+              </div>
             </div>
           </div>
         </div>
