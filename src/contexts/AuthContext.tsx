@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to fetch user data from our database
   const fetchUserData = async (userId: string, userEmail: string) => {
     try {
-      console.log('🔍 Fetching user data for:', userId, userEmail);
+      console.log('🔍 Fetching user data for:', userEmail);
       
       // Try direct database query first
       if (supabase) {
@@ -117,36 +117,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error('❌ Error fetching user data from Supabase:', error);
           // Fall through to the fallback
         }
-      } else if (session?.access_token) {
-        try {
-          console.log('🔍 Fetching user data from API');
-          const response = await axios.get(`/api/users/${userId}`, {
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`
-            }
-          });
-          console.log('✅ User data from API:', response.data);
-          return response.data;
-        } catch (error) {
-          console.error('❌ Error fetching user data from API:', error);
-          // Fall through to the fallback
-        }
       }
       
       // Fallback to basic user info
       console.log('⚠️ Using fallback user data');
 
-      // Special case for admin users - always admin
-      if (userEmail === 'gary@tattscore.com' || userEmail === 'gary@gwts.co.uk') {
-        return {
-          id: userId,
-          name: 'Gary Watts',
-          email: userEmail,
-          role: 'admin',
-          roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge']
-        };
-      }
-      
       return {
         id: userId,
         name: userEmail?.split('@')[0] || 'User',
@@ -157,7 +132,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('❌ Error fetching user data:', error);
       // Fallback to basic user info if API call fails
-      
       return {
         id: userId,
         name: userEmail?.split('@')[0] || 'User',
