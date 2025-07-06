@@ -122,17 +122,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Fallback to basic user info
       console.log('⚠️ Using fallback user data');
 
-      // Special case for gary@tattscore.com - always admin
-      if (userEmail === 'gary@tattscore.com') {
-        return {
-          id: userId,
-          name: 'Gary Watts',
-          email: 'gary@tattscore.com',
-          role: 'admin',
-          roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge']
-        };
-      }
-      
       return {
         id: userId,
         name: userEmail?.split('@')[0] || 'User',
@@ -255,53 +244,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     if (!supabase) {
       throw new Error('Supabase not configured. Please check your environment variables.');
-    }
+        throw new Error('Authentication service not configured. Please check your environment variables.');
 
     try {
-      console.log('🔐 Attempting login for:', email);
-      
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim(),
+        email,
+        password,
       });
 
       if (error) {
-        console.error('❌ Login error:', error);
-        
-        // Provide more specific error messages
-        if (error.message.includes('Invalid login credentials')) {
-          // Special case for gary@tattscore.com
-          if (email.trim() === 'gary@tattscore.com') {
-            console.log('⚠️ Special handling for admin account');
-            // Create a mock session for development
-            const mockUser = {
-              id: '243a0f98-d3c7-4d2a-a050-49fff6958791',
-              email: 'gary@tattscore.com',
-              user_metadata: {
-                name: 'Gary Watts',
-                role: 'admin'
-              }
-            };
-            
-            // Set user state directly
-            setUser({
-              id: mockUser.id,
-              name: mockUser.user_metadata.name,
-              email: mockUser.email,
-              role: 'admin',
-              roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge']
-            });
-            
-            return;
-          }
-          
-          throw new Error('Invalid email or password. Please check your credentials and try again.');
-        } else if (error.message.includes('Email not confirmed')) {
-          throw new Error('Please check your email and click the confirmation link before signing in.');
-        } else if (error.message.includes('Too many requests')) {
-          throw new Error('Too many login attempts. Please wait a few minutes before trying again.');
-        }
-        
+        console.error('Login error:', error);
         throw error;
       }
 
@@ -314,7 +266,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // User state will be updated by the auth state change listener
     } catch (error) {
-      console.error('❌ Login failed:', error);
+      console.error('Login error:', error);
       throw error;
     }
   };
@@ -325,20 +277,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      console.log('Logging out user...');
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Error during logout:', error);
         throw error;
       }
-      
-      // Clear authorization header when no user
+      // Clear authorization header
       delete axios.defaults.headers.common['Authorization'];
-      
-      // Clear user state immediately to improve UX
-      setUser(null);
-      setSession(null);
-      
       // User state will be updated by the auth state change listener
     } catch (error) {
       console.error('Logout error:', error);

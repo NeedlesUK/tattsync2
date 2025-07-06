@@ -206,7 +206,7 @@ export function Header() {
                   </div>
                 </Link>
                 {(roleDisplay || user.email === 'gary@tattscore.com') && (
-                  <span className={`${user.email === 'gary@tattscore.com' ? 'bg-purple-600' : roleDisplay?.color} text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1`}>
+                  <span className={`${roleDisplay?.color} text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1`}>
                     {user.role === 'admin' ? (
                       <>
                         <Crown className="w-3 h-3" />

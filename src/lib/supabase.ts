@@ -37,7 +37,13 @@ let supabase = null;
 
 try {
   if (validateCredentials()) {
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false
+      }
+    });
     console.log('✅ Supabase client created successfully');
     
     // Test the connection

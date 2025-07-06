@@ -1,19 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, Navigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogIn, AlertCircle, Mail, Lock, Eye, EyeOff, Info, UserPlus, CheckCircle } from 'lucide-react';
 
 export function RegistrationPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    email: 'gary@tattscore.com',
+    email: '',
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [showTestCredentials, setShowTestCredentials] = useState(false);
-  const [loginSuccess, setLoginSuccess] = useState(false);
-  const { login, supabase } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,43 +30,26 @@ export function RegistrationPage() {
     setIsLoading(true);
     setErrorMessage('');
 
+    // Check if Supabase is configured
     try {
-      setLoginSuccess(false);
       await login(formData.email, formData.password);
-      setLoginSuccess(true);
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1000);
+      navigate('/dashboard');
     } catch (error: any) {
       console.error('Authentication error:', error);
       
-      // Handle different types of authentication errors
-      let message = 'Authentication failed. Please check your credentials and try again.';
+      // Extract error message from response
+      let message = 'Authentication failed. Please try again.';
       
-      if (error.message) {
-        if (error.message.includes('Invalid login credentials')) {
-          message = 'Invalid email or password. Please check your credentials and try again.';
-        } else if (error.message.includes('Email not confirmed')) {
-          message = 'Please check your email and click the confirmation link before signing in.';
-        } else if (error.message.includes('Too many requests')) {
-          message = 'Too many login attempts. Please wait a few minutes before trying again.';
-        } else {
-          message = error.message;
-        }
+      if (error.response?.data?.error) {
+        message = error.response.data.error;
+      } else if (error.message) {
+        message = error.message;
       }
       
       setErrorMessage(message);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Function to fill in test credentials
-  const useTestCredentials = () => {
-    setFormData({
-      email: 'gary@tattscore.com',
-      password: 'password123' 
-    });
   };
 
   return (
@@ -83,69 +64,11 @@ export function RegistrationPage() {
             <p className="text-gray-300">Sign in to access your TattSync dashboard</p>
           </div>
 
-          {/* Success Message */}
-          {loginSuccess && (
-            <div className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-lg flex items-center space-x-3">
-              <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-              <p className="text-green-400 text-sm">Login successful! Redirecting to dashboard...</p>
-            </div>
-          )}
-
-          {/* Development Notice */}
-          <div className="mb-6 p-4 bg-blue-500/20 border border-blue-500/30 rounded-lg">
-            <div className="flex items-start space-x-3">
-              <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-blue-300 font-medium mb-1">Development Environment</h4>
-                <p className="text-blue-200 text-sm mb-3">
-                  This is a development version. You'll need valid Supabase credentials to sign in.
-                </p>
-                <p className="text-blue-200 text-sm mb-3">
-                  <strong>Note:</strong> The default admin account is pre-filled for you.
-                </p>
-                <div className="flex justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setShowTestCredentials(!showTestCredentials)}
-                    className="text-blue-300 hover:text-blue-200 text-sm underline"
-                  >
-                    {showTestCredentials ? 'Hide' : 'Show'} test credentials
-                  </button>
-                  <button
-                    type="button"
-                    onClick={useTestCredentials}
-                    className="text-blue-300 hover:text-blue-200 text-sm underline"
-                  >
-                    Use test credentials
-                  </button>
-                </div>
-                {showTestCredentials && (
-                  <div className="mt-3 p-3 bg-blue-600/20 rounded border border-blue-500/40">
-                    <p className="text-blue-200 text-xs mb-2">Test credentials (if available):</p>
-                    <p className="text-blue-100 text-xs font-mono">Email: gary@tattscore.com</p>
-                    <p className="text-blue-100 text-xs font-mono">Password: password123</p>
-                    <p className="text-amber-300 text-xs font-medium mt-2">
-                      The default admin account (gary@tattscore.com) has been pre-configured in the database.
-                      Use this account to access all features of the application.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
           {/* Error Message */}
           {errorMessage && (
             <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center space-x-3">
               <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-              <div>
-                <p className="text-red-400 text-sm">{errorMessage}</p>
-                {errorMessage.includes('Invalid email or password') && (
-                  <p className="text-red-300 text-xs mt-1">
-                    Try using the pre-filled credentials for the admin account.
-                  </p>
-                )}
-              </div>
+              <p className="text-red-400 text-sm">{errorMessage}</p>
             </div>
           )}
 
@@ -219,19 +142,12 @@ export function RegistrationPage() {
           </div>
 
           <div className="mt-8 pt-6 border-t border-white/10 text-center">
-            <div className="bg-amber-500/20 border border-amber-500/30 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <UserPlus className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-amber-300 font-medium mb-2">Need an Account?</h4>
-                  <p className="text-amber-200 text-sm mb-3">
-                    For development: Create a user in your Supabase Authentication panel.
-                  </p>
-                  <p className="text-amber-200 text-sm">
-                    For production: Accounts are created by administrators or through event applications.
-                  </p>
-                </div>
-              </div>
+            <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
+              <h4 className="text-blue-300 font-medium mb-2">Need an Account?</h4>
+              <p className="text-blue-200 text-sm">
+                Accounts are created by administrators or through event applications. 
+                Contact your event organizer for access.
+              </p>
             </div>
           </div>
         </div>

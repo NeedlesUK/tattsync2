@@ -15,6 +15,7 @@ if (supabaseUrl &&
     supabaseAnonKey !== 'your_supabase_anon_key' &&
     supabaseUrl.startsWith('https://')) {
   // Initialize public Supabase client (for user authentication)
+  // Initialize public Supabase client (for user authentication)
   try {
     supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
@@ -34,13 +35,13 @@ if (supabaseUrl &&
   console.error("Current SUPABASE_URL:", supabaseUrl || "Not set");
   console.error("Please update your backend/.env file with actual Supabase credentials from your Supabase project dashboard");
 }
-
 if (supabaseUrl && 
     supabaseServiceKey && 
     supabaseUrl !== 'your_supabase_project_url' && 
     supabaseServiceKey !== 'your_supabase_service_role_key' &&
     supabaseUrl.startsWith('https://')) {
   try {
+    // Initialize admin Supabase client (for admin operations)
     // Initialize admin Supabase client (for admin operations)
     supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
