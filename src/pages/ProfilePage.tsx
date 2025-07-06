@@ -9,8 +9,8 @@ export function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [profileDbId, setProfileDbId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
+    name: '',
+    email: '',
     phone: '+1 (555) 123-4567',
     location: 'Los Angeles, CA',
     bio: 'Experienced tattoo artist specializing in traditional and neo-traditional styles.',
@@ -70,7 +70,13 @@ export function ProfilePage() {
   // Fetch user profile data
   useEffect(() => {
     if (user) {
-      console.log('User data:', user);
+      // Initialize form with user data
+      setFormData(prev => ({
+        ...prev,
+        name: user.name || '',
+        email: user.email || ''
+      }));
+      
       fetchUserProfile();
       
       // Set roles from user object
@@ -167,7 +173,6 @@ export function ProfilePage() {
   const handleSave = async () => {
     if (!supabase || !user) return;
     
-    console.log('Saving profile...', formData);
     setIsSaving(true);
     setSaveSuccess('');
     setSaveError('');
@@ -175,11 +180,13 @@ export function ProfilePage() {
     try {
       // Update user name in auth.users
       const { error: nameError } = await supabase.auth.updateUser({
-        data: { name: formData.name }
+        data: { 
+          name: formData.name,
+          email: formData.email
+        }
       });
       
       if (nameError) {
-        console.log('Error updating name:', nameError);
         console.error('Error updating name:', nameError);
         setSaveError('Failed to update name. Please try again.');
         setIsSaving(false);
@@ -190,10 +197,10 @@ export function ProfilePage() {
       const { error: userError } = await supabase
         .from('users')
         .update({ name: formData.name, updated_at: new Date().toISOString() })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select();
       
       if (userError) {
-        console.log('Error updating user:', userError);
         console.error('Error updating user:', userError);
         setSaveError('Failed to update user. Please try again.');
         setIsSaving(false);
@@ -201,28 +208,6 @@ export function ProfilePage() {
       }
       
       // Update or insert user profile
-      console.log('Updating user profile...');
-      console.log('Profile data with ID:', {
-        id: profileDbId,
-        user_id: user.id,
-        phone: formData.phone,
-        location: formData.location,
-        bio: formData.bio,
-        website: formData.website,
-        instagram: formData.instagram,
-        facebook: formData.facebook,
-        tiktok: formData.tiktok,
-        experience: formData.experience,
-        specialties: formData.specialties,
-        profile_picture: profilePicture,
-        show_instagram: formData.show_instagram,
-        show_facebook: formData.show_facebook,
-        show_tiktok: formData.show_tiktok,
-        show_website: formData.show_website, 
-        show_profile: formData.show_profile,
-        updated_at: new Date().toISOString()
-      });
-      
       const { error: profileError } = await supabase
         .from('user_profiles')
         .upsert({
@@ -247,7 +232,6 @@ export function ProfilePage() {
         });
       
       if (profileError) {
-        console.log('Error updating profile:', profileError);
         console.error('Error updating profile:', profileError.message);
         setSaveError('Failed to update profile. Please try again.');
         setIsSaving(false);
@@ -257,7 +241,6 @@ export function ProfilePage() {
       // Update email if changed
       if (user.email !== formData.email) {
         try {
-          console.log('Updating email from', user.email, 'to', formData.email);
           await updateUserEmail(formData.email);
         } catch (emailError) {
           console.error('Error updating email:', emailError);
@@ -268,7 +251,6 @@ export function ProfilePage() {
       }
       
       // Success
-      console.log('Profile updated successfully!');
       setSaveSuccess('Profile updated successfully!');
       
       // Refresh user data
@@ -278,7 +260,6 @@ export function ProfilePage() {
       
       setIsEditing(false);
     } catch (error) {
-      console.log('Error saving profile:', error);
       console.error('Error saving profile:', error);
       setSaveError('Failed to update profile. Please try again.');
     } finally {
@@ -290,8 +271,8 @@ export function ProfilePage() {
     // Reset messages
     setPasswordChangeError('');
     setPasswordChangeSuccess('');
-    
-    // Validate passwords
+
+    // Validate current password
     if (!passwordData.currentPassword) {
       setPasswordChangeError('Current password is required');
       return;
@@ -315,6 +296,16 @@ export function ProfilePage() {
     try {
       if (!supabase) {
         throw new Error('Supabase client not initialized');
+      }
+
+      // First verify the current password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password: passwordData.currentPassword
+      });
+
+      if (signInError) {
+        throw new Error('Current password is incorrect');
       }
       
       // Update password in Supabase Auth
@@ -405,13 +396,11 @@ export function ProfilePage() {
   const handleAddRole = async () => {
     if (!newRole || !supabase || !user) return;
     
-    console.log('Adding role:', newRole, 'to existing roles:', userRoles);
     try {
       const updatedRoles = [...userRoles, newRole];
       await updateUserRoles(updatedRoles, primaryRole);
       setUserRoles(updatedRoles);
       setNewRole('');
-      console.log('Role added successfully');
     } catch (error) {
       console.error('Error adding role:', error);
     }
@@ -420,12 +409,10 @@ export function ProfilePage() {
   const handleRemoveRole = async (role: string) => {
     if (role === primaryRole || !supabase || !user) return;
     
-    console.log('Removing role:', role, 'from roles:', userRoles);
     try {
       const updatedRoles = userRoles.filter(r => r !== role);
       await updateUserRoles(updatedRoles, primaryRole);
       setUserRoles(updatedRoles);
-      console.log('Role removed successfully');
     } catch (error) {
       console.error('Error removing role:', error);
     }
@@ -434,11 +421,9 @@ export function ProfilePage() {
   const handleSetPrimaryRole = async (role: string) => {
     if (!supabase || !user) return;
     
-    console.log('Setting primary role:', role, 'current roles:', userRoles);
     try {
       await updateUserRoles(userRoles, role);
       setPrimaryRole(role);
-      console.log('Primary role set successfully');
     } catch (error) {
       console.error('Error setting primary role:', error);
     }

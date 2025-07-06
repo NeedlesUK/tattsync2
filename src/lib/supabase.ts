@@ -3,31 +3,51 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Validate Supabase credentials
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase credentials in environment variables');
-  console.error('VITE_SUPABASE_URL:', supabaseUrl ? 'Present' : 'Missing');
-  console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Present' : 'Missing');
-} else if (supabaseUrl === 'https://your-project-id.supabase.co' || supabaseAnonKey === 'your-supabase-anon-key') {
-  console.error('Default placeholder Supabase credentials detected');
-  console.error('Please update your .env file with actual Supabase credentials from your project dashboard');
-} else {
-  console.log('Supabase credentials found in environment variables');
+// Function to validate Supabase credentials
+function validateCredentials() {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('❌ Missing Supabase credentials in environment variables');
+    console.error('VITE_SUPABASE_URL:', supabaseUrl ? 'Present' : 'Missing');
+    console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Present' : 'Missing');
+    return false;
+  }
+  
+  if (supabaseUrl === 'https://your-project-id.supabase.co' || 
+      supabaseUrl === 'your_supabase_project_url' || 
+      supabaseAnonKey === 'your-supabase-anon-key' || 
+      supabaseAnonKey === 'your_supabase_anon_key') {
+    console.error('❌ Default placeholder Supabase credentials detected');
+    console.error('Please update your .env file with actual Supabase credentials from your project dashboard');
+    return false;
+  }
+  
+  if (!supabaseUrl.startsWith('https://')) {
+    console.error('❌ Invalid Supabase URL format. URL must start with https://');
+    return false;
+  }
+  
+  console.log('✅ Supabase credentials found in environment variables');
   console.log('VITE_SUPABASE_URL:', supabaseUrl.substring(0, 15) + '...');
   console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey.substring(0, 5) + '...');
+  return true;
 }
 
 // Create client only if we have valid credentials
 let supabase = null;
 
 try {
-  if (supabaseUrl && 
-      supabaseAnonKey && 
-      supabaseUrl !== 'https://your-project-id.supabase.co' && 
-      supabaseAnonKey !== 'your-supabase-anon-key' && 
-      supabaseUrl.startsWith('https://')) {
+  if (validateCredentials()) {
     supabase = createClient(supabaseUrl, supabaseAnonKey);
     console.log('✅ Supabase client created successfully');
+    
+    // Test the connection
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        console.error('❌ Error testing Supabase connection:', error.message);
+      } else {
+        console.log('✅ Supabase connection test successful');
+      }
+    });
   }
 } catch (error) {
   console.error('❌ Error creating Supabase client:', error);

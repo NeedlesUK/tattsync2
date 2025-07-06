@@ -224,6 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase) {
       console.warn('⚠️ Supabase not configured. Please check your environment variables.');
+      console.warn('Using mock data for development');
       setIsLoading(false);
       return;
     }
@@ -231,8 +232,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
-      
-      console.log('🔍 Initial session check:', session?.user?.email);
+      console.log('🔍 Initial session check:', session?.user?.email || 'No session');
       
       if (session?.access_token) {
         // Set the authorization header for API requests
@@ -246,8 +246,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log('🔄 Auth state changed:', session?.user?.email);
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state changed:', event, session?.user?.email || 'No session');
       setSession(session);
       
       if (session?.access_token) {
@@ -256,6 +256,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         // Clear authorization header when no session
         delete axios.defaults.headers.common['Authorization'];
+        // Clear user state
+        setUser(null);
       }
       
       await updateUserState(session);
@@ -299,13 +301,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      console.log('Logging out user...');
       const { error } = await supabase.auth.signOut();
       if (error) {
+        console.error('Error during logout:', error);
         throw error;
       }
       
       // Clear authorization header when no user
       delete axios.defaults.headers.common['Authorization'];
+      
+      // Clear user state immediately to improve UX
+      setUser(null);
+      setSession(null);
+      
       // User state will be updated by the auth state change listener
     } catch (error) {
       console.error('Logout error:', error);
