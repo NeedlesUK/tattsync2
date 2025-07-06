@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext'; 
+import { useAuth } from '../contexts/AuthContext';
 
 export function RegistrationPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -9,10 +9,10 @@ export function RegistrationPage() {
     email: '',
     password: ''
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); 
   const [errorMessage, setErrorMessage] = useState('');
-  const { login, user } = useAuth();
-  const navigate = useNavigate(); 
+  const { login, user, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Clear any error messages when component mounts
@@ -21,10 +21,11 @@ export function RegistrationPage() {
 
   // Redirect if already logged in
   useEffect(() => {
-    if (user) {
+    if (user && !authLoading) {
+      console.log('User already logged in, redirecting to dashboard');
       navigate('/dashboard');
     }
-  }, [user, navigate]);
+  }, [user, navigate, authLoading]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -40,15 +41,12 @@ export function RegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrorMessage('');
-    
-    // Check if Supabase is configured
+    setErrorMessage(''); 
+
     try {
-      const data = await login(formData.email, formData.password);
-      
-      // Login successful - don't navigate here
-      // The useEffect hook watching for user changes will handle navigation
-      console.log('Login successful');
+      await login(formData.email, formData.password);
+      // Don't navigate here - the useEffect will handle it
+      console.log('Login request successful');
     } catch (error: any) {
       console.error('Authentication error:', error);
       
@@ -63,8 +61,7 @@ export function RegistrationPage() {
       
       setErrorMessage(message);
       setIsLoading(false);
-    } finally {
-      // Always set isLoading to false
+    } finally { 
       setIsLoading(false);
     }
   };
@@ -91,13 +88,14 @@ export function RegistrationPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
                 Email Address
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="email"
+                  id="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
@@ -109,13 +107,14 @@ export function RegistrationPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
                 Password
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  id="password"
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
@@ -126,7 +125,8 @@ export function RegistrationPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors" 
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -136,7 +136,7 @@ export function RegistrationPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-purple-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full bg-gradient-to-r from-purple-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2" 
             >
               {isLoading ? (
                 <>

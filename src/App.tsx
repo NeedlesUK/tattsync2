@@ -34,14 +34,17 @@ import { StudioDashboardPage } from './pages/StudioDashboardPage';
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
   const location = useLocation();
 
   // If not logged in and not loading, redirect to login
   useEffect(() => {
     if (!isLoading && !user) {
       console.log('Not authenticated, redirecting to login');
-      navigate('/login', { replace: true });
+      navigate('/login', { 
+        replace: true,
+        state: { from: location }
+      });
     }
   }, [isLoading, user, navigate]);
 
@@ -74,6 +77,7 @@ function App() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<RegistrationPage />} />
+              <Route path="/setup" element={<RegistrationPage />} />
               
               {/* Registration flow routes */}
               <Route path="/register/:token" element={<RegistrationFormPage />} />
