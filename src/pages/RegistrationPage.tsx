@@ -11,8 +11,13 @@ export function RegistrationPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -30,7 +35,6 @@ export function RegistrationPage() {
     setIsLoading(true);
     setErrorMessage('');
 
-    // Check if Supabase is configured
     try {
       await login(formData.email, formData.password);
       navigate('/dashboard');
@@ -46,8 +50,7 @@ export function RegistrationPage() {
         message = error.message;
       }
       
-      // Set error message
-      setErrorMessage(error.message || 'Authentication failed. Please try again.');
+      setErrorMessage(message);
     } finally {
       setIsLoading(false);
     }
@@ -145,12 +148,12 @@ export function RegistrationPage() {
           <div className="mt-8 pt-6 border-t border-white/10 text-center">
             <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
               <h4 className="text-blue-300 font-medium mb-2">Need an Account?</h4>
-              <p className="text-blue-200 text-sm mb-2">
+              <p className="text-blue-200 text-sm">
                 Accounts are created by administrators or through event applications. 
                 Contact your event organizer for access.
-              </p>              
+              </p>
               <div className="text-blue-200 text-sm mt-4 bg-blue-500/30 p-2 rounded">
-                <p><strong>Available accounts:</strong></p>
+                <p><strong>Available test accounts:</strong></p>
                 <ul className="list-disc pl-5 mt-1 space-y-1">
                   <li>Admin: gary@tattscore.com / password123</li>
                   <li>Admin: gary@gwts.co.uk / password123</li>

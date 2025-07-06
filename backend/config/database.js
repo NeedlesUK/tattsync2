@@ -1,5 +1,4 @@
 const { createClient } = require("@supabase/supabase-js");
-const tempDb = require("../lib/tempDb");
 
 // Supabase configuration
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -9,13 +8,12 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 let supabase = null;
 let supabaseAdmin = null;
 
-// Check if we should use the temporary database
-if (tempDb.shouldUseTempDb()) {
-  console.log("⚠️ Using temporary in-memory database for development");
-  const tempDbClients = tempDb.getDbClient(null, null);
-  supabase = tempDbClients.supabase;
-  supabaseAdmin = tempDbClients.supabaseAdmin;
-} else if (supabaseUrl && supabaseAnonKey) {
+// Initialize public Supabase client (for user authentication)
+if (supabaseUrl && 
+    supabaseAnonKey && 
+    supabaseUrl !== 'your_supabase_project_url' && 
+    supabaseAnonKey !== 'your_supabase_anon_key' &&
+    supabaseUrl.startsWith('https://')) {
   // Initialize public Supabase client (for user authentication)
   try {
     supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -34,9 +32,14 @@ if (tempDb.shouldUseTempDb()) {
   console.error("Required: SUPABASE_URL and SUPABASE_ANON_KEY");
   console.error("Anon key present:", !!supabaseAnonKey); 
   console.error("Current SUPABASE_URL:", supabaseUrl || "Not set");
+  console.error("Please update your backend/.env file with actual Supabase credentials from your Supabase project dashboard");
 }
 
-if (supabaseUrl && supabaseServiceKey) {
+if (supabaseUrl && 
+    supabaseServiceKey && 
+    supabaseUrl !== 'your_supabase_project_url' && 
+    supabaseServiceKey !== 'your_supabase_service_role_key' &&
+    supabaseUrl.startsWith('https://')) {
   try {
     // Initialize admin Supabase client (for admin operations)
     supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
@@ -76,12 +79,6 @@ if (supabaseUrl && supabaseServiceKey) {
   console.error("Required: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
   console.error("Current SUPABASE_URL:", supabaseUrl || "Not set");
   console.error("Service role key present:", !!supabaseServiceKey);
-    
-  // Use temporary database as fallback
-  console.log("⚠️ Falling back to temporary in-memory database");
-  const tempDbClients = tempDb.getDbClient(null, null);
-  supabase = tempDbClients.supabase;
-  supabaseAdmin = tempDbClients.supabaseAdmin;
   console.error("Please update your backend/.env file with actual Supabase credentials");
 }
 

@@ -5,21 +5,21 @@ import { QRCodeSVG } from "qrcode.react";
 
 
 export function ProfilePage() {
-  const { user, updateUserEmail, updateUserRoles, supabase } = useAuth();
+  const { user, logout, updateUserEmail, updateUserRoles, supabase } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [profileDbId, setProfileDbId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    phone: '',
-    location: '',
-    bio: '',
-    website: '',
-    instagram: '',
-    facebook: '',
-    tiktok: '', 
-    experience: '',
-    specialties: [],
+    phone: '+1 (555) 123-4567',
+    location: 'Los Angeles, CA',
+    bio: 'Experienced tattoo artist specializing in traditional and neo-traditional styles.',
+    website: 'https://example.com',
+    instagram: '@artist_handle',
+    facebook: '@artist.page',
+    tiktok: '@artist_tiktok', 
+    experience: '8 years',
+    specialties: ['Traditional', 'Neo-Traditional', 'Black & Grey'],
     show_instagram: true,
     show_facebook: true,
     show_tiktok: true,
@@ -40,7 +40,7 @@ export function ProfilePage() {
   const [passwordChangeSuccess, setPasswordChangeSuccess] = useState('');
 
   // Profile picture state
-  const [profilePicture, setProfilePicture] = useState(user?.avatar || '');
+  const [profilePicture, setProfilePicture] = useState(user?.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=128&h=128&dpr=2');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -70,13 +70,16 @@ export function ProfilePage() {
   // Fetch user profile data
   useEffect(() => {
     if (user) {
+      console.log('User data:', user);
       fetchUserProfile();
       
       // Set roles from user object
       if (user.roles) {
+        console.log('Setting roles from user.roles:', user.roles);
         setUserRoles(user.roles);
         setPrimaryRole(user.role);
       } else if (user.role) {
+        console.log('Setting roles from user.role:', user.role);
         setUserRoles([user.role]);
         setPrimaryRole(user.role);
       }
@@ -86,6 +89,7 @@ export function ProfilePage() {
   const fetchUserProfile = async () => {
     if (!supabase || !user) return;
     
+    console.log('Fetching user profile for:', user.id);
     try {
       // Fetch user profile from database
       const { data, error } = await supabase
@@ -95,6 +99,7 @@ export function ProfilePage() {
         .single();
       
       if (error) {
+        console.log('Error fetching profile:', error);
         console.error('Error fetching profile:', error);
         return;
       }
@@ -105,7 +110,7 @@ export function ProfilePage() {
         
         setFormData(prev => ({
           ...prev,
-          // Keep basic user data from auth
+          // Keep user data from auth
           name: user.name,
           email: user.email,
           phone: data.phone || prev.phone,
@@ -129,6 +134,7 @@ export function ProfilePage() {
         }
       }
     } catch (error) {
+      console.log('Error in fetchUserProfile:', error);
       console.error('Error fetching profile:', error);
     }
   };
@@ -161,6 +167,7 @@ export function ProfilePage() {
   const handleSave = async () => {
     if (!supabase || !user) return;
     
+    console.log('Saving profile...', formData);
     setIsSaving(true);
     setSaveSuccess('');
     setSaveError('');
@@ -172,6 +179,7 @@ export function ProfilePage() {
       });
       
       if (nameError) {
+        console.log('Error updating name:', nameError);
         console.error('Error updating name:', nameError);
         setSaveError('Failed to update name. Please try again.');
         setIsSaving(false);
@@ -185,6 +193,7 @@ export function ProfilePage() {
         .eq('id', user.id);
       
       if (userError) {
+        console.log('Error updating user:', userError);
         console.error('Error updating user:', userError);
         setSaveError('Failed to update user. Please try again.');
         setIsSaving(false);
@@ -192,6 +201,28 @@ export function ProfilePage() {
       }
       
       // Update or insert user profile
+      console.log('Updating user profile...');
+      console.log('Profile data with ID:', {
+        id: profileDbId,
+        user_id: user.id,
+        phone: formData.phone,
+        location: formData.location,
+        bio: formData.bio,
+        website: formData.website,
+        instagram: formData.instagram,
+        facebook: formData.facebook,
+        tiktok: formData.tiktok,
+        experience: formData.experience,
+        specialties: formData.specialties,
+        profile_picture: profilePicture,
+        show_instagram: formData.show_instagram,
+        show_facebook: formData.show_facebook,
+        show_tiktok: formData.show_tiktok,
+        show_website: formData.show_website, 
+        show_profile: formData.show_profile,
+        updated_at: new Date().toISOString()
+      });
+      
       const { error: profileError } = await supabase
         .from('user_profiles')
         .upsert({
@@ -216,6 +247,7 @@ export function ProfilePage() {
         });
       
       if (profileError) {
+        console.log('Error updating profile:', profileError);
         console.error('Error updating profile:', profileError.message);
         setSaveError('Failed to update profile. Please try again.');
         setIsSaving(false);
@@ -225,6 +257,7 @@ export function ProfilePage() {
       // Update email if changed
       if (user.email !== formData.email) {
         try {
+          console.log('Updating email from', user.email, 'to', formData.email);
           await updateUserEmail(formData.email);
         } catch (emailError) {
           console.error('Error updating email:', emailError);
@@ -235,6 +268,7 @@ export function ProfilePage() {
       }
       
       // Success
+      console.log('Profile updated successfully!');
       setSaveSuccess('Profile updated successfully!');
       
       // Refresh user data
@@ -244,6 +278,7 @@ export function ProfilePage() {
       
       setIsEditing(false);
     } catch (error) {
+      console.log('Error saving profile:', error);
       console.error('Error saving profile:', error);
       setSaveError('Failed to update profile. Please try again.');
     } finally {
@@ -370,11 +405,13 @@ export function ProfilePage() {
   const handleAddRole = async () => {
     if (!newRole || !supabase || !user) return;
     
+    console.log('Adding role:', newRole, 'to existing roles:', userRoles);
     try {
       const updatedRoles = [...userRoles, newRole];
       await updateUserRoles(updatedRoles, primaryRole);
       setUserRoles(updatedRoles);
       setNewRole('');
+      console.log('Role added successfully');
     } catch (error) {
       console.error('Error adding role:', error);
     }
@@ -383,10 +420,12 @@ export function ProfilePage() {
   const handleRemoveRole = async (role: string) => {
     if (role === primaryRole || !supabase || !user) return;
     
+    console.log('Removing role:', role, 'from roles:', userRoles);
     try {
       const updatedRoles = userRoles.filter(r => r !== role);
       await updateUserRoles(updatedRoles, primaryRole);
       setUserRoles(updatedRoles);
+      console.log('Role removed successfully');
     } catch (error) {
       console.error('Error removing role:', error);
     }
@@ -395,9 +434,11 @@ export function ProfilePage() {
   const handleSetPrimaryRole = async (role: string) => {
     if (!supabase || !user) return;
     
+    console.log('Setting primary role:', role, 'current roles:', userRoles);
     try {
       await updateUserRoles(userRoles, role);
       setPrimaryRole(role);
+      console.log('Primary role set successfully');
     } catch (error) {
       console.error('Error setting primary role:', error);
     }
@@ -456,7 +497,7 @@ export function ProfilePage() {
             <div className="relative">
               <img
                 src={profilePicture}
-                alt={user?.name || "Profile"}
+                alt="Profile"
                 className="w-24 h-24 rounded-full object-cover border-4 border-purple-500/30"
               />
               <button 
@@ -483,17 +524,7 @@ export function ProfilePage() {
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-2xl font-bold text-white">{formData.name}</h2>
                 <button
-                  onClick={() => {
-                    if (isEditing) {
-                      // Cancel editing
-                      setIsEditing(false);
-                      // Reset form data to original values
-                      fetchUserProfile();
-                    } else {
-                      // Start editing
-                      setIsEditing(true);
-                    }
-                  }}
+                  onClick={() => setIsEditing(!isEditing)}
                   className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
                 >
                   <Edit className="w-4 h-4" />
@@ -503,8 +534,8 @@ export function ProfilePage() {
               <div className="flex items-center space-x-2 mb-2">
                 <p className="text-purple-400 capitalize">{user?.role}</p>
                 {!formData.show_profile && (
-                  <span className="bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full text-xs flex items-center">
-                    <EyeSlash className="w-3 h-3 mr-1" />
+                  <span className="bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full text-xs flex items-center space-x-1">
+                    <EyeSlash className="w-3 h-3" />
                     <span>Private Profile</span>
                   </span>
                 )}
@@ -785,7 +816,7 @@ export function ProfilePage() {
                 <div className="mt-6 p-6 bg-white/5 rounded-lg border border-white/10">
                   <h3 className="text-lg font-semibold text-white mb-4">User Roles</h3>
                   
-                  <div className="mb-4">
+                  <div className="mb-4 space-y-2">
                     <p className="text-gray-300 text-sm">
                       Your current roles:
                     </p>
@@ -829,7 +860,10 @@ export function ProfilePage() {
                     <div className="flex items-center space-x-2 mt-4">
                       <select
                         value={newRole}
-                        onChange={(e) => setNewRole(e.target.value)}
+                        onChange={(e) => {
+                          console.log('Selected role:', e.target.value);
+                          setNewRole(e.target.value);
+                        }}
                         className="bg-white/5 border border-white/20 rounded-lg text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       >
                         <option value="">Select a role to add</option>
@@ -862,7 +896,7 @@ export function ProfilePage() {
                   <div className="flex justify-end space-x-4">
                     <button
                       onClick={() => setIsEditing(false)}
-                      className="px-6 py-2 bg-white/10 hover:bg-white/20 text-gray-300 rounded-lg transition-colors"
+                      className="px-6 py-2 text-gray-300 hover:text-white transition-colors"
                     >
                       Cancel
                     </button>

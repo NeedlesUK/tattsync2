@@ -222,9 +222,10 @@ export function Header() {
                 )}
                 <button
                   onClick={logout}
-                  className="text-gray-300 hover:text-white transition-colors flex items-center"
+                  className="text-gray-300 hover:text-white transition-colors"
+                  title="Logout"
                 >
-                  <LogOut className="w-5 h-5" title="Logout" />
+                  <LogOut className="w-5 h-5" />
                 </button>
               </div>
             ) : (

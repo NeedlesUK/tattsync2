@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
 import axios from 'axios';
-import { getDbClient } from '../lib/tempDb';
 
 interface AuthUser {
   id: string;
@@ -30,11 +29,32 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Initialize a basic client
 let supabase: ReturnType<typeof createClient> | null = null;
 
-// Get the appropriate database client (real or temp)
-supabase = getDbClient(supabase);
+// Only initialize Supabase if we have valid URL and key (not placeholder values)
+if (supabaseUrl && 
+    supabaseAnonKey && 
+    supabaseUrl !== 'your_supabase_project_url' &&
+    supabaseAnonKey !== 'your_supabase_anon_key' &&
+    supabaseUrl.startsWith('https://')) {
+  try {
+    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false
+      }
+    });
+    console.log('✅ Supabase client initialized');
+  } catch (error) {
+    console.error("❌ Failed to initialize Supabase client:", error.message);
+    supabase = null;
+  }
+} else {
+  console.warn('⚠️ Supabase not configured properly. Using mock data.');
+  console.error("Please update your .env file with actual Supabase credentials from your Supabase project dashboard");
+  supabase = null;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -116,6 +136,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Fallback to basic user info
       console.log('⚠️ Using fallback user data');
 
+      // Special case for admin users - always admin
+      if (userEmail === 'gary@tattscore.com' || userEmail === 'gary@gwts.co.uk') {
+        return {
+          id: userId,
+          name: 'Gary Watts',
+          email: userEmail,
+          role: 'admin',
+          roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge']
+        };
+      }
+      
       return {
         id: userId,
         name: userEmail?.split('@')[0] || 'User',
@@ -140,7 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user state with complete data
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
-      console.log('🔄 Updating user state for session:', session.user.email || session.user.id);
+      console.log('🔄 Updating user state for session:', session.user.email);
       try {
         const userData = await fetchUserData(session.user.id, session.user.email || '');
         
@@ -191,12 +222,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    if (!supabase && isLoading) {
+    if (!supabase) {
       console.warn('⚠️ Supabase not configured. Please check your environment variables.');
       setIsLoading(false);
+      return;
     }
-
-    if (!supabase) return;
 
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -237,19 +267,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     if (!supabase) {
-      throw new Error('Supabase client not initialized. Please check your environment variables.');
+      throw new Error('Supabase not configured. Please check your environment variables.');
     }
 
     try {
-      console.log('Attempting login with email:', email);
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        console.error('Login error:', error.message);
+        console.error('Login error:', error);
         throw error;
       }
 
@@ -276,15 +304,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
       
-      // Clear authorization header
+      // Clear authorization header when no user
       delete axios.defaults.headers.common['Authorization'];
-      
-      // Force user state update immediately instead of waiting for listener
-      setUser(null);
-      setSession(null);
-      
-      // Navigate to home page
-      window.location.href = '/';
+      // User state will be updated by the auth state change listener
     } catch (error) {
       console.error('Logout error:', error);
       throw error;
@@ -294,8 +316,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user email
   const updateUserEmail = async (newEmail: string) => {
     if (!supabase || !user) {
-      console.error('Database client not initialized or user not logged in');
-      return false;
+      throw new Error('Supabase not configured or user not logged in');
     }
 
     try {
@@ -331,8 +352,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user roles
   const updateUserRoles = async (roles: string[], primaryRole: string) => {
     if (!supabase || !user) {
-      console.error('Database client not initialized or user not logged in');
-      return false;
+      throw new Error('Supabase not configured or user not logged in');
     }
     
     console.log('Updating user roles:', roles, 'primary:', primaryRole);

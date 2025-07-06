@@ -1,41 +1,38 @@
 import { createClient } from '@supabase/supabase-js';
-import { getDbClient } from './tempDb';
 
-// Get Supabase credentials from environment
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Initialize a basic client
+// Validate Supabase credentials
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase credentials in environment variables');
+  console.error('VITE_SUPABASE_URL:', supabaseUrl ? 'Present' : 'Missing');
+  console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Present' : 'Missing');
+} else if (supabaseUrl === 'https://your-project-id.supabase.co' || supabaseAnonKey === 'your-supabase-anon-key') {
+  console.error('Default placeholder Supabase credentials detected');
+  console.error('Please update your .env file with actual Supabase credentials from your project dashboard');
+} else {
+  console.log('Supabase credentials found in environment variables');
+  console.log('VITE_SUPABASE_URL:', supabaseUrl.substring(0, 15) + '...');
+  console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey.substring(0, 5) + '...');
+}
+
+// Create client only if we have valid credentials
 let supabase = null;
 
 try {
   if (supabaseUrl && 
       supabaseAnonKey && 
-      supabaseUrl !== 'your_supabase_project_url' &&
-      supabaseAnonKey !== 'your_supabase_anon_key' &&
+      supabaseUrl !== 'https://your-project-id.supabase.co' && 
+      supabaseAnonKey !== 'your-supabase-anon-key' && 
       supabaseUrl.startsWith('https://')) {
-    supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: false
-      }
-    });
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
     console.log('✅ Supabase client created successfully');
-  } else {
-    console.warn('⚠️ Invalid or missing Supabase credentials, falling back to temporary database');
   }
 } catch (error) {
   console.error('❌ Error creating Supabase client:', error);
+  supabase = null;
 }
-
-// Always use the temp database for consistent behavior
-supabase = getDbClient(supabase);
-
-// Log available accounts
-console.log('Available accounts:');
-console.log('- gary@tattscore.com / password123');
-console.log('- gary@gwts.co.uk / password123');
 
 export { supabase };
 
