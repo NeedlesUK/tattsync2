@@ -154,7 +154,8 @@ export function RegistrationPage() {
             <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
               <h4 className="text-blue-300 font-medium mb-2">Need an Account?</h4>
               <p className="text-blue-200 text-sm mb-2">
-                Accounts are created by administrators or through event applications.
+                Accounts are created by administrators or through event applications. 
+                Contact your event organizer for access.
               </p>
             </div>
           </div>
