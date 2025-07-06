@@ -34,35 +34,31 @@ import { StudioDashboardPage } from './pages/StudioDashboardPage';
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation(); 
+  const navigate = useNavigate(); 
+  const location = useLocation();
 
-  // Check if we need to redirect to setup page
+  // If not logged in and not loading, redirect to login
   useEffect(() => {
-    const checkSetupNeeded = async () => {
-      if (!isLoading && !user && location.pathname !== '/setup') {
-        // Redirect to login page if not authenticated
-        navigate('/login');
-        return;
-      }
-    };
-    
-    checkSetupNeeded();
-  }, [isLoading, user, location.pathname, navigate]);
+    if (!isLoading && !user) {
+      console.log('Not authenticated, redirecting to login');
+      navigate('/login', { replace: true });
+    }
+  }, [isLoading, user, navigate]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-white text-lg">Loading application...</p>
+          <p className="text-white text-lg">Loading...</p>
         </div>
       </div>
     );
   }
 
+  // If still not logged in after loading, don't render children
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return null;
   }
 
   return <>{children}</>;
