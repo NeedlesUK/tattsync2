@@ -8,11 +8,18 @@ export function RegistrationPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
-  });
+  }); 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -34,6 +41,7 @@ export function RegistrationPage() {
     try {
       await login(formData.email, formData.password);
       navigate('/dashboard');
+      setIsLoading(false);
     } catch (error: any) {
       console.error('Authentication error:', error);
       
@@ -47,8 +55,9 @@ export function RegistrationPage() {
       }
       
       setErrorMessage(message);
-    } finally {
       setIsLoading(false);
+    } finally {
+      // Don't set isLoading to false here, as it might interrupt the navigation
     }
   };
 
