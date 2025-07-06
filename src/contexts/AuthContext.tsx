@@ -230,8 +230,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error('Supabase not configured. Please check your environment variables.');
     }
 
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -252,9 +252,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Return the data so the calling component can handle it
       return true;
     } catch (error) {
-      setIsLoading(false);
       console.error('Login error:', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 

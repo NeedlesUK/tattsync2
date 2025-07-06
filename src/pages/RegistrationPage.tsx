@@ -41,7 +41,7 @@ export function RegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrorMessage(''); 
+    setErrorMessage('');
 
     try {
       await login(formData.email, formData.password);
@@ -60,7 +60,6 @@ export function RegistrationPage() {
       }
       
       setErrorMessage(message);
-      setIsLoading(false);
     } finally { 
       setIsLoading(false);
     }
