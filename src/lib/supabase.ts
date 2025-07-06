@@ -15,6 +15,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Please update your .env file with actual Supabase credentials from your project dashboard');
 } else {
   console.log('Supabase credentials found in environment variables');
+}
+
 // Initialize a basic client
 let supabase = null; 
 
