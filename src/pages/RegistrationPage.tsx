@@ -7,7 +7,7 @@ export function RegistrationPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: 'gary@tattscore.com',
-    password: 'password123'
+    password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -67,7 +67,7 @@ export function RegistrationPage() {
   const useTestCredentials = () => {
     setFormData({
       email: 'gary@tattscore.com',
-      password: 'password123'
+      password: 'password123' 
     });
   };
 
@@ -103,13 +103,22 @@ export function RegistrationPage() {
                 <p className="text-blue-200 text-sm mb-3">
                   <strong>Note:</strong> The default admin account is pre-filled for you.
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setShowTestCredentials(!showTestCredentials)}
-                  className="text-blue-300 hover:text-blue-200 text-sm underline"
-                >
-                  {showTestCredentials ? 'Hide' : 'Show'} test credentials
-                </button>
+                <div className="flex justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setShowTestCredentials(!showTestCredentials)}
+                    className="text-blue-300 hover:text-blue-200 text-sm underline"
+                  >
+                    {showTestCredentials ? 'Hide' : 'Show'} test credentials
+                  </button>
+                  <button
+                    type="button"
+                    onClick={useTestCredentials}
+                    className="text-blue-300 hover:text-blue-200 text-sm underline"
+                  >
+                    Use test credentials
+                  </button>
+                </div>
                 {showTestCredentials && (
                   <div className="mt-3 p-3 bg-blue-600/20 rounded border border-blue-500/40">
                     <p className="text-blue-200 text-xs mb-2">Test credentials (if available):</p>
