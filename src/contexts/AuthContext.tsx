@@ -265,8 +265,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) {
       throw new Error('Supabase not configured. Please check your environment variables.');
     }
-      } else {
-        console.log('Attempting login with:', email);
+    
+    console.log('Attempting login with:', email);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
