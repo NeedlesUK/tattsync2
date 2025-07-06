@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 
 export function RegistrationPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -11,13 +9,8 @@ export function RegistrationPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const { login, user } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
-
-  // Redirect if already logged in
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -33,7 +26,6 @@ export function RegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrorMessage('');
 
     try {
       await login(formData.email, formData.password);
@@ -152,13 +144,6 @@ export function RegistrationPage() {
                 Accounts are created by administrators or through event applications. 
                 Contact your event organizer for access.
               </p>
-              <div className="text-blue-200 text-sm mt-4 bg-blue-500/30 p-2 rounded">
-                <p><strong>Available test accounts:</strong></p>
-                <ul className="list-disc pl-5 mt-1 space-y-1">
-                  <li>Admin: gary@tattscore.com / password123</li>
-                  <li>Admin: gary@gwts.co.uk / password123</li>
-                </ul>
-              </div>
             </div>
           </div>
         </div>
