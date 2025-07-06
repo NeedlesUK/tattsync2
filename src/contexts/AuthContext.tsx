@@ -267,8 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     if (!supabase) {
-      console.error('Database client not initialized. Cannot logout.');
-      return;
+      throw new Error('Supabase not configured');
     }
 
     try {
@@ -276,9 +275,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         throw error;
       }
+      
       // Clear authorization header
       delete axios.defaults.headers.common['Authorization'];
-      // User state will be updated by the auth state change listener
+      
+      // Force user state update immediately instead of waiting for listener
+      setUser(null);
+      setSession(null);
+      
+      // Navigate to home page
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
       throw error;
