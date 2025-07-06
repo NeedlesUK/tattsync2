@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
-import axios from 'axios';
 
 interface AuthUser {
   id: string;
@@ -130,6 +129,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
       console.log('🔄 Updating user state for session:', session.user.email);
+      
+      // Set the authorization header for API requests
+      if (session?.access_token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      
       try {
         const userData = await fetchUserData(session.user.id, session.user.email || '');
         
@@ -231,7 +236,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setIsLoading(true);
-    try {
+    setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -252,7 +257,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Return the data so the calling component can handle it
       return true;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error in AuthContext:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -262,8 +267,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     if (!supabase) {
       throw new Error('Supabase not configured');
-    } 
+    }
 
+    setIsLoading(true);
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
@@ -279,6 +285,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // User state will be updated by the auth state change listener
     } catch (error) {
       console.error('Logout error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Function to update user profile
+  const updateUserProfile = (profileData: Partial<AuthUser>) => {
+    if (!user) return;
+    
+    setUser(prev => {
+      if (!prev) return null;
+      return { ...prev, ...profileData };
+    });
+  };
+
+  // Function to update user email
+  const updateUserEmail = async (newEmail: string) => {
+    if (!supabase || !user) {
+      throw new Error('Supabase not configured or user not logged in');
+    }
+
+    try {
+      // Update email in Supabase Auth
+      const { error: authError } = await supabase.auth.updateUser({
+        email: newEmail
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      // Update email in users table
+      const { error: dbError } = await supabase
+        .from('users')
+        .update({ email: newEmail, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+
+      if (dbError) {
+        throw dbError;
+      }
+
+      // Update local user state
+      setUser(prev => prev ? { ...prev, email: newEmail } : null);
+
+      return true;
+    } catch (error) {
+      console.error('Error updating email:', error);
       throw error;
     }
   };
@@ -397,9 +451,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       session,
       supabase,
+      session,
+      supabase,
       login,
       logout,
       isLoading,
+      updateUserEmail,
+      updateUserRoles,
+      updateUserProfile
       updateUserEmail,
       updateUserRoles,
       updateUserProfile

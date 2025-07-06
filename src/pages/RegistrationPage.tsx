@@ -41,7 +41,7 @@ export function RegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrorMessage('');
+    setErrorMessage(''); 
 
     try {
       await login(formData.email, formData.password);
@@ -51,16 +51,16 @@ export function RegistrationPage() {
       console.error('Authentication error:', error);
       
       // Extract error message from response
-      let message = 'Authentication failed. Please try again.';
+      let message = 'Login failed. Please check your email and password.';
       
-      if (error.response?.data?.error) {
+      if (error.response && error.response.data && error.response.data.error) {
         message = error.response.data.error;
       } else if (error.message) {
         message = error.message;
       }
       
       setErrorMessage(message);
-    } finally { 
+    } finally {
       setIsLoading(false);
     }
   };
