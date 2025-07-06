@@ -33,20 +33,8 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // Initialize a basic client
 let supabase: ReturnType<typeof createClient> | null = null;
 
-// Only initialize Supabase if we have valid URL and key
-if (supabaseUrl && 
-    supabaseAnonKey && 
-    supabaseUrl !== 'your_supabase_project_url' &&
-    supabaseAnonKey !== 'your_supabase_anon_key' &&
-    supabaseUrl.startsWith('https://')) {
-  try {
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
-    console.log('✅ Supabase client initialized');
-  } catch (error) {
-    console.error("❌ Failed to initialize Supabase client:", error.message);
-    supabase = null;
-  }
-}
+// Get the appropriate database client (real or temp)
+supabase = getDbClient(supabase);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -141,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Fallback to basic user info
       console.log('⚠️ Using fallback user data');
-      
+
       return {
         id: userId,
         name: userEmail?.split('@')[0] || 'User',
