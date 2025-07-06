@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
 import axios from 'axios';
+import axios from 'axios';
 
 interface AuthUser {
   id: string;
@@ -74,48 +75,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to fetch user data from our database
   const fetchUserData = async (userId: string, userEmail: string) => {
     try {
-      console.log('🔍 Fetching user data for:', userEmail);
+      console.log('🔍 Fetching user data for:', userEmail, 'via API');
       
-      // Try direct database query first
-      if (supabase) {
+      // Try API call first
+      if (session?.access_token) {
         try {
-          console.log('🔍 Querying Supabase for user data');
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('id, name, email, role')
-            .eq('id', userId)
-            .single();
+          console.log('🔍 Calling backend API for user data');
           
-          if (userError) {
-            console.error('❌ Error fetching user data from Supabase:', userError);
-            throw userError;
-          }
+          // Set authorization header with the access token
+          axios.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
           
-          // Fetch user roles
-          const { data: rolesData, error: rolesError } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', userId);
-            
-          if (rolesError) {
-            console.error('❌ Error fetching user roles from Supabase:', rolesError);
-          }
+          // Call the backend API to get user data
+          const response = await axios.get(`/api/users/${userId}`);
+          const userData = response.data;
           
-          const roles = rolesData ? rolesData.map(r => r.role) : [userData.role];
-          
-          console.log('✅ User data from Supabase:', userData);
-          console.log('✅ User roles from Supabase:', roles);
+          console.log('✅ User data from API:', userData);
           
           const result = {
             ...userData,
-            roles
+            roles: userData.roles || [userData.role]
           };
           
           console.log('Returning user data:', result);
           return result;
         } catch (error) {
-          console.error('❌ Error fetching user data from Supabase:', error);
-          // Fall through to the fallback
+          console.error('❌ Error fetching user data from API:', error);
+          // Fall through to the fallback if API call fails
         }
       }
       
@@ -247,6 +232,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -267,6 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Return the data so the calling component can handle it
       return true;
     } catch (error) {
+      setIsLoading(false);
       console.error('Login error:', error);
       throw error;
     }
