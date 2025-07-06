@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { LogIn, AlertCircle, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export function RegistrationPage() {
   const [showPassword, setShowPassword] = useState(false);
