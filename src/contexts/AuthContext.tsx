@@ -241,15 +241,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('1. Starting sign in process');
     
     try {
+      // Clear any previous session first to avoid state conflicts
+      await supabase.auth.signOut();
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log('2. Auth response received', { error });
+      console.log('2. Auth response received', { success: !error, errorMessage: error?.message });
       
       if (error) {
         console.error('Login error:', error);
+        setIsLoading(false);
+        console.log('3. Error during login, setting loading to false');
         throw error;
       }
 
@@ -258,13 +263,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Set authorization header immediately after successful login
       if (data.session?.access_token) {
         axios.defaults.headers.common['Authorization'] = `Bearer ${data.session.access_token}`;
+         console.log('4. Set Authorization header with token');
       }
 
+      console.log('5. Login completed successfully');
       // Return the data so the calling component can handle it
       return true;
     } catch (error) {
       console.error('Login error in AuthContext:', error);
       console.log('3. Error during login:', error);
+      setIsLoading(false);
       throw error;
     } finally {
       setIsLoading(false);
@@ -279,9 +287,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setIsLoading(true);
+    console.log('Starting logout process');
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
+        console.error('Logout error:', error);
+        setIsLoading(false);
         throw error;
       }
       // Clear authorization header
@@ -290,13 +301,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear user state immediately
       setUser(null);
       setSession(null);
+      console.log('User logged out successfully');
       
       // User state will be updated by the auth state change listener
     } catch (error) {
       console.error('Logout error:', error);
+      setIsLoading(false);
       throw error;
     } finally {
       setIsLoading(false);
+      console.log('Logout process completed');
     }
   };
 

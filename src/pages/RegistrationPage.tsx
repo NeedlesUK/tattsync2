@@ -40,14 +40,15 @@ export function RegistrationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setErrorMessage('');
     
     // Prevent multiple simultaneous attempts
     if (isLoading) {
       console.log('Sign in already in progress, ignoring...');
       return;
     }
+    
+    setIsLoading(true);
+    setErrorMessage('');
 
     try {
       console.log('Attempting login with:', formData.email);
@@ -67,8 +68,10 @@ export function RegistrationPage() {
       }
       
       setErrorMessage(message);
+      setIsLoading(false);
     } finally {
       setIsLoading(false);
+      console.log('Login attempt completed');
     }
   };
 
