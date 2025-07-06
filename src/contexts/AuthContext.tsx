@@ -128,18 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Fallback to basic user info
       console.log('⚠️ Using fallback user data');
-      
-      // Special case for gary@tattscore.com - always admin
-      if (userEmail === 'gary@tattscore.com') {
-        console.log('Using special admin account for gary@tattscore.com');
-        const adminUser = {
-          id: userId,
-          name: 'Gary Watts',
-          email: 'gary@tattscore.com',
-          role: 'admin',
-          roles: ['admin', 'artist', 'piercer', 'performer', 'trader', 'volunteer', 'event_manager', 'event_admin', 'client', 'studio_manager', 'judge']
-        };
-        return adminUser;
+            
       }
       
       return {
@@ -221,6 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.warn('⚠️ Supabase not configured. Please check your environment variables.');
       setIsLoading(false);
       setUser(null);
+      setUser(null);
       return;
     }
 
@@ -267,6 +257,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     console.log('Attempting login with:', email);
+    
+    console.log('Attempting login with:', email);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -277,15 +269,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Login error:', error);
         throw error;
-      } else if (!data.session) {
-        // Special case for test user
-        if (email === 'gary@tattscore.com' && password === 'password123') {
-          console.log('Using test credentials for gary@tattscore.com');
-          // Set a mock user for testing
-          setUser({ id: 'test-admin-id', name: 'Gary Watts', email: 'gary@tattscore.com', role: 'admin', roles: ['admin'] });
-          return;
-        }
-        throw new Error('No session returned from authentication');
       }
 
       // Set authorization header immediately after successful login

@@ -77,7 +77,6 @@ function App() {
           <main className="flex-1">
             <Routes>
               <Route path="/" element={<HomePage />} />
-              <Route path="/setup" element={<InitialSetupPage />} />
               <Route path="/login" element={<RegistrationPage />} />
               
               {/* Registration flow routes */}
