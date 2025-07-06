@@ -236,7 +236,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setIsLoading(true);
-    setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -338,42 +337,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Function to update user email
-  const updateUserEmail = async (newEmail: string) => {
-    if (!supabase || !user) {
-      throw new Error('Supabase not configured or user not logged in');
-    }
-
-    try {
-      // Update email in Supabase Auth
-      const { error: authError } = await supabase.auth.updateUser({
-        email: newEmail
-      });
-
-      if (authError) {
-        throw authError;
-      }
-
-      // Update email in users table
-      const { error: dbError } = await supabase
-        .from('users')
-        .update({ email: newEmail, updated_at: new Date().toISOString() })
-        .eq('id', user.id);
-
-      if (dbError) {
-        throw dbError;
-      }
-
-      // Update local user state
-      setUser(prev => prev ? { ...prev, email: newEmail } : null);
-
-      return true;
-    } catch (error) {
-      console.error('Error updating email:', error);
-      throw error;
-    }
-  };
-
-  // Function to update user roles
   const updateUserRoles = async (roles: string[], primaryRole: string) => {
     if (!supabase || !user) {
       throw new Error('Supabase not configured or user not logged in');
@@ -451,14 +414,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       session,
       supabase,
-      session,
       supabase,
       login,
       logout,
       isLoading,
-      updateUserEmail,
-      updateUserRoles,
-      updateUserProfile
       updateUserEmail,
       updateUserRoles,
       updateUserProfile
