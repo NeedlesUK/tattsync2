@@ -237,12 +237,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setIsLoading(true);
+    console.log('=== SIGN IN DEBUG ===');
+    console.log('1. Starting sign in process');
+    
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log('2. Auth response received', { error });
+      
       if (error) {
         console.error('Login error:', error);
         throw error;
@@ -259,9 +264,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return true;
     } catch (error) {
       console.error('Login error in AuthContext:', error);
+      console.log('3. Error during login:', error);
       throw error;
     } finally {
       setIsLoading(false);
+      console.log('4. Finally block executing');
+      console.log('5. Loading state set to false');
     }
   };
 

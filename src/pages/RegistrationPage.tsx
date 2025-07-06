@@ -41,9 +41,16 @@ export function RegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setErrorMessage(''); 
+    setErrorMessage('');
+    
+    // Prevent multiple simultaneous attempts
+    if (isLoading) {
+      console.log('Sign in already in progress, ignoring...');
+      return;
+    }
 
     try {
+      console.log('Attempting login with:', formData.email);
       await login(formData.email, formData.password);
       // Don't navigate here - the useEffect will handle it
       console.log('Login request successful');
@@ -135,7 +142,10 @@ export function RegistrationPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-purple-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2" 
+              className="w-full bg-gradient-to-r from-purple-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              onClick={(e) => {
+                console.log('Button clicked, loading state:', isLoading);
+              }}
             >
               {isLoading ? (
                 <>
