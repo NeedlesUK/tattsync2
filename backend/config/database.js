@@ -15,7 +15,7 @@ if (shouldUseTempDb()) {
   const tempDbClients = getDbClient(null, null);
   supabase = tempDbClients.supabase;
   supabaseAdmin = tempDbClients.supabaseAdmin;
-} else {
+} else if (supabaseUrl && supabaseAnonKey) {
   // Initialize public Supabase client (for user authentication)
   try {
     supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -32,9 +32,12 @@ if (shouldUseTempDb()) {
 } else {
   console.error("❌ Missing or invalid Supabase public credentials!");
   console.error("Required: SUPABASE_URL and SUPABASE_ANON_KEY");
-    console.error("Anon key present:", !!supabaseAnonKey); 
+  console.error("Anon key present:", !!supabaseAnonKey); 
   console.error("Anon key present:", !!supabaseAnonKey);
-  
+}
+
+if (supabaseUrl && supabaseServiceKey) {
+  try {
     // Initialize admin Supabase client (for admin operations)
     supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
@@ -74,11 +77,11 @@ if (shouldUseTempDb()) {
   console.error("Current SUPABASE_URL:", supabaseUrl || "Not set");
   console.error("Service role key present:", !!supabaseServiceKey);
     
-    // Use temporary database as fallback
-    console.log("⚠️ Falling back to temporary in-memory database");
-    const tempDbClients = getDbClient(null, null);
-    supabase = tempDbClients.supabase;
-    supabaseAdmin = tempDbClients.supabaseAdmin;
+  // Use temporary database as fallback
+  console.log("⚠️ Falling back to temporary in-memory database");
+  const tempDbClients = getDbClient(null, null);
+  supabase = tempDbClients.supabase;
+  supabaseAdmin = tempDbClients.supabaseAdmin;
   console.error("Please update your backend/.env file with actual Supabase credentials");
 }
 
