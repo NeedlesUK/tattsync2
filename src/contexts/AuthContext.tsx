@@ -244,7 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     if (!supabase) {
       throw new Error('Supabase not configured. Please check your environment variables.');
-    } 
+    }
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -255,30 +255,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Login error:', error);
         throw error;
-      } 
+      }
 
       console.log('✅ Login successful for:', email);
+      console.log('Session data:', data.session);
       
       // Set authorization header immediately after successful login
       if (data.session?.access_token) {
         axios.defaults.headers.common['Authorization'] = `Bearer ${data.session.access_token}`;
-        
-        // Update user state immediately to prevent hanging
-        if (data.user) {
-          const userData = {
-            id: data.user.id,
-            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'User',
-            email: data.user.email || '',
-            role: data.user.user_metadata?.role || 'artist',
-            roles: [data.user.user_metadata?.role || 'artist']
-          };
-          
-          setUser(userData);
-          setSession(data.session);
-        }
       }
 
-      // User state will be updated by the auth state change listener
+      // Return the data so the calling component can handle it
+      return data;
     } catch (error) {
       console.error('Login error:', error);
       throw error;

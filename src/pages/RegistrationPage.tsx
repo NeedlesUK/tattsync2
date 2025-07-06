@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext'; 
 
 export function RegistrationPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
-  }); 
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const { login, user } = useAuth();
@@ -36,12 +36,20 @@ export function RegistrationPage() {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage('');
-
+    
     // Check if Supabase is configured
     try {
-      await login(formData.email, formData.password);
-      navigate('/dashboard');
-      setIsLoading(false);
+      const data = await login(formData.email, formData.password);
+      
+      if (data && data.session) {
+        // Login successful, redirect to dashboard
+        console.log('Login successful, redirecting to dashboard');
+        navigate('/dashboard');
+      } else {
+        // This shouldn't happen if login was successful
+        setErrorMessage('Login successful but session data is missing');
+        setIsLoading(false);
+      }
     } catch (error: any) {
       console.error('Authentication error:', error);
       
@@ -57,7 +65,8 @@ export function RegistrationPage() {
       setErrorMessage(message);
       setIsLoading(false);
     } finally {
-      // Don't set isLoading to false here, as it might interrupt the navigation
+      // We set isLoading to false in the error case, but not on success
+      // because we're navigating away from this page
     }
   };
 
