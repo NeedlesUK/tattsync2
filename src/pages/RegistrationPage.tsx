@@ -18,12 +18,34 @@ export function RegistrationPage() {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
+    }));
+    // Clear error message when user starts typing
+    if (errorMessage) {
+      setErrorMessage('');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage('');
 
     // Check if Supabase is configured
+    try {
+      await login(formData.email, formData.password);
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error('Authentication error:', error);
+      
+      // Extract error message from response
+      let message = 'Authentication failed. Please try again.';
+      
+      if (error.response?.data?.error) {
+        message = error.response.data.error;
+      } else if (error.message) {
+        message = error.message;
+      }
+      
       // Set error message
       setErrorMessage(error.message || 'Authentication failed. Please try again.');
     } finally {
