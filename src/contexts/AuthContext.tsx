@@ -236,6 +236,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setIsLoading(true);
+    try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -413,7 +414,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{ 
       user,
       session,
-      supabase,
       supabase,
       login,
       logout,
