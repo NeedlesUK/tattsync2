@@ -9,22 +9,6 @@
 const storage = {
   users: [
     {
-      id: '1',
-      name: 'Test User',
-      email: 'test@example.com',
-      role: 'artist',
-      roles: ['artist'],
-      created_at: new Date().toISOString()
-    },
-    {
-      id: '2',
-      name: 'Event Manager',
-      email: 'manager@example.com',
-      role: 'event_manager',
-      roles: ['event_manager'],
-      created_at: new Date().toISOString()
-    },
-    {
       id: '3',
       name: 'Gary Watts',
       email: 'gary@tattscore.com',
@@ -56,18 +40,10 @@ const storage = {
 // Simple authentication storage
 const authStorage = {
   sessions: {},
-  users: {
-    'test@example.com': {
-      password: 'password123',
-      user: storage.users[0]
-    },
-    'manager@example.com': {
-      password: 'password123',
-      user: storage.users[1]
-    },
+  users: {    
     'gary@tattscore.com': {
       password: 'password123',
-      user: storage.users[2]
+      user: storage.users[0]
     }
   }
 };
@@ -121,7 +97,15 @@ const tempDb = {
       console.log('TempDB: Attempting login with', email);
       const user = authStorage.users[email.toLowerCase()];
       
-      if (!user || user.password !== password) {
+      if (!user) {
+        console.log('TempDB: User not found:', email);
+        return {
+          data: { session: null, user: null },
+          error: { message: 'User not found' }
+        };
+      }
+      
+      if (user.password !== password) {
         console.log('TempDB: Invalid credentials for', email);
         return {
           data: { session: null, user: null },
@@ -350,9 +334,8 @@ const tempDb = {
 // Helper function to check if temp DB should be used
 const shouldUseTempDb = () => {
   // Check if Supabase URL is missing or invalid
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.SUPABASE_URL || '';
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
   
   return !supabaseUrl || 
          !supabaseServiceKey || 
@@ -364,7 +347,11 @@ const shouldUseTempDb = () => {
 // Export a function to get either the real Supabase client or the temp DB
 const getDbClient = (realSupabase, realSupabaseAdmin) => {
   if (shouldUseTempDb() || !realSupabase) {
-    console.log('⚠️ Using temporary in-memory database for development');
+    console.log('⚠️ Using temporary in-memory database for development or testing');
+    console.log('Available test accounts:');
+    console.log('- gary@tattscore.com / password123 (Admin)');
+    console.log('- test@example.com / password123 (Artist)');
+    console.log('- manager@example.com / password123 (Event Manager)');
     return { supabase: tempDb, supabaseAdmin: tempDb };
   }
   

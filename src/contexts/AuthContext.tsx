@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
 import axios from 'axios';
-import { getDbClient } from '../lib/tempDb';
+import { getDbClient, shouldUseTempDb } from '../lib/tempDb';
 
 interface AuthUser {
   id: string;
@@ -30,8 +30,23 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Initialize a basic client that will be replaced by the real one or temp DB
-let supabase = createClient(supabaseUrl || 'https://example.com', supabaseAnonKey || 'dummy-key');
+// Initialize a basic client
+let supabase: ReturnType<typeof createClient> | null = null;
+
+// Only initialize Supabase if we have valid URL and key
+if (supabaseUrl && 
+    supabaseAnonKey && 
+    supabaseUrl !== 'your_supabase_project_url' &&
+    supabaseAnonKey !== 'your_supabase_anon_key' &&
+    supabaseUrl.startsWith('https://')) {
+  try {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    console.log('✅ Supabase client initialized');
+  } catch (error) {
+    console.error("❌ Failed to initialize Supabase client:", error.message);
+    supabase = null;
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -40,12 +55,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
   // Get the appropriate database client (real or temp)
   const [dbClient, setDbClient] = useState<any>(null);
+  const [isDbInitialized, setIsDbInitialized] = useState(false);
 
   // Initialize the database client
   useEffect(() => {
-    const client = getDbClient(supabase);
-    setDbClient(client);
-    console.log('Database client initialized');
+    if (!isDbInitialized) {
+      const client = getDbClient(supabase);
+      setDbClient(client);
+      setIsDbInitialized(true);
+      console.log('Database client initialized:', shouldUseTempDb() ? 'Using temp DB' : 'Using Supabase');
+    }
   }, []);
 
   // Function to update user profile data in the context
@@ -200,7 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!dbClient && isLoading) {
       console.warn('⚠️ Supabase not configured. Please check your environment variables.');
-      return;
+      setIsLoading(false);
     }
 
     if (!dbClient) return;
@@ -244,12 +263,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     if (!dbClient) {
-      throw new Error('Database client not initialized. Please try again.');
+      console.error('Database client not initialized. Initializing now...');
+      const client = getDbClient(supabase);
+      setDbClient(client);
+      setIsDbInitialized(true);
     }
 
     try {
       console.log('Attempting login with email:', email);
-      const { data, error } = await dbClient.auth.signInWithPassword({
+      
+      // Use the client directly to avoid race conditions
+      const client = dbClient || getDbClient(supabase);
+      const { data, error } = await client.auth.signInWithPassword({
         email,
         password,
       });
@@ -273,7 +298,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     if (!dbClient) {
-      throw new Error('Database client not initialized');
+      console.error('Database client not initialized. Cannot logout.');
+      return;
     }
 
     try {
@@ -293,7 +319,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user email
   const updateUserEmail = async (newEmail: string) => {
     if (!dbClient || !user) {
-      throw new Error('Database client not initialized or user not logged in');
+      console.error('Database client not initialized or user not logged in');
+      return false;
     }
 
     try {
@@ -329,7 +356,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user roles
   const updateUserRoles = async (roles: string[], primaryRole: string) => {
     if (!dbClient || !user) {
-      throw new Error('Database client not initialized or user not logged in');
+      console.error('Database client not initialized or user not logged in');
+      return false;
     }
     
     console.log('Updating user roles:', roles, 'primary:', primaryRole);

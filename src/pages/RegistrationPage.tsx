@@ -151,8 +151,13 @@ export function RegistrationPage() {
                 Accounts are created by administrators or through event applications. 
                 Contact your event organizer for access.
               </p>
-              <p className="text-blue-200 text-sm">
-                <strong>Test credentials:</strong> test@example.com / password123
+              <div className="text-blue-200 text-sm mt-4 bg-blue-500/30 p-2 rounded">
+                <p><strong>Test credentials:</strong></p>
+                <ul className="list-disc pl-5 mt-1 space-y-1">
+                  <li>Artist: test@example.com / password123</li>
+                  <li>Manager: manager@example.com / password123</li>
+                  <li>Admin: gary@tattscore.com / password123</li>
+                </ul>
               </p>
             </div>
           </div>
