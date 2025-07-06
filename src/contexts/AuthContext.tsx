@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
+import axios from 'axios';
 
 interface AuthUser {
   id: string;
@@ -289,16 +290,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Function to update user profile
-  const updateUserProfile = (profileData: Partial<AuthUser>) => {
-    if (!user) return;
-    
-    setUser(prev => {
-      if (!prev) return null;
-      return { ...prev, ...profileData };
-    });
   };
 
   // Function to update user email
