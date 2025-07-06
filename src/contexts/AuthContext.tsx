@@ -264,7 +264,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Login error:', error);
         throw error;
       }
-      }
 
       // Set authorization header immediately after successful login
       if (data.session?.access_token) {
