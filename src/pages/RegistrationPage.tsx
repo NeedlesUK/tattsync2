@@ -12,7 +12,7 @@ export function RegistrationPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const { login, user } = useAuth();
-  const navigate = useNavigate();
+  const navigate = useNavigate(); 
 
   useEffect(() => {
     // Clear any error messages when component mounts
@@ -46,15 +46,9 @@ export function RegistrationPage() {
     try {
       const data = await login(formData.email, formData.password);
       
-      if (data && data.session) {
-        // Login successful, redirect to dashboard
-        console.log('Login successful, redirecting to dashboard');
-        navigate('/dashboard');
-      } else {
-        // This shouldn't happen if login was successful
-        setErrorMessage('Login successful but session data is missing');
-        setIsLoading(false);
-      }
+      // Login successful - don't navigate here
+      // The useEffect hook watching for user changes will handle navigation
+      console.log('Login successful');
     } catch (error: any) {
       console.error('Authentication error:', error);
       
@@ -70,8 +64,8 @@ export function RegistrationPage() {
       setErrorMessage(message);
       setIsLoading(false);
     } finally {
-      // We set isLoading to false in the error case, but not on success
-      // because we're navigating away from this page
+      // Always set isLoading to false
+      setIsLoading(false);
     }
   };
 
