@@ -13,7 +13,7 @@ import { RegistrationSuccessPage } from './pages/RegistrationSuccessPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { MessagesPage } from './pages/MessagesPage';
 import { DealsPage } from './pages/DealsPage';
-import { TicketManagementPage } from './pages/TicketManagementPage';
+import { TicketManagementPage } from './pages/ApplicationsPage';
 import { ClientTicketsPage } from './pages/ClientTicketsPage';
 import { ConsentFormsPage } from './pages/ConsentFormsPage';
 import { ConsentScanPage } from './pages/ConsentScanPage';
