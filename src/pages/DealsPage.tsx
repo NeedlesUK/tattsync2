@@ -4,56 +4,7 @@ import { Gift, Plus, Eye, Edit, Trash2, Copy, Calendar, Users, Percent } from 'l
 export function DealsPage() {
   const [activeTab, setActiveTab] = useState('active');
 
-  const deals = [
-    {
-      id: 1,
-      title: 'Early Bird Special',
-      description: '20% off registration for first 50 artists',
-      discount: 20,
-      type: 'percentage',
-      code: 'EARLY2024',
-      validUntil: '2024-02-28',
-      used: 23,
-      limit: 50,
-      status: 'active'
-    },
-    {
-      id: 2,
-      title: 'Student Discount',
-      description: '$50 off booth rental for students',
-      discount: 50,
-      type: 'fixed',
-      code: 'STUDENT50',
-      validUntil: '2024-03-15',
-      used: 12,
-      limit: 100,
-      status: 'active'
-    },
-    {
-      id: 3,
-      title: 'Group Registration',
-      description: '15% off for groups of 5 or more',
-      discount: 15,
-      type: 'percentage',
-      code: 'GROUP15',
-      validUntil: '2024-03-01',
-      used: 8,
-      limit: 25,
-      status: 'expired'
-    },
-    {
-      id: 4,
-      title: 'Returning Artist',
-      description: '10% off for previous participants',
-      discount: 10,
-      type: 'percentage',
-      code: 'RETURN10',
-      validUntil: '2024-04-01',
-      used: 0,
-      limit: 200,
-      status: 'draft'
-    }
-  ];
+  const deals: any[] = [];
 
   const filteredDeals = deals.filter(deal => {
     if (activeTab === 'active') return deal.status === 'active';

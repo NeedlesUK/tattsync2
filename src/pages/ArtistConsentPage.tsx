@@ -56,20 +56,8 @@ export function ArtistConsentPage() {
   const fetchArtistData = async () => {
     try {
       setIsLoading(true);
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockArtistData = {
-        id: user?.id,
-        name: user?.name,
-        email: user?.email,
-        booth_number: 'A-15',
-        application_type: 'artist',
-        specialties: ['Traditional', 'Neo-Traditional'],
-        event_id: 1,
-        event_name: 'Ink Fest 2024'
-      };
-      
-      setArtistData(mockArtistData);
+      // TODO: Implement API call to fetch artist data
+      setArtistData(null);
     } catch (error) {
       console.error('Error fetching artist data:', error);
     } finally {
@@ -79,104 +67,9 @@ export function ArtistConsentPage() {
 
   const fetchSubmissions = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockSubmissions: FormSubmission[] = [
-        {
-          id: 1,
-          form_id: 1,
-          client_id: '1',
-          client_name: 'John Smith',
-          client_email: 'john@example.com',
-          client_phone: '+44 7700 900123',
-          submission_data: {
-            clientName: 'John Smith',
-            clientEmail: 'john@example.com',
-            DOB: '1990-05-15',
-            Phone: '+44 7700 900123',
-            FullAddress: '123 Main St, London, UK',
-            artistName: user?.name,
-            ageConfirm: true,
-            riskConfirm: true,
-            liabilityConfirm: true,
-            mediaRelease: 'Yes',
-            noIssues: true,
-            aftercareAdvice: true,
-            eatBefore: true,
-            unwell: true,
-            noAlcohol: true,
-            marketingConsent: 'No'
-          },
-          submitted_at: '2024-01-15T14:30:00Z',
-          procedure_type: 'tattoo',
-          is_new: true
-        },
-        {
-          id: 2,
-          form_id: 2,
-          client_id: '2',
-          client_name: 'Emily Wilson',
-          client_email: 'emily@example.com',
-          client_phone: '+44 7700 900456',
-          submission_data: {
-            clientName: 'Emily Wilson',
-            clientEmail: 'emily@example.com',
-            DOB: '1995-08-22',
-            Phone: '+44 7700 900456',
-            FullAddress: '456 High St, Manchester, UK',
-            artistName: user?.name,
-            ageConfirm: true,
-            riskConfirm: true,
-            liabilityConfirm: true,
-            mediaRelease: 'No',
-            noIssues: false,
-            medicalIssues: ['Any allergies'],
-            medicalDetails: 'Allergic to latex',
-            aftercareAdvice: true,
-            eatBefore: true,
-            unwell: true,
-            noAlcohol: true,
-            marketingConsent: 'Yes'
-          },
-          submitted_at: '2024-01-14T12:15:00Z',
-          procedure_type: 'tattoo',
-          is_new: false
-        },
-        {
-          id: 3,
-          form_id: 2,
-          client_id: '3',
-          client_name: 'David Brown',
-          client_email: 'david@example.com',
-          client_phone: '+44 7700 900789',
-          submission_data: {
-            clientName: 'David Brown',
-            clientEmail: 'david@example.com',
-            DOB: '1988-11-30',
-            Phone: '+44 7700 900789',
-            FullAddress: '789 Park Lane, Birmingham, UK',
-            artistName: user?.name,
-            ageConfirm: true,
-            riskConfirm: true,
-            liabilityConfirm: true,
-            mediaRelease: 'Yes',
-            noIssues: false,
-            medicalIssues: ['Diabetes'],
-            medicalDetails: 'Type 2 diabetes, well controlled with medication',
-            aftercareAdvice: true,
-            eatBefore: true,
-            unwell: true,
-            noAlcohol: true,
-            marketingConsent: 'No'
-          },
-          submitted_at: '2024-01-12T16:20:00Z',
-          procedure_type: 'piercing',
-          is_new: false
-        }
-      ];
-      
-      setSubmissions(mockSubmissions);
-      setFilteredSubmissions(mockSubmissions);
+      // TODO: Implement API call to fetch submissions
+      setSubmissions([]);
+      setFilteredSubmissions([]);
     } catch (error) {
       console.error('Error fetching submissions:', error);
     }

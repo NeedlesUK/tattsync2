@@ -9,17 +9,17 @@ export function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [profileDbId, setProfileDbId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '+1 (555) 123-4567',
-    location: 'Los Angeles, CA',
-    bio: 'Experienced tattoo artist specializing in traditional and neo-traditional styles.',
-    website: 'https://example.com',
-    instagram: '@artist_handle',
-    facebook: '@artist.page',
-    tiktok: '@artist_tiktok', 
-    experience: '8 years',
-    specialties: ['Traditional', 'Neo-Traditional', 'Black & Grey'],
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: '',
+    location: '',
+    bio: '',
+    website: '',
+    instagram: '',
+    facebook: '',
+    tiktok: '', 
+    experience: '',
+    specialties: [],
     show_instagram: true,
     show_facebook: true,
     show_tiktok: true,
@@ -40,7 +40,7 @@ export function ProfilePage() {
   const [passwordChangeSuccess, setPasswordChangeSuccess] = useState('');
 
   // Profile picture state
-  const [profilePicture, setProfilePicture] = useState(user?.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=128&h=128&dpr=2');
+  const [profilePicture, setProfilePicture] = useState(user?.avatar || '');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,7 +50,7 @@ export function ProfilePage() {
   const [saveError, setSaveError] = useState('');
 
   // Roles state
-  const [userRoles, setUserRoles] = useState<string[]>(user?.roles || [user?.role || 'artist']);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
   const [primaryRole, setPrimaryRole] = useState<string>('');
   const [availableRoles, setAvailableRoles] = useState([
     { value: 'admin', label: 'Master Admin' },
@@ -437,36 +437,8 @@ export function ProfilePage() {
     });
   };
 
-  const stats = [
-    { label: 'Events Attended', value: '12', icon: Calendar },
-    { label: 'Years Experience', value: formData.experience, icon: Award },
-    { label: 'Specialties', value: formData.specialties.length.toString(), icon: User },
-    { label: 'Profile Views', value: '234', icon: Shield }
-  ];
-
-  const recentEvents = [
-    {
-      id: 1,
-      name: 'Ink Fest 2024',
-      date: '2024-03-15',
-      role: 'Artist',
-      status: 'completed'
-    },
-    {
-      id: 2,
-      name: 'Body Art Expo',
-      date: '2024-02-20',
-      role: 'Artist',
-      status: 'completed'
-    },
-    {
-      id: 3,
-      name: 'Tattoo Convention',
-      date: '2024-01-10',
-      role: 'Artist',
-      status: 'completed'
-    }
-  ];
+  const stats: { label: string; value: string; icon: any }[] = [];
+  const recentEvents: { id: number; name: string; date: string; role: string; status: string }[] = [];
 
   return (
     <div className="min-h-screen pt-16">

@@ -27,24 +27,8 @@ export function StudioDashboardPage() {
   const fetchStudioData = async () => {
     try {
       setIsLoading(true);
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockStudioData = {
-        id: 1,
-        name: 'Ink Dreams Studio',
-        description: 'Premier tattoo and piercing studio specializing in custom designs and professional body art.',
-        address: '123 Main Street',
-        city: 'London',
-        postal_code: 'W1A 1AA',
-        country: 'United Kingdom',
-        phone: '+44 20 1234 5678',
-        email: 'contact@inkdreams.com',
-        website: 'https://inkdreams.com',
-        logo_url: 'https://images.pexels.com/photos/1337380/pexels-photo-1337380.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2',
-        owner_id: user?.id
-      };
-      
-      setStudioData(mockStudioData);
+      // TODO: Implement API call to fetch studio data
+      setStudioData(null);
     } catch (error) {
       console.error('Error fetching studio data:', error);
     } finally {
@@ -54,39 +38,8 @@ export function StudioDashboardPage() {
 
   const fetchMembers = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockMembers = [
-        {
-          id: 1,
-          user_id: user?.id,
-          name: user?.name,
-          email: user?.email,
-          role: 'studio_manager',
-          is_active: true,
-          avatar: user?.avatar || 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2'
-        },
-        {
-          id: 2,
-          user_id: '2',
-          name: 'Mike Chen',
-          email: 'mike@example.com',
-          role: 'artist',
-          is_active: true,
-          avatar: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2'
-        },
-        {
-          id: 3,
-          user_id: '3',
-          name: 'Emma Davis',
-          email: 'emma@example.com',
-          role: 'piercer',
-          is_active: true,
-          avatar: 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2'
-        }
-      ];
-      
-      setMembers(mockMembers);
+      // TODO: Implement API call to fetch members
+      setMembers([]);
     } catch (error) {
       console.error('Error fetching members:', error);
     }
@@ -94,42 +47,8 @@ export function StudioDashboardPage() {
 
   const fetchServices = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockServices = [
-        {
-          id: 1,
-          name: 'Small Tattoo',
-          description: 'Simple designs, up to 2 inches',
-          price_from: 60.00,
-          price_to: 120.00,
-          duration_minutes: 60,
-          service_type: 'tattoo',
-          is_active: true
-        },
-        {
-          id: 2,
-          name: 'Medium Tattoo',
-          description: 'Detailed designs, 2-5 inches',
-          price_from: 120.00,
-          price_to: 250.00,
-          duration_minutes: 120,
-          service_type: 'tattoo',
-          is_active: true
-        },
-        {
-          id: 3,
-          name: 'Basic Piercing',
-          description: 'Ear lobe, nostril, etc.',
-          price_from: 30.00,
-          price_to: 50.00,
-          duration_minutes: 30,
-          service_type: 'piercing',
-          is_active: true
-        }
-      ];
-      
-      setServices(mockServices);
+      // TODO: Implement API call to fetch services
+      setServices([]);
     } catch (error) {
       console.error('Error fetching services:', error);
     }
@@ -137,36 +56,8 @@ export function StudioDashboardPage() {
 
   const fetchClients = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockClients = [
-        {
-          id: 1,
-          name: 'John Smith',
-          email: 'john@example.com',
-          phone: '+44 7700 900123',
-          last_visit: '2024-01-15',
-          total_visits: 3
-        },
-        {
-          id: 2,
-          name: 'Sarah Johnson',
-          email: 'sarah@example.com',
-          phone: '+44 7700 900456',
-          last_visit: '2024-01-10',
-          total_visits: 1
-        },
-        {
-          id: 3,
-          name: 'David Brown',
-          email: 'david@example.com',
-          phone: '+44 7700 900789',
-          last_visit: '2024-01-05',
-          total_visits: 2
-        }
-      ];
-      
-      setClients(mockClients);
+      // TODO: Implement API call to fetch clients
+      setClients([]);
     } catch (error) {
       console.error('Error fetching clients:', error);
     }
@@ -174,42 +65,8 @@ export function StudioDashboardPage() {
 
   const fetchAppointments = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockAppointments = [
-        {
-          id: 1,
-          client_name: 'John Smith',
-          service: 'Small Tattoo',
-          artist: 'Mike Chen',
-          date: '2024-01-20',
-          time: '10:00 AM',
-          duration: '1 hour',
-          status: 'confirmed'
-        },
-        {
-          id: 2,
-          client_name: 'Sarah Johnson',
-          service: 'Basic Piercing',
-          artist: 'Emma Davis',
-          date: '2024-01-21',
-          time: '2:00 PM',
-          duration: '30 minutes',
-          status: 'confirmed'
-        },
-        {
-          id: 3,
-          client_name: 'David Brown',
-          service: 'Medium Tattoo',
-          artist: 'Mike Chen',
-          date: '2024-01-22',
-          time: '11:00 AM',
-          duration: '2 hours',
-          status: 'pending'
-        }
-      ];
-      
-      setAppointments(mockAppointments);
+      // TODO: Implement API call to fetch appointments
+      setAppointments([]);
     } catch (error) {
       console.error('Error fetching appointments:', error);
     }

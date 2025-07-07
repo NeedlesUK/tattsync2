@@ -34,32 +34,9 @@ export function ConsentScanPage() {
     try {
       setIsLoading(true);
       setError(null);
-      
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockQrData: QrCodeData = {
-        code: qrCode,
-        event_id: 1,
-        event_name: 'Ink Fest 2024',
-        form_id: 1,
-        form_title: 'Tattoo Consent Form',
-        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
-        is_valid: true
-      };
-      
-      // Check if QR code is valid
-      if (!mockQrData.is_valid) {
-        setError('This QR code is invalid or has expired.');
-        return;
-      }
-      
-      // Check if QR code has expired
-      if (new Date(mockQrData.expires_at) < new Date()) {
-        setError('This QR code has expired.');
-        return;
-      }
-      
-      setQrData(mockQrData);
+      // TODO: Implement API call to fetch QR code data
+      setQrData(null);
+      setError('QR code data not available');
     } catch (error) {
       console.error('Error fetching QR code data:', error);
       setError('Failed to load QR code data. Please try again.');

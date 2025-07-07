@@ -33,6 +33,8 @@ export function ApplicationsPage() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isPaymentSettingsOpen, setIsPaymentSettingsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [filteredApplications, setFilteredApplications] = useState<Application[]>([]);
 
   // Check if user has access to applications
   const hasApplicationAccess = user?.role === 'event_manager' || user?.role === 'event_admin';
@@ -46,11 +48,8 @@ export function ApplicationsPage() {
       }
       
       try {
-        // In a real implementation, fetch from API
-        // For now, we'll just simulate loading
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Set empty applications array
+        // Fetch applications from API
+        // TODO: Implement API call
         setApplications([]);
       } catch (error) {
         console.error('Error fetching applications:', error);
@@ -60,9 +59,6 @@ export function ApplicationsPage() {
     };
     
     fetchApplications();
-    setIsLoading(false);
-  }, [hasApplicationAccess]);
-
   // Filter applications
   useEffect(() => {
     let filtered = applications;

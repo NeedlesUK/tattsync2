@@ -67,45 +67,8 @@ export function RegistrationFormPage() {
   const fetchRegistrationData = async (registrationToken: string) => {
     try {
       setIsLoading(true);
-      // Mock data - in real implementation, fetch from API
-      const mockData: RegistrationData = {
-        token: registrationToken,
-        application: {
-          id: 1,
-          applicant_name: 'Sarah Johnson',
-          applicant_email: 'sarah@example.com',
-          application_type: 'artist',
-          event_name: 'Ink Fest 2024',
-          event_id: 1
-        },
-        requirements: {
-          requires_payment: true,
-          payment_amount: 150.00,
-          agreement_text: `1. I have a valid tattoo registration issued by a local authority or government department or am willing to demonstrate my understanding of safe tattooing using the method(s) determined by the event.
-
-2. I have or will have valid Public Liability Insurance for the event.
-
-3. I agree to comply with the Event Management Plan which includes national guidance and local bylaws.
-
-4. I understand that I could be removed from the event because of behaviour deemed to be unruly or offensive.
-
-5. I understand that all payments are non refundable except in certain circumstances deemed suitable by the event management.
-
-6. I understand that if full payment is not received by the due date my space at the event may be forfeit without refund.
-
-7. I understand that only the practitioner in this application may tattoo at the event in a single booth and this is not a studio application.`,
-          profile_deadline_days: 30
-        },
-        payment_settings: {
-          cash_enabled: true,
-          cash_details: 'Cash payments can be made at the event registration desk. Please bring exact change when possible.',
-          bank_transfer_enabled: true,
-          bank_details: 'Bank transfers should be made to: Account Name: Event Organizer, Sort Code: 12-34-56, Account Number: 12345678. Please use your application reference as the payment reference.',
-          stripe_enabled: true,
-          allow_installments: true
-        }
-      };
-      setRegistrationData(mockData);
+      // TODO: Implement API call to fetch registration data
+      setRegistrationData(null);
     } catch (error) {
       console.error('Error fetching registration data:', error);
     } finally {

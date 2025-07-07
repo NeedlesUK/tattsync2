@@ -70,20 +70,8 @@ export function ArtistBookingPage() {
   const fetchArtistData = async () => {
     try {
       setIsLoading(true);
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockArtistData = {
-        id: user?.id,
-        name: user?.name,
-        email: user?.email,
-        booth_number: 'A-15',
-        application_type: 'artist',
-        specialties: ['Traditional', 'Neo-Traditional'],
-        event_id: 1,
-        event_name: 'Ink Fest 2024'
-      };
-      
-      setArtistData(mockArtistData);
+      // TODO: Implement API call to fetch artist data
+      setArtistData(null);
     } catch (error) {
       console.error('Error fetching artist data:', error);
     } finally {
@@ -93,68 +81,9 @@ export function ArtistBookingPage() {
 
   const fetchBookings = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockBookings: Booking[] = [
-        {
-          id: '1',
-          start: '2024-03-15T10:00:00Z',
-          end: '2024-03-15T11:00:00Z',
-          clientName: 'John Smith',
-          clientEmail: 'john@example.com',
-          clientPhone: '+44 7700 900123',
-          notes: 'Traditional sleeve design, upper arm',
-          status: 'upcoming',
-          consentCompleted: true
-        },
-        {
-          id: '2',
-          start: '2024-03-15T13:00:00Z',
-          end: '2024-03-15T14:30:00Z',
-          clientName: 'Emily Wilson',
-          clientEmail: 'emily@example.com',
-          clientPhone: '+44 7700 900456',
-          notes: 'Small rose design on wrist',
-          status: 'upcoming',
-          consentCompleted: false
-        },
-        {
-          id: '3',
-          start: '2024-03-16T11:00:00Z',
-          end: '2024-03-16T12:00:00Z',
-          clientName: 'David Brown',
-          clientEmail: 'david@example.com',
-          clientPhone: '+44 7700 900789',
-          notes: 'Japanese style dragon on back',
-          status: 'upcoming',
-          consentCompleted: false
-        },
-        {
-          id: '4',
-          start: '2024-03-14T14:00:00Z',
-          end: '2024-03-14T15:00:00Z',
-          clientName: 'Sarah Johnson',
-          clientEmail: 'sarah@example.com',
-          clientPhone: '+44 7700 900321',
-          notes: 'Small bird design on ankle',
-          status: 'completed',
-          consentCompleted: true
-        },
-        {
-          id: '5',
-          start: '2024-03-14T16:00:00Z',
-          end: '2024-03-14T17:00:00Z',
-          clientName: 'Michael Lee',
-          clientEmail: 'michael@example.com',
-          clientPhone: '+44 7700 900654',
-          notes: 'Geometric design on forearm',
-          status: 'cancelled',
-          consentCompleted: false
-        }
-      ];
-      
-      setBookings(mockBookings);
-      setFilteredBookings(mockBookings);
+      // TODO: Implement API call to fetch bookings
+      setBookings([]);
+      setFilteredBookings([]);
     } catch (error) {
       console.error('Error fetching bookings:', error);
     }
@@ -162,28 +91,8 @@ export function ArtistBookingPage() {
 
   const fetchBookingSettings = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockSettings = {
-        event_id: 1,
-        enabled: true,
-        default_slot_duration: 30,
-        booking_hours: {
-          start: '10:00',
-          end: '18:00'
-        },
-        available_dates: [
-          '2024-03-15',
-          '2024-03-16',
-          '2024-03-17'
-        ],
-        buffer_time: 15,
-        max_bookings_per_day: null,
-        allow_client_cancellation: true,
-        cancellation_deadline_hours: 24
-      };
-      
-      setBookingSettings(mockSettings);
+      // TODO: Implement API call to fetch booking settings
+      setBookingSettings(null);
     } catch (error) {
       console.error('Error fetching booking settings:', error);
     }
@@ -191,16 +100,8 @@ export function ArtistBookingPage() {
 
   const fetchBookingPreferences = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockPreferences = {
-        booking_status: 'taking_walkups',
-        contact_method: 'instagram',
-        contact_details: '@artist_handle',
-        booking_notes: 'Specializing in traditional and neo-traditional styles. Minimum size applies.'
-      };
-      
-      setBookingPreferences(mockPreferences);
+      // TODO: Implement API call to fetch booking preferences
+      setBookingPreferences(null);
     } catch (error) {
       console.error('Error fetching booking preferences:', error);
     }
@@ -315,11 +216,7 @@ export function ArtistBookingPage() {
   }
 
   // Mock event dates for the calendar
-  const eventDates = [
-    '2024-03-15',
-    '2024-03-16',
-    '2024-03-17'
-  ];
+  const eventDates: string[] = [];
 
   // Convert bookings to time slots for the calendar
   const bookingTimeSlots: TimeSlot[] = bookings

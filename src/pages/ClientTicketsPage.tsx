@@ -14,115 +14,13 @@ export function ClientTicketsPage() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
   // Mock data - in real implementation, fetch from API
-  const events = [
-    {
-      id: 1,
-      name: 'Ink Fest 2024',
-      location: 'Los Angeles, CA',
-      venue: 'LA Convention Center',
-      dates: ['2024-03-15', '2024-03-16', '2024-03-17'],
-      ticketTypes: [
-        {
-          id: '1',
-          name: 'Day Pass',
-          description: 'Access for one day of your choice',
-          price_gbp: 25.00,
-          capacity: 500,
-          available: 423,
-          sold: 77
-        },
-        {
-          id: '2',
-          name: 'Weekend Pass',
-          description: 'Full access to all days of the event',
-          price_gbp: 65.00,
-          capacity: 300,
-          available: 187,
-          sold: 113
-        },
-        {
-          id: '3',
-          name: 'VIP Pass',
-          description: 'Premium access with exclusive perks',
-          price_gbp: 120.00,
-          capacity: 50,
-          available: 32,
-          sold: 18
-        }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Body Art Expo',
-      location: 'New York, NY',
-      venue: 'Javits Center',
-      dates: ['2024-04-10', '2024-04-11', '2024-04-12'],
-      ticketTypes: [
-        {
-          id: '1',
-          name: 'General Admission',
-          description: 'Standard entry to the event',
-          price_gbp: 30.00,
-          capacity: 600,
-          available: 450,
-          sold: 150
-        },
-        {
-          id: '2',
-          name: 'VIP Experience',
-          description: 'Premium access with exclusive areas',
-          price_gbp: 85.00,
-          capacity: 100,
-          available: 75,
-          sold: 25
-        }
-      ]
-    }
-  ];
+  const events: any[] = [];
 
   useEffect(() => {
     // Simulate loading data
-    setTimeout(() => {
-      // Mock tickets data
-      const mockTickets = [
-        {
-          id: 1,
-          eventName: 'Ink Fest 2024',
-          eventLocation: 'Los Angeles, CA',
-          eventVenue: 'LA Convention Center',
-          ticketType: 'Weekend Pass',
-          purchaseDate: '2024-01-15T14:30:00Z',
-          eventDate: '2024-03-15',
-          qrCode: 'TICKET-1-123-WEEKEND-123456',
-          status: 'active'
-        },
-        {
-          id: 2,
-          eventName: 'Body Art Expo',
-          eventLocation: 'New York, NY',
-          eventVenue: 'Javits Center',
-          ticketType: 'General Admission',
-          purchaseDate: '2023-12-10T10:15:00Z',
-          eventDate: '2024-04-10',
-          qrCode: 'TICKET-2-123-GENERAL-789012',
-          status: 'active'
-        },
-        {
-          id: 3,
-          eventName: 'Tattoo Convention 2023',
-          eventLocation: 'Miami, FL',
-          eventVenue: 'Miami Beach Convention Center',
-          ticketType: 'Day Pass',
-          purchaseDate: '2023-10-05T09:45:00Z',
-          eventDate: '2023-11-20',
-          qrCode: 'TICKET-3-123-DAY-345678',
-          status: 'used'
-        }
-      ];
-      
-      setTickets(mockTickets);
-      setIsLoading(false);
-    }, 1000);
+    // TODO: Implement API call to fetch tickets
+    setTickets([]);
+    setIsLoading(false);
   }, []);
 
   const handleDownloadTicket = (ticketId: number) => {

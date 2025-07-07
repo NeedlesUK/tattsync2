@@ -46,23 +46,8 @@ export function ClientConsentPage() {
   const fetchClientData = async () => {
     try {
       setIsLoading(true);
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockClientData = {
-        id: user?.id,
-        name: user?.name,
-        email: user?.email,
-        phone: '+44 7700 900123',
-        date_of_birth: '1990-05-15',
-        address: '123 Main St, London, UK',
-        emergency_contact_name: 'Jane Smith',
-        emergency_contact_phone: '+44 7700 900456',
-        medical_conditions: 'None',
-        allergies: 'Latex',
-        medications: 'None'
-      };
-      
-      setClientData(mockClientData);
+      // TODO: Implement API call to fetch client data
+      setClientData(null);
     } catch (error) {
       console.error('Error fetching client data:', error);
     } finally {
@@ -72,74 +57,8 @@ export function ClientConsentPage() {
 
   const fetchSubmissions = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockSubmissions: FormSubmission[] = [
-        {
-          id: 1,
-          form_id: 1,
-          client_id: user?.id || '',
-          submission_data: {
-            clientName: user?.name,
-            clientEmail: user?.email,
-            DOB: '1990-05-15',
-            Phone: '+44 7700 900123',
-            FullAddress: '123 Main St, London, UK',
-            artistName: 'Sarah Johnson',
-            artistEmail: 'sarah@example.com',
-            artistBooth: 'A-15',
-            ageConfirm: true,
-            riskConfirm: true,
-            liabilityConfirm: true,
-            mediaRelease: 'Yes',
-            noIssues: false,
-            medicalIssues: ['Any allergies'],
-            medicalDetails: 'Allergic to latex',
-            aftercareAdvice: true,
-            eatBefore: true,
-            unwell: true,
-            noAlcohol: true,
-            marketingConsent: 'No'
-          },
-          submitted_at: '2024-01-15T14:30:00Z',
-          artist_name: 'Sarah Johnson',
-          artist_email: 'sarah@example.com',
-          artist_booth: 'A-15',
-          procedure_type: 'tattoo'
-        },
-        {
-          id: 2,
-          form_id: 2,
-          client_id: user?.id || '',
-          submission_data: {
-            clientName: user?.name,
-            clientEmail: user?.email,
-            DOB: '1990-05-15',
-            Phone: '+44 7700 900123',
-            FullAddress: '123 Main St, London, UK',
-            artistName: 'Mike Chen',
-            artistEmail: 'mike@example.com',
-            artistBooth: 'B-08',
-            ageConfirm: true,
-            riskConfirm: true,
-            liabilityConfirm: true,
-            mediaRelease: 'No',
-            noIssues: true,
-            aftercareAdvice: true,
-            eatBefore: true,
-            unwell: true,
-            noAlcohol: true,
-            marketingConsent: 'Yes'
-          },
-          submitted_at: '2024-01-10T10:45:00Z',
-          artist_name: 'Mike Chen',
-          artist_email: 'mike@example.com',
-          artist_booth: 'B-08',
-          procedure_type: 'piercing'
-        }
-      ];
-      
-      setSubmissions(mockSubmissions);
+      // TODO: Implement API call to fetch submissions
+      setSubmissions([]);
     } catch (error) {
       console.error('Error fetching submissions:', error);
     }

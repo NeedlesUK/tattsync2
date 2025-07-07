@@ -127,19 +127,8 @@ export function TattScoreJudgingPage() {
   const fetchJudgeData = async () => {
     try {
       setIsLoading(true);
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockJudgeData = {
-        id: 1,
-        user_id: user?.id,
-        event_id: 1,
-        event_name: 'Ink Fest 2024',
-        is_active: true,
-        entries_judged: 5,
-        total_entries: 15
-      };
-      
-      setJudgeData(mockJudgeData);
+      // TODO: Implement API call to fetch judge data
+      setJudgeData(null);
     } catch (error) {
       console.error('Error fetching judge data:', error);
     } finally {
@@ -149,48 +138,9 @@ export function TattScoreJudgingPage() {
 
   const fetchEntries = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockEntries = [
-        {
-          id: 1,
-          title: 'Dragon Sleeve',
-          description: 'Traditional Japanese dragon sleeve design',
-          artist_name: 'Sarah Johnson',
-          entry_type: 'tattoo',
-          entry_number: '001',
-          image_url: 'https://images.pexels.com/photos/1337380/pexels-photo-1337380.jpeg?auto=compress&cs=tinysrgb&w=400',
-          categories: ['Large Color', 'Japanese'],
-          has_been_judged: true,
-          average_score: 8.5
-        },
-        {
-          id: 2,
-          title: 'Geometric Back Piece',
-          description: 'Modern geometric design covering full back',
-          artist_name: 'Mike Chen',
-          entry_type: 'tattoo',
-          entry_number: '002',
-          image_url: 'https://images.pexels.com/photos/1319461/pexels-photo-1319461.jpeg?auto=compress&cs=tinysrgb&w=400',
-          categories: ['Large Black & Grey', 'Geometric'],
-          has_been_judged: false
-        },
-        {
-          id: 3,
-          title: 'Neo-Traditional Portrait',
-          description: 'Vibrant neo-traditional portrait with bold lines',
-          artist_name: 'Emma Davis',
-          entry_type: 'tattoo',
-          entry_number: '003',
-          image_url: 'https://images.pexels.com/photos/1435612/pexels-photo-1435612.jpeg?auto=compress&cs=tinysrgb&w=400',
-          categories: ['Medium Color', 'Neo-Traditional'],
-          has_been_judged: true,
-          average_score: 7.8
-        }
-      ];
-      
-      setEntries(mockEntries);
-      setFilteredEntries(mockEntries);
+      // TODO: Implement API call to fetch entries
+      setEntries([]);
+      setFilteredEntries([]);
     } catch (error) {
       console.error('Error fetching entries:', error);
     }
@@ -198,36 +148,8 @@ export function TattScoreJudgingPage() {
 
   const fetchResults = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockResults = [
-        {
-          placement: 1,
-          entry_id: 1,
-          entry_title: 'Dragon Sleeve',
-          artist_name: 'Sarah Johnson',
-          entry_type: 'tattoo',
-          total_score: 9.2
-        },
-        {
-          placement: 2,
-          entry_id: 3,
-          entry_title: 'Neo-Traditional Portrait',
-          artist_name: 'Emma Davis',
-          entry_type: 'tattoo',
-          total_score: 8.7
-        },
-        {
-          placement: 3,
-          entry_id: 2,
-          entry_title: 'Geometric Back Piece',
-          artist_name: 'Mike Chen',
-          entry_type: 'tattoo',
-          total_score: 8.1
-        }
-      ];
-      
-      setResults(mockResults);
+      // TODO: Implement API call to fetch results
+      setResults([]);
     } catch (error) {
       console.error('Error fetching results:', error);
     }

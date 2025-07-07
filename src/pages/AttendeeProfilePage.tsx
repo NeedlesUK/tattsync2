@@ -44,22 +44,7 @@ export function AttendeeProfilePage() {
   const [informationItems, setInformationItems] = useState<InformationItem[]>([]);
 
   // Mock data for the attendee
-  const attendee = {
-    id: 1,
-    name: 'Sarah Johnson',
-    email: 'sarah@example.com',
-    phone: '+44 7700 900123',
-    application_type: 'artist',
-    event_name: 'Ink Fest 2024',
-    event_id: 1,
-    booth_number: 'A-15',
-    profile_photo: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=128&h=128&dpr=2',
-    registration_date: '2024-01-10T10:00:00Z',
-    profile_completion: {
-      percentage: 100,
-      is_complete: true
-    }
-  };
+  const attendee = null;
 
   useEffect(() => {
     // Fetch profile data, deals, and information
@@ -69,104 +54,10 @@ export function AttendeeProfilePage() {
   const fetchProfileData = async () => {
     try {
       setIsLoading(true);
-      
-      // Mock profile fields data
-      const mockProfileFields: ProfileField[] = [
-        {
-          field_name: 'bio',
-          field_label: 'Artist Bio',
-          field_value: 'Experienced tattoo artist specializing in traditional and neo-traditional styles with over 8 years in the industry.',
-          field_type: 'textarea',
-          status: 'approved'
-        },
-        {
-          field_name: 'specialties',
-          field_label: 'Specialties',
-          field_value: 'Traditional, Neo-Traditional, Black & Grey',
-          field_type: 'text',
-          status: 'approved'
-        },
-        {
-          field_name: 'instagram_handle',
-          field_label: 'Instagram Handle',
-          field_value: '@sarahtattoos',
-          field_type: 'text',
-          status: 'approved'
-        },
-        {
-          field_name: 'portfolio_images',
-          field_label: 'Portfolio Images',
-          field_value: '5 images',
-          field_type: 'image',
-          file_url: 'https://images.pexels.com/photos/1337380/pexels-photo-1337380.jpeg?auto=compress&cs=tinysrgb&w=200',
-          status: 'approved'
-        }
-      ];
-      
-      // Mock deals data
-      const mockDeals: Deal[] = [
-        {
-          id: 1,
-          title: 'Exclusive Tattoo Supply Discount',
-          description: '20% off all tattoo supplies from InkMasters Supply Co. Valid during the event weekend.',
-          discount_type: 'percentage',
-          discount_value: 20,
-          discount_code: 'INKFEST20',
-          provider: 'InkMasters Supply Co.',
-          provider_logo_url: 'https://images.pexels.com/photos/1337380/pexels-photo-1337380.jpeg?auto=compress&cs=tinysrgb&w=200',
-          valid_from: new Date().toISOString(),
-          valid_until: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-          is_global: false
-        },
-        {
-          id: 2,
-          title: 'Hotel Discount',
-          description: 'Special rate at the Riverside Hotel for all event attendees. Use code TATTCON24 when booking.',
-          discount_type: 'fixed',
-          discount_value: 50,
-          discount_code: 'TATTCON24',
-          provider: 'Riverside Hotel',
-          provider_logo_url: 'https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg?auto=compress&cs=tinysrgb&w=200',
-          valid_from: new Date().toISOString(),
-          valid_until: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-          is_global: false
-        },
-        {
-          id: 3,
-          title: 'TattSync Pro Membership Discount',
-          description: 'Get 15% off your first year of TattSync Pro membership. Access exclusive events and resources.',
-          discount_type: 'percentage',
-          discount_value: 15,
-          discount_code: 'TATTSYNCPRO15',
-          provider: 'TattSync',
-          provider_logo_url: null,
-          valid_from: new Date().toISOString(),
-          valid_until: null,
-          is_global: true
-        }
-      ];
-      
-      // Mock information items
-      const mockInformationItems: InformationItem[] = [
-        {
-          id: 1,
-          title: 'Welcome to Ink Fest 2024',
-          content: 'Thank you for being part of our event! This page contains important information about the event, including setup times, venue details, and other resources.',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: 2,
-          title: 'Artist Setup Information',
-          content: 'Artist setup begins at 8:00 AM on the first day of the event. Please bring your own equipment, including chairs, lamps, and supplies. Power will be provided at each booth.\n\nCheck-in will be at the main entrance. You will need to show your ID and confirmation email to receive your badge and booth assignment.\n\nParking is available in the main lot. You will receive one free parking pass per booth.',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
-
-      setProfileFields(mockProfileFields);
-      setDeals(mockDeals);
-      setInformationItems(mockInformationItems);
+      // TODO: Implement API calls to fetch profile data
+      setProfileFields([]);
+      setDeals([]);
+      setInformationItems([]);
     } catch (error) {
       console.error('Error fetching profile data:', error);
     } finally {

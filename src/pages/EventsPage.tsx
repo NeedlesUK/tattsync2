@@ -20,79 +20,9 @@ export function EventsPage() {
   const fetchEvents = async () => {
     setIsLoading(true);
     try {
-      if (supabase) {
-        // Fetch events directly from Supabase
-        const { data, error } = await supabase
-          .from('events')
-          .select(`
-            id,
-            name,
-            description,
-            event_slug,
-            start_date,
-            end_date,
-            location,
-            venue,
-            max_attendees,
-            status,
-            created_at,
-            event_manager_id,
-            users:event_manager_id (name, email)
-          `)
-          .order('start_date', { ascending: false });
-
-        if (error) {
-          console.error('Error fetching events from Supabase:', error);
-          setEvents([]);
-        } else {
-          // Format the data to match the expected structure
-          const formattedEvents = data.map(event => ({
-            id: event.id,
-            name: event.name,
-            description: event.description,
-            date: event.start_date,
-            endDate: event.end_date,
-            location: event.location,
-            venue: event.venue || '',
-            attendees: 0, // This would need to be calculated from applications or tickets
-            maxAttendees: event.max_attendees,
-            status: event.status || 'draft',
-            image: 'https://images.pexels.com/photos/1002638/pexels-photo-1002638.jpeg?auto=compress&cs=tinysrgb&w=400', // Placeholder
-            event_manager_name: event.users?.name,
-            event_manager_email: event.users?.email
-          }));
-
-          // Filter events managed by the current user
-          const managedEvents = formattedEvents.filter(event => 
-            event.event_manager_id === user?.id || 
-            event.event_manager_email === user?.email
-          );
-
-          // Set user's events
-          setUserEvents(managedEvents);
-
-          // Log the events for debugging
-          console.log('All events:', formattedEvents);
-          console.log('User events:', managedEvents);
-          console.log('Current user:', user);
-
-          // If the user is an event manager, make sure their events are at the top
-          if (user?.role === 'event_manager' && managedEvents.length > 0) {
-            console.log('User is an event manager with events');
-          }
-
-          setEvents(formattedEvents);
-        }
-      } else {
-        // Fallback to API if Supabase is not available
-        try {
-          console.error('Supabase client not available');
-          setEvents([]);
-        } catch (apiError) {
-          console.error('Error fetching events:', apiError);
-          setEvents([]);
-        }
-      }
+      // TODO: Implement API call to fetch events
+      setEvents([]);
+      setUserEvents([]);
     } catch (error) {
       console.error('Error fetching events:', error);
       setEvents([]);

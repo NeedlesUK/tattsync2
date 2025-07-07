@@ -127,19 +127,8 @@ export function TattScoreAdminPage() {
   const fetchEventData = async () => {
     try {
       setIsLoading(true);
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockEventData = {
-        id: 1,
-        name: 'Ink Fest 2024',
-        start_date: '2024-03-15',
-        end_date: '2024-03-17',
-        location: 'Los Angeles, CA',
-        venue: 'LA Convention Center',
-        tattscore_enabled: true
-      };
-      
-      setEventData(mockEventData);
+      // TODO: Implement API call to fetch event data
+      setEventData(null);
     } catch (error) {
       console.error('Error fetching event data:', error);
     } finally {
@@ -149,55 +138,9 @@ export function TattScoreAdminPage() {
 
   const fetchEntries = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockEntries = [
-        {
-          id: 1,
-          title: 'Dragon Sleeve',
-          description: 'Traditional Japanese dragon sleeve design',
-          artist_name: 'Sarah Johnson',
-          entry_type: 'tattoo',
-          entry_number: '001',
-          image_url: 'https://images.pexels.com/photos/1337380/pexels-photo-1337380.jpeg?auto=compress&cs=tinysrgb&w=400',
-          categories: ['Large Color', 'Japanese'],
-          is_disqualified: false,
-          average_score: 8.5,
-          has_been_judged: true,
-          placement: 1
-        },
-        {
-          id: 2,
-          title: 'Geometric Back Piece',
-          description: 'Modern geometric design covering full back',
-          artist_name: 'Mike Chen',
-          entry_type: 'tattoo',
-          entry_number: '002',
-          image_url: 'https://images.pexels.com/photos/1319461/pexels-photo-1319461.jpeg?auto=compress&cs=tinysrgb&w=400',
-          categories: ['Large Black & Grey', 'Geometric'],
-          is_disqualified: false,
-          average_score: 7.2,
-          has_been_judged: true,
-          placement: 3
-        },
-        {
-          id: 3,
-          title: 'Neo-Traditional Portrait',
-          description: 'Vibrant neo-traditional portrait with bold lines',
-          artist_name: 'Emma Davis',
-          entry_type: 'tattoo',
-          entry_number: '003',
-          image_url: 'https://images.pexels.com/photos/1435612/pexels-photo-1435612.jpeg?auto=compress&cs=tinysrgb&w=400',
-          categories: ['Medium Color', 'Neo-Traditional'],
-          is_disqualified: false,
-          average_score: 7.8,
-          has_been_judged: true,
-          placement: 2
-        }
-      ];
-      
-      setEntries(mockEntries);
-      setFilteredEntries(mockEntries);
+      // TODO: Implement API call to fetch entries
+      setEntries([]);
+      setFilteredEntries([]);
     } catch (error) {
       console.error('Error fetching entries:', error);
     }
@@ -205,82 +148,8 @@ export function TattScoreAdminPage() {
 
   const fetchCategories = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now - these are tattoo style/size categories, not scoring areas
-      const mockCategories = [
-        {
-          id: 1,
-          name: 'Small Color',
-          description: 'Color tattoos under 5 inches',
-          max_entries: 20,
-          current_entries: 5
-        },
-        {
-          id: 2,
-          name: 'Medium Color',
-          description: 'Color tattoos 5-10 inches',
-          max_entries: 20,
-          current_entries: 8
-        },
-        {
-          id: 3,
-          name: 'Large Color',
-          description: 'Color tattoos over 10 inches',
-          max_entries: 15,
-          current_entries: 3
-        },
-        {
-          id: 4,
-          name: 'Small Black & Grey',
-          description: 'Black & grey tattoos under 5 inches',
-          max_entries: 20,
-          current_entries: 7
-        },
-        {
-          id: 5,
-          name: 'Medium Black & Grey',
-          description: 'Black & grey tattoos 5-10 inches',
-          max_entries: 20,
-          current_entries: 10
-        },
-        {
-          id: 6,
-          name: 'Large Black & Grey',
-          description: 'Black & grey tattoos over 10 inches',
-          max_entries: 15,
-          current_entries: 4
-        },
-        {
-          id: 7,
-          name: 'Traditional',
-          description: 'American traditional style tattoos',
-          max_entries: 15,
-          current_entries: 6
-        },
-        {
-          id: 8,
-          name: 'Neo-Traditional',
-          description: 'Neo-traditional style tattoos',
-          max_entries: 15,
-          current_entries: 5
-        },
-        {
-          id: 9,
-          name: 'Japanese',
-          description: 'Japanese style tattoos',
-          max_entries: 15,
-          current_entries: 3
-        },
-        {
-          id: 10,
-          name: 'Geometric',
-          description: 'Geometric style tattoos',
-          max_entries: 15,
-          current_entries: 4
-        }
-      ];
-      
-      setCategories(mockCategories);
+      // TODO: Implement API call to fetch categories
+      setCategories([]);
     } catch (error) {
       console.error('Error fetching categories:', error);
     }
@@ -288,36 +157,8 @@ export function TattScoreAdminPage() {
 
   const fetchJudges = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockJudges = [
-        {
-          id: 1,
-          name: 'John Smith',
-          email: 'john@example.com',
-          entries_judged: 15,
-          total_entries: 15,
-          completion_percentage: 100
-        },
-        {
-          id: 2,
-          name: 'Lisa Wong',
-          email: 'lisa@example.com',
-          entries_judged: 10,
-          total_entries: 15,
-          completion_percentage: 67
-        },
-        {
-          id: 3,
-          name: 'Mark Johnson',
-          email: 'mark@example.com',
-          entries_judged: 5,
-          total_entries: 15,
-          completion_percentage: 33
-        }
-      ];
-      
-      setJudges(mockJudges);
+      // TODO: Implement API call to fetch judges
+      setJudges([]);
     } catch (error) {
       console.error('Error fetching judges:', error);
     }
@@ -325,36 +166,8 @@ export function TattScoreAdminPage() {
 
   const fetchResults = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockResults = [
-        {
-          placement: 1,
-          entry_id: 1,
-          entry_title: 'Dragon Sleeve',
-          artist_name: 'Sarah Johnson',
-          entry_type: 'tattoo',
-          total_score: 9.2
-        },
-        {
-          placement: 2,
-          entry_id: 3,
-          entry_title: 'Neo-Traditional Portrait',
-          artist_name: 'Emma Davis',
-          entry_type: 'tattoo',
-          total_score: 8.7
-        },
-        {
-          placement: 3,
-          entry_id: 2,
-          entry_title: 'Geometric Back Piece',
-          artist_name: 'Mike Chen',
-          entry_type: 'tattoo',
-          total_score: 8.1
-        }
-      ];
-      
-      setResults(mockResults);
+      // TODO: Implement API call to fetch results
+      setResults([]);
     } catch (error) {
       console.error('Error fetching results:', error);
     }

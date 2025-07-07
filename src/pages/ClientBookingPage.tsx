@@ -51,7 +51,7 @@ export function ClientBookingPage() {
   useEffect(() => {
     fetchArtists();
     fetchBookings();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     let filtered = artists;
@@ -83,69 +83,9 @@ export function ClientBookingPage() {
   const fetchArtists = async () => {
     try {
       setIsLoading(true);
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockArtists: Artist[] = [
-        {
-          id: '1',
-          name: 'Sarah Johnson',
-          email: 'sarah@example.com',
-          booth_number: 'A-15',
-          application_type: 'artist',
-          profile_photo: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2',
-          specialties: ['Traditional', 'Neo-Traditional'],
-          rating: 4.8,
-          booking_status: 'advance_bookings',
-          contact_method: 'instagram',
-          contact_details: '@sarahtattoos',
-          booking_notes: 'Specializing in traditional and neo-traditional styles. Minimum size applies.'
-        },
-        {
-          id: '2',
-          name: 'Mike Chen',
-          email: 'mike@example.com',
-          booth_number: 'B-08',
-          application_type: 'piercer',
-          profile_photo: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2',
-          specialties: ['Ear Piercings', 'Body Piercings'],
-          rating: 4.9,
-          booking_status: 'taking_walkups',
-          contact_method: 'email',
-          contact_details: 'mike@example.com',
-          booking_notes: 'Experienced piercer with a wide range of jewelry options available.'
-        },
-        {
-          id: '3',
-          name: 'Emma Davis',
-          email: 'emma@example.com',
-          booth_number: 'A-22',
-          application_type: 'artist',
-          profile_photo: 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2',
-          specialties: ['Black & Grey', 'Realism'],
-          rating: 4.7,
-          booking_status: 'fully_booked',
-          contact_method: 'instagram',
-          contact_details: '@emmadavis_art',
-          booking_notes: 'Specializing in black and grey realism. Currently fully booked for this event.'
-        },
-        {
-          id: '4',
-          name: 'Alex Rodriguez',
-          email: 'alex@example.com',
-          booth_number: 'C-05',
-          application_type: 'artist',
-          profile_photo: 'https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2',
-          specialties: ['Japanese', 'Color'],
-          rating: 4.6,
-          booking_status: 'advance_bookings',
-          contact_method: 'phone',
-          contact_details: '+44 7700 900123',
-          booking_notes: 'Specializing in Japanese style and color work. Booking in advance recommended.'
-        }
-      ];
-      
-      setArtists(mockArtists);
-      setFilteredArtists(mockArtists);
+      // TODO: Implement API call to fetch artists
+      setArtists([]);
+      setFilteredArtists([]);
     } catch (error) {
       console.error('Error fetching artists:', error);
     } finally {
@@ -155,55 +95,9 @@ export function ClientBookingPage() {
 
   const fetchBookings = async () => {
     try {
-      // In a real implementation, fetch from API
-      // Mock data for now
-      const mockBookings: Booking[] = [
-        {
-          id: '1',
-          start: '2024-03-15T10:00:00Z',
-          end: '2024-03-15T11:00:00Z',
-          clientName: user?.name || 'Client',
-          clientEmail: user?.email || 'client@example.com',
-          clientPhone: '+44 7700 900123',
-          notes: 'Traditional sleeve design, upper arm',
-          status: 'upcoming',
-          consentCompleted: true,
-          artistId: '1',
-          artistName: 'Sarah Johnson',
-          artistType: 'artist'
-        },
-        {
-          id: '2',
-          start: '2024-03-16T14:00:00Z',
-          end: '2024-03-16T15:00:00Z',
-          clientName: user?.name || 'Client',
-          clientEmail: user?.email || 'client@example.com',
-          clientPhone: '+44 7700 900123',
-          notes: 'Ear piercing, helix',
-          status: 'upcoming',
-          consentCompleted: false,
-          artistId: '2',
-          artistName: 'Mike Chen',
-          artistType: 'piercer'
-        },
-        {
-          id: '3',
-          start: '2024-03-14T13:00:00Z',
-          end: '2024-03-14T14:00:00Z',
-          clientName: user?.name || 'Client',
-          clientEmail: user?.email || 'client@example.com',
-          clientPhone: '+44 7700 900123',
-          notes: 'Small rose design on wrist',
-          status: 'completed',
-          consentCompleted: true,
-          artistId: '4',
-          artistName: 'Alex Rodriguez',
-          artistType: 'artist'
-        }
-      ];
-      
-      setBookings(mockBookings);
-      setFilteredBookings(mockBookings);
+      // TODO: Implement API call to fetch bookings
+      setBookings([]);
+      setFilteredBookings([]);
     } catch (error) {
       console.error('Error fetching bookings:', error);
     }
@@ -311,21 +205,10 @@ export function ClientBookingPage() {
   }
 
   // Mock event dates for the booking modal
-  const availableDates = [
-    '2024-03-15',
-    '2024-03-16',
-    '2024-03-17'
-  ];
+  const availableDates: string[] = [];
 
   // Mock time slots for the booking modal
-  const availableTimeSlots = [
-    { start: '2024-03-15T10:00:00Z', end: '2024-03-15T11:00:00Z' },
-    { start: '2024-03-15T11:00:00Z', end: '2024-03-15T12:00:00Z' },
-    { start: '2024-03-15T13:00:00Z', end: '2024-03-15T14:00:00Z' },
-    { start: '2024-03-15T14:00:00Z', end: '2024-03-15T15:00:00Z' },
-    { start: '2024-03-15T15:00:00Z', end: '2024-03-15T16:00:00Z' },
-    { start: '2024-03-15T16:00:00Z', end: '2024-03-15T17:00:00Z' }
-  ];
+  const availableTimeSlots: { start: string; end: string }[] = [];
 
   return (
     <div className="min-h-screen pt-16">
