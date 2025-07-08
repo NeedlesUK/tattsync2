@@ -26,6 +26,9 @@ export function RegistrationPage() {
     if (user && !authLoading) {
       // User already logged in, redirect to dashboard
       navigate('/dashboard');
+    }
+  }, [user, navigate, authLoading]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
