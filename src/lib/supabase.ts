@@ -35,16 +35,12 @@ function validateCredentials() {
 // Create client only if we have valid credentials
 let supabase = null;
 
-// Add a timeout for Supabase operations
-const SUPABASE_TIMEOUT = 10000; // 10 seconds
-
 try {
   if (validateCredentials()) {
     supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true, 
-        storageKey: 'tattsync-auth',
         detectSessionInUrl: false
       }
     });
@@ -52,69 +48,16 @@ try {
     
     // Test the connection
     supabase.auth.getSession().then(({ data, error }) => {
-      if (data && data.session) {
-        console.log('✅ Supabase session found');
-        
-        // Log session expiry time
-        const expiresAt = new Date(data.session.expires_at * 1000);
-        const now = new Date();
-        const minutesUntilExpiry = Math.round((expiresAt.getTime() - now.getTime()) / 60000);
-        console.log(`Session expires in ${minutesUntilExpiry} minutes`);
-        
-      } else if (error) {
-        console.warn('⚠️ Supabase session test returned an error:', error.message);
-        console.log('This is normal if you are not logged in');
+      if (error) {
+        console.error('❌ Error testing Supabase connection:', error.message);
       } else {
         console.log('✅ Supabase connection test successful');
-        if (data.session) {
-          console.log('User is already logged in');
-        } else {
-          console.log('No active session found');
-        }
       }
     });
   }
 } catch (error) {
   console.error('❌ Error creating Supabase client:', error);
   supabase = null;
-  
-  // Create a mock client for development
-  console.warn('⚠️ Creating mock Supabase client for development');
-  supabase = {
-    auth: {
-      signInWithPassword: async ({ email, password }) => {
-        console.log('Mock login with:', email);
-        if (email === 'admin@tattsync.com' && password === 'password123') {
-          return {
-            data: {
-              user: {
-                id: '00000000-0000-0000-0000-000000000000',
-                email: email,
-                user_metadata: { name: 'Admin User', role: 'admin' }
-              },
-              session: {
-                access_token: 'mock-token',
-                refresh_token: 'mock-refresh-token',
-                expires_at: Date.now() + 3600000
-              }
-            },
-            error: null
-          };
-        }
-        return { data: null, error: { message: 'Invalid login credentials' } };
-      },
-      getSession: async () => ({ data: { session: null } }),
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-      signOut: async () => ({ error: null })
-    },
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          single: async () => ({ data: null, error: null })
-        })
-      })
-    })
-  };
 }
 
 export { supabase };

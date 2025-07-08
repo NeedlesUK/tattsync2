@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 export function RegistrationPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -40,6 +41,8 @@ export function RegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Form submitted with email:', formData.email);
+    
     // Prevent multiple simultaneous attempts
     if (isLoading) {
       return;
@@ -49,10 +52,31 @@ export function RegistrationPage() {
     setErrorMessage('');
 
     try {
-      const success = await login(formData.email, formData.password);
-      
-      if (!success) {
-        throw new Error('Login failed. Please check your credentials.');
+      // Direct login with Supabase to bypass any issues with the auth context
+      if (supabase) {
+        console.log('Attempting direct login with Supabase');
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password
+        });
+        
+        if (error) {
+          console.error('Supabase login error:', error);
+          throw error;
+        }
+        
+        if (data?.user) {
+          console.log('Login successful, redirecting...');
+          navigate('/dashboard');
+          return;
+        }
+      } else {
+        // Fallback to context login if supabase is not available
+        console.log('Falling back to context login');
+        const success = await login(formData.email, formData.password);
+        if (!success) {
+          throw new Error('Login failed. Please check your credentials.');
+        }
       }
     } catch (error: any) {
       console.error('Authentication error:', error);
@@ -142,7 +166,9 @@ export function RegistrationPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-purple-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2">
+              className="w-full bg-gradient-to-r from-purple-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              onClick={() => console.log('Login button clicked')}
+            >
               {isLoading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>

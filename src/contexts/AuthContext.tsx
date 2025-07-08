@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import { createClient, Session, User } from '@supabase/supabase-js';
 import api from '../lib/api';
 
+// Define a timeout for auth operations
+const AUTH_TIMEOUT = 15000; // 15 seconds
+
 interface AuthUser {
   id: string;
   name: string;
@@ -41,7 +44,8 @@ if (supabaseUrl &&
     supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
-        persistSession: true,
+        persistSession: true, 
+        storageKey: 'tattsync-auth',
         detectSessionInUrl: false
       }
     });
@@ -125,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user state with complete data
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
-      console.log('🔄 Updating user state for session:', session.user.email || 'unknown email');
+      console.log('Updating user state for:', session.user.email || 'unknown email');
       
       // Set the authorization header for API requests
       if (session?.access_token) {
@@ -138,13 +142,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userObj: AuthUser = {
           id: userData.id,
           name: userData.name,
-          email: userData.email,
+          email: userData.email || session.user.email || '',
           role: userData.role || 'artist', 
           roles: userData.roles || [userData.role || 'artist'],
           avatar: undefined
         };
         
-        console.log('Setting user state:', userObj);
+        console.log('User state updated successfully');
         setUser(userObj);
         setIsLoading(false);
       } catch (error: any) {
@@ -159,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           roles: [session.user.user_metadata?.role || 'artist']
         };
         
-        console.log('Setting fallback user state:', fallbackUser);
+        console.log('Using fallback user state');
         setUser(fallbackUser);
         setIsLoading(false);
       }
@@ -181,7 +185,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
-      console.log('🔍 Initial session check:', session?.user?.email || 'No session');
+      console.log('Initial session check:', session?.user?.email || 'No session');
       
       if (session?.access_token) {
         // Set the authorization header for API requests
@@ -196,7 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log('🔄 Auth state changed:', event, newSession?.user?.email);
+      console.log('Auth state changed:', event, newSession?.user?.email);
 
       // Important: Only update if the session actually changed
       if (JSON.stringify(session) === JSON.stringify(newSession)) {
@@ -226,23 +230,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     if (!supabase) {
       throw new Error('Supabase not configured. Please check your environment variables.');
-    } 
+    }
     
     setIsLoading(true);
     
     try {
-      // First check if we already have a session and sign out if needed
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (sessionData.session) {
-        console.log('Existing session found, signing out first');
-        await supabase.auth.signOut();
-      }
+      console.log('Attempting login for:', email);
 
-      // Now sign in with the provided credentials
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // Create a promise that will be rejected after timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Login request timed out')), AUTH_TIMEOUT);
       });
+      
+      // Create the actual login promise
+      const loginPromise = supabase.auth.signInWithPassword({ email, password });
+      
+      // Race the login against the timeout
+      const { data, error } = await Promise.race([
+        loginPromise,
+        timeoutPromise.then(() => { throw new Error('Login request timed out'); })
+      ]);
 
       if (error) {
         console.error('Login error:', error);
@@ -251,25 +258,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('Login successful for:', email);
-      
-      // Set authorization header immediately after successful login
-      if (data?.session?.access_token) {
-        api.defaults.headers.common['Authorization'] = `Bearer ${data.session.access_token}`;
-        console.log('Set Authorization header with token');
-      }
-
-      // Update session and user state immediately
-      setSession(data?.session || null);
-      
-      // The auth state change listener will handle updating the user state
-      console.log('Login completed successfully');
-      
-      // Return success
-      setIsLoading(false);
       return true;
     } catch (error) {
-      console.error('Login error in AuthContext:', error);
-      console.log('Error during login:', error.message || error);
+      console.error('Login error:', error);
       setIsLoading(false);
       return false;
     }
@@ -284,7 +275,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     console.log('Starting logout process');
     try {
-      const { error } = await supabase.auth.signOut();
+      // Create a promise that will be rejected after timeout
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Logout request timed out')), AUTH_TIMEOUT);
+      });
+      
+      // Create the actual logout promise
+      const logoutPromise = supabase.auth.signOut();
+      
+      // Race the logout against the timeout
+      const { error } = await Promise.race([
+        logoutPromise,
+        timeoutPromise.then(() => { throw new Error('Logout request timed out'); })
+      ]);
+      
       if (error) {
         console.error('Logout error:', error);
         setIsLoading(false);
