@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserData = async (userId: string, userEmail: string) => {
     try {
       console.log('🔍 Fetching user data for:', userEmail, 'via API');
-      let userData;
+      let userData = null;
       
       // Try API call first
       if (session?.access_token) {
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('🔍 Calling backend API for user data');
           
           // Call the backend API to get user data
-          const response = await api.get(`/api/users/${userId}`, {
+          const response = await api.get(`/users/${userId}`, {
             headers: {
               'Authorization': `Bearer ${session.access_token}`
             }
@@ -129,7 +129,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
       console.log('🔄 Updating user state for session:', session.user.email);
-      setSession(session);
       
       // Set the authorization header for API requests
       if (session?.access_token) {
@@ -241,20 +240,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('1. Starting sign in process');
     
     try {
-      // Clear any previous session first to avoid state conflicts
-      // Removed signOut call as it can cause issues with the subsequent login attempt
-      
+      // First check if we already have a session and sign out if needed
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session) {
+        console.log('2. Existing session found, signing out first');
+        await supabase.auth.signOut();
+      } else {
+        console.log('2. No existing session found');
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log('2. Auth response received', { success: !error, errorMessage: error?.message });
+      console.log('3. Auth response received', { success: !error, errorMessage: error?.message });
       
       if (error) {
         console.error('Login error:', error);
         setIsLoading(false);
-        console.log('3. Error during login, setting loading to false');
+        console.log('4. Error during login, setting loading to false');
         throw error;
       }
 
@@ -266,11 +271,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          console.log('4. Set Authorization header with token');
       }
 
-      console.log('5. Login completed successfully');
+      console.log('5. Setting session state');
       
       // Update session and user state immediately
       setSession(data.session);
-      await updateUserState(data.session);
+      
+      try {
+        console.log('6. Updating user state');
+        await updateUserState(data.session);
+        console.log('7. User state updated successfully');
+      } catch (userStateError) {
+        console.error('Error updating user state:', userStateError);
+        // Continue even if user state update fails
+      }
+      
+      console.log('8. Login completed successfully');
       
       // Return the data so the calling component can handle it
       return true;
