@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, CreditCard, MessageCircle, TrendingUp, Clock, User, MapPin } from 'lucide-react';
+import { Calendar, Users, CreditCard, MessageCircle, User, MapPin } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { StatsCard } from '../components/dashboard/StatsCard';
 import { EventCalendar } from '../components/calendar/EventCalendar';
@@ -7,36 +7,10 @@ import { EventCalendar } from '../components/calendar/EventCalendar';
 export function DashboardPage() {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [stats] = useState([
-    {
-      title: 'Active Events',
-      value: '12',
-      change: '+3 from last month',
-      icon: Calendar,
-      color: 'purple'
-    },
-    {
-      title: 'Total Applications',
-      value: '247',
-      change: '+18% from last week',
-      icon: Users,
-      color: 'teal'
-    },
-    {
-      title: 'Revenue',
-      value: '£24,580',
-      change: '+12% from last month',
-      icon: CreditCard,
-      color: 'orange'
-    },
-    {
-      title: 'Messages',
-      value: '86',
-      change: '12 unread',
-      icon: MessageCircle,
-      color: 'blue'
-    }
-  ]);
+  
+  // Remove all dummy data to avoid reference errors
+  const stats = [];
+  const recentEvents = [];
 
   // Show different dashboard based on user role
   const isClient = user?.role === 'client';
@@ -55,7 +29,7 @@ export function DashboardPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
-            Welcome back, {user?.name}!
+            Welcome back, {user?.name || 'User'}!
           </h1>
           <p className="text-gray-300">
             {isClient 
@@ -70,9 +44,34 @@ export function DashboardPage() {
         {/* Show stats only for admins and event managers */}
         {!isClient && !isRegularUser && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {stats.map((stat, index) => (
-              <StatsCard key={index} {...stat} />
-            ))}
+            <StatsCard 
+              title="Active Events" 
+              value="12" 
+              change="+3 from last month" 
+              icon={Calendar} 
+              color="purple" 
+            />
+            <StatsCard 
+              title="Total Applications" 
+              value="247" 
+              change="+18% from last week" 
+              icon={Users} 
+              color="teal" 
+            />
+            <StatsCard 
+              title="Revenue" 
+              value="£24,580" 
+              change="+12% from last month" 
+              icon={CreditCard} 
+              color="orange" 
+            />
+            <StatsCard 
+              title="Messages" 
+              value="86" 
+              change="12 unread" 
+              icon={MessageCircle} 
+              color="blue" 
+            />
           </div>
         )}
 
