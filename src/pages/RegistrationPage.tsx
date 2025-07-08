@@ -16,7 +16,7 @@ export function RegistrationPage() {
 
   useEffect(() => {
     if (user && !authLoading) {
-      console.log('User already logged in, redirecting to dashboard');
+      // User already logged in, redirect to dashboard
       navigate('/dashboard');
     }
   }, [user, navigate, authLoading]);
@@ -40,24 +40,17 @@ export function RegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('Form submitted with email:', formData.email);
     // Prevent multiple simultaneous attempts
     if (isLoading) {
-      console.log('Sign in already in progress, ignoring...');
       return;
     }
     
     setIsLoading(true);
     setErrorMessage('');
 
-    console.log('Attempting login with:', formData.email);
-    setIsLoading(true);
-    
     try {
       const success = await login(formData.email, formData.password);
       
-      // If login was successful, the auth state change will trigger navigation
-      // If not, we'll fall through to the catch block
       if (!success) {
         throw new Error('Login failed. Please check your credentials.');
       }
@@ -75,7 +68,7 @@ export function RegistrationPage() {
       
       setErrorMessage(message);
     } finally {
-      setIsLoading(false);
+      // The loading state is managed by the auth context
     }
   };
 
@@ -149,9 +142,7 @@ export function RegistrationPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-purple-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              onClick={() => console.log('Login button clicked, form will handle submission')}
-            >
+              className="w-full bg-gradient-to-r from-purple-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2">
               {isLoading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>

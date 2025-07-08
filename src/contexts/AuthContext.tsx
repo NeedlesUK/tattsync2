@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
 import api from '../lib/api';
-import { shouldUseTempDb, getDbClient } from '../lib/tempDb';
 
 interface AuthUser {
   id: string;
@@ -18,7 +17,7 @@ interface AuthContextType {
   supabase: ReturnType<typeof createClient> | null;
   updateUserEmail: (newEmail: string) => Promise<void>;
   updateUserRoles: (roles: string[], primaryRole: string) => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>; 
   isLoading: boolean;
   updateUserProfile: (profileData: Partial<AuthUser>) => void;
@@ -126,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user state with complete data
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
-      console.log('🔄 Updating user state for session:', session.user.email);
+      console.log('🔄 Updating user state for session:', session.user.email || 'unknown email');
       
       // Set the authorization header for API requests
       if (session?.access_token) {
@@ -136,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const userData = await fetchUserData(session.user.id, session.user.email || '');
         
-        const userObj = {
+        const userObj: AuthUser = {
           id: userData.id,
           name: userData.name,
           email: userData.email,
@@ -174,18 +173,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase) {
       console.warn('⚠️ Supabase not configured. Please check your environment variables.');
-      console.warn('⚠️ Using mock data for development');
+      console.warn('Using mock data for development');
       setIsLoading(false);
       return;
     }
-
-    // Set a timeout to prevent hanging during initial load
-    const initTimeout = setTimeout(() => {
-      if (isLoading) {
-        console.warn('Auth initialization timed out after 5 seconds');
-        setIsLoading(false);
-      }
-    }, 5000);
 
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -199,9 +190,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       await updateUserState(session);
       setIsLoading(false);
-      
-      // Clear the timeout since we've completed initialization
-      clearTimeout(initTimeout);
     });
 
     // Listen for auth changes
@@ -210,12 +198,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       console.log('🔄 Auth state changed:', event, newSession?.user?.email);
 
-      // Set a timeout to prevent hanging during auth state change
-      const stateChangeTimeout = setTimeout(() => {
-        if (isLoading) {
-          setIsLoading(false);
-        }
-      }, 5000);
       // Important: Only update if the session actually changed
       if (JSON.stringify(session) === JSON.stringify(newSession)) {
         console.log('Session unchanged, skipping update');
@@ -236,9 +218,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       await updateUserState(newSession);
       setIsLoading(false);
-      
-      // Clear the timeout
-      clearTimeout(stateChangeTimeout);
     });
 
     return () => subscription.unsubscribe();
@@ -250,16 +229,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } 
     
     setIsLoading(true);
-    console.log('=== SIGN IN DEBUG ===');
-    console.log('1. Starting sign in process');
     
     try {
-      console.log('2. Attempting sign in with email:', email);
-      
       // First check if we already have a session and sign out if needed
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData.session) {
-        console.log('2a. Existing session found, signing out first');
+        console.log('Existing session found, signing out first');
         await supabase.auth.signOut();
       }
 
@@ -269,37 +244,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       });
 
-      console.log('3. Auth response received', { success: !!data.session, errorMessage: error?.message });
-      
       if (error) {
         console.error('Login error:', error);
         setIsLoading(false);
-        console.log('4. Error during login, loading state reset');
         return false;
       }
 
-      console.log('4. Login successful for:', email);
+      console.log('Login successful for:', email);
       
       // Set authorization header immediately after successful login
       if (data?.session?.access_token) {
         api.defaults.headers.common['Authorization'] = `Bearer ${data.session.access_token}`;
-        console.log('5. Set Authorization header with token');
+        console.log('Set Authorization header with token');
       }
 
-      console.log('6. Setting session state');
-      
       // Update session and user state immediately
       setSession(data?.session || null);
       
       // The auth state change listener will handle updating the user state
-      console.log('7. Login completed successfully');
+      console.log('Login completed successfully');
       
-      // Return the data so the calling component can handle it
+      // Return success
       setIsLoading(false);
       return true;
     } catch (error) {
       console.error('Login error in AuthContext:', error);
-      console.log('3. Error during login:', error.message || error);
+      console.log('Error during login:', error.message || error);
       setIsLoading(false);
       return false;
     }
@@ -326,9 +296,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear user state immediately
       setUser(null);
       setSession(null);
-      console.log('User logged out successfully');
-      
-      // User state will be updated by the auth state change listener
+      console.log('User logged out successfully');      
     } catch (error) {
       console.error('Logout error:', error);
       setIsLoading(false);
@@ -343,7 +311,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUserEmail = async (newEmail: string) => {
     if (!supabase || !user) {
       console.error('Supabase not configured or user not logged in');
-      return false;
+      throw new Error('Supabase not configured or user not logged in');
     }
 
     try {
@@ -380,7 +348,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUserRoles = async (roles: string[], primaryRole: string) => {
     if (!supabase || !user) {
       console.error('Supabase not configured or user not logged in');
-      return false;
+      throw new Error('Supabase not configured or user not logged in');
     }
     
     console.log('Updating user roles:', roles, 'primary:', primaryRole);
