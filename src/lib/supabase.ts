@@ -43,16 +43,25 @@ try {
     supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: false,
-        storageKey: 'tattsync-auth'
+        persistSession: true, 
+        storageKey: 'tattsync-auth',
+        detectSessionInUrl: false
       }
     });
     console.log('✅ Supabase client created successfully');
     
     // Test the connection
     supabase.auth.getSession().then(({ data, error }) => {
-      if (error) {
+      if (data && data.session) {
+        console.log('✅ Supabase session found');
+        
+        // Log session expiry time
+        const expiresAt = new Date(data.session.expires_at * 1000);
+        const now = new Date();
+        const minutesUntilExpiry = Math.round((expiresAt.getTime() - now.getTime()) / 60000);
+        console.log(`Session expires in ${minutesUntilExpiry} minutes`);
+        
+      } else if (error) {
         console.warn('⚠️ Supabase session test returned an error:', error.message);
         console.log('This is normal if you are not logged in');
       } else {
