@@ -246,62 +246,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     if (!supabase) {
-      console.error('Supabase not configured. Using mock authentication.');
-      setUser({
-        id: '00000000-0000-0000-0000-000000000000',
-        name: email.split('@')[0] || 'User',
-        email: email,
-        role: 'admin',
-        roles: ['admin']
-      });
-      setIsLoading(false);
-      return { success: true };
+      throw new Error('Supabase not configured. Please check your environment variables.');
     } 
     
     setIsLoading(true);
     console.log('=== SIGN IN DEBUG ===');
     console.log('1. Starting sign in process');
     
-    // Simple validation
-    if (!email || !password) {
-      setIsLoading(false);
-      throw new Error('Email and password are required');
-    }
-    
     try {
       console.log('2. Attempting sign in with email:', email);
       
-      let data, error;
-      
-      // Set a timeout to prevent hanging
-      const loginTimeout = setTimeout(() => {
-        console.warn('Login operation timed out after 10 seconds');
-        error = new Error('Login operation timed out');
-        setIsLoading(false);
-      }, 10000);
-      
-      try {
-        const result = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        data = result.data;
-        error = result.error;
-      } catch (authError) {
-        console.error('Auth API error:', authError);
-        error = authError;
-      } finally {
-        // Clear the timeout
-        clearTimeout(loginTimeout);
+      // First check if we already have a session and sign out if needed
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session) {
+        console.log('2a. Existing session found, signing out first');
+        await supabase.auth.signOut();
       }
+
+      // Now sign in with the provided credentials
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
       console.log('3. Auth response received', { success: !!data.session, errorMessage: error?.message });
       
       if (error) {
         console.error('Login error:', error);
         setIsLoading(false);
-        console.log('4. Error during login, loading state reset');  
-        return { success: false, error };
+        console.log('4. Error during login, loading state reset');
+        return false;
       }
 
       console.log('4. Login successful for:', email);
@@ -309,7 +283,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Set authorization header immediately after successful login
       if (data?.session?.access_token) {
         api.defaults.headers.common['Authorization'] = `Bearer ${data.session.access_token}`;
-        console.log('5. Set Authorization header with token:', data.session.access_token.substring(0, 10) + '...');
+        console.log('5. Set Authorization header with token');
       }
 
       console.log('6. Setting session state');
@@ -317,34 +291,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Update session and user state immediately
       setSession(data?.session || null);
       
-      try {
-        console.log('7. Updating user state');
-        if (data?.session?.user) {
-          await updateUserState(data.session);
-        } else {
-          console.warn('No session data available for user state update');
-          setUser(null);
-        }
-        console.log('8. User state updated successfully');
-      } catch (userStateError) {
-        console.error('Error updating user state:', userStateError.message || userStateError);
-        // Continue even if user state update fails
-      }
-      
-      console.log('9. Login completed successfully');
+      // The auth state change listener will handle updating the user state
+      console.log('7. Login completed successfully');
       
       // Return the data so the calling component can handle it
       setIsLoading(false);
-      return { success: true, data };
+      return true;
     } catch (error) {
       console.error('Login error in AuthContext:', error);
       console.log('3. Error during login:', error.message || error);
       setIsLoading(false);
-      return { success: false, error };
-    } finally {
-      setIsLoading(false);
-      console.log('4. Finally block executing');
-      console.log('5. Loading state set to false');
+      return false;
     }
   };
 

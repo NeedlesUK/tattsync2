@@ -51,24 +51,15 @@ export function RegistrationPage() {
     setErrorMessage('');
 
     console.log('Attempting login with:', formData.email);
+    setIsLoading(true);
+    
     try {
-      const { success, error } = await login(formData.email, formData.password);
-      console.log('Login result:', success);
+      const success = await login(formData.email, formData.password);
       
-      if (success) {
-        console.log('Login successful, redirecting to dashboard');
-        navigate('/dashboard');
-      } else if (error) {
-        let message = 'Login failed. Please check your email and password.';
-        
-        if (error.response && error.response.data && error.response.data.error) {
-          message = error.response.data.error;
-        } else if (error.message) {
-          message = error.message || 'Login failed. Please check your credentials.';
-        }
-        
-        setErrorMessage(message);
-        setIsLoading(false);
+      // If login was successful, the auth state change will trigger navigation
+      // If not, we'll fall through to the catch block
+      if (!success) {
+        throw new Error('Login failed. Please check your credentials.');
       }
     } catch (error: any) {
       console.error('Authentication error:', error);
@@ -83,6 +74,7 @@ export function RegistrationPage() {
       }
       
       setErrorMessage(message);
+    } finally {
       setIsLoading(false);
     }
   };
