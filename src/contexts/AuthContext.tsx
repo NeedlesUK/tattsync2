@@ -247,20 +247,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     if (!supabase) {
       console.error('Supabase not configured. Using mock authentication.');
-      
-      setTimeout(() => {
-        // Mock successful login for development
-        setUser({
-          id: '00000000-0000-0000-0000-000000000000',
-          name: email.split('@')[0] || 'User',
-          email: email,
-          role: 'admin',
-          roles: ['admin']
-        });
-        setIsLoading(false);
-      }, 500);
-      
-      return true;
+      setUser({
+        id: '00000000-0000-0000-0000-000000000000',
+        name: email.split('@')[0] || 'User',
+        email: email,
+        role: 'admin',
+        roles: ['admin']
+      });
+      setIsLoading(false);
+      return { success: true };
     } 
     
     setIsLoading(true);
@@ -281,6 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Set a timeout to prevent hanging
       const loginTimeout = setTimeout(() => {
         console.warn('Login operation timed out after 10 seconds');
+        error = new Error('Login operation timed out');
         setIsLoading(false);
       }, 10000);
       
@@ -304,8 +300,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Login error:', error);
         setIsLoading(false);
-        console.log('4. Error during login, loading state reset');
-        throw error;
+        console.log('4. Error during login, loading state reset');  
+        return { success: false, error };
       }
 
       console.log('4. Login successful for:', email);
@@ -339,12 +335,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Return the data so the calling component can handle it
       setIsLoading(false);
-      return true;
+      return { success: true, data };
     } catch (error) {
       console.error('Login error in AuthContext:', error);
       console.log('3. Error during login:', error.message || error);
       setIsLoading(false);
-      throw error;
+      return { success: false, error };
     } finally {
       setIsLoading(false);
       console.log('4. Finally block executing');

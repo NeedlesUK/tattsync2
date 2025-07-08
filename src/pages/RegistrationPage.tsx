@@ -15,6 +15,13 @@ export function RegistrationPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (user && !authLoading) {
+      console.log('User already logged in, redirecting to dashboard');
+      navigate('/dashboard');
+    }
+  }, [user, navigate, authLoading]);
+
+  useEffect(() => {
     // Clear any error messages when component mounts
     setErrorMessage('');
   }, []);
@@ -43,17 +50,25 @@ export function RegistrationPage() {
     setIsLoading(true);
     setErrorMessage('');
 
+    console.log('Attempting login with:', formData.email);
     try {
-      console.log('Attempting login with:', formData.email);
-      setIsLoading(true);
+      const { success, error } = await login(formData.email, formData.password);
+      console.log('Login result:', success);
       
-      const result = await login(formData.email, formData.password);
-      console.log('Login result:', result);
-      
-      // Force navigation if login was successful but useEffect didn't trigger
-      if (result && user) {
-        console.log('Login successful, forcing navigation to dashboard');
+      if (success) {
+        console.log('Login successful, redirecting to dashboard');
         navigate('/dashboard');
+      } else if (error) {
+        let message = 'Login failed. Please check your email and password.';
+        
+        if (error.response && error.response.data && error.response.data.error) {
+          message = error.response.data.error;
+        } else if (error.message) {
+          message = error.message || 'Login failed. Please check your credentials.';
+        }
+        
+        setErrorMessage(message);
+        setIsLoading(false);
       }
     } catch (error: any) {
       console.error('Authentication error:', error);
@@ -69,14 +84,6 @@ export function RegistrationPage() {
       
       setErrorMessage(message);
       setIsLoading(false);
-    } finally {
-      // Ensure loading state is reset
-      setTimeout(() => {
-        if (isLoading) {
-          console.log('Login process timed out, resetting loading state');
-          setIsLoading(false);
-        }
-      }, 5000);
     }
   };
 
