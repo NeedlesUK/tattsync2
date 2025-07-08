@@ -53,15 +53,9 @@ export function RegistrationPage() {
     setErrorMessage('');
 
     try {
-      console.log('Attempting login via AuthContext');
-      const success = await login(formData.email, formData.password);
-      
-      if (success) {
-        console.log('Login successful, redirecting to dashboard');
-        navigate('/dashboard');
-      } else {
-        throw new Error('Login failed. Please check your credentials.');
-      }
+      console.log('Attempting login with email:', formData.email);
+      await login(formData.email, formData.password);
+      console.log('Login request successful, navigation will be handled by useEffect');
     } catch (error: any) {
       console.error('Authentication error:', error);
       
@@ -71,7 +65,7 @@ export function RegistrationPage() {
       if (error.response && error.response.data && error.response.data.error) {
         message = error.response.data.error;
       } else if (error.message) {
-        message = error.message || 'Login failed. Please check your credentials.';
+        message = error.message;
       }
       
       setErrorMessage(message);

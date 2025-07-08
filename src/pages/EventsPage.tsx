@@ -12,38 +12,98 @@ export function EventsPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [events, setEvents] = useState<any[]>([]);
   const [userEvents, setUserEvents] = useState<any[]>([]);
+  const [filteredUserEvents, setFilteredUserEvents] = useState<any[]>([]);
+  const [filteredAllEvents, setFilteredAllEvents] = useState<any[]>([]);
 
   useEffect(() => {
     fetchEvents();
   }, []);
 
+  useEffect(() => {
+    let filteredUser = userEvents;
+    let filteredAll = events;
+    
+    if (searchTerm) {
+      filteredUser = filteredUser.filter(event =>
+        event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.location.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      
+      filteredAll = filteredAll.filter(event =>
+        event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.location.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    if (filterStatus !== 'all') {
+      filteredUser = filteredUser.filter(event => event.status === filterStatus);
+      filteredAll = filteredAll.filter(event => event.status === filterStatus);
+    }
+    
+    setFilteredUserEvents(filteredUser);
+    setFilteredAllEvents(filteredAll.filter(
+      event => !userEvents.some(userEvent => userEvent.id === event.id)
+    ));
+  }, [searchTerm, filterStatus, events, userEvents]);
+
   const fetchEvents = async () => {
     setIsLoading(true);
     try {
-      // TODO: Implement API call to fetch events
-      setEvents([]);
-      setUserEvents([]);
+      // Mock data for demonstration
+      const mockEvents = [
+        {
+          id: 1,
+          name: 'Ink Fest 2024',
+          description: 'The premier tattoo convention on the West Coast',
+          location: 'Los Angeles, CA',
+          venue: 'LA Convention Center',
+          date: '2024-03-15',
+          endDate: '2024-03-17',
+          status: 'published',
+          image: 'https://images.pexels.com/photos/955938/pexels-photo-955938.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
+        },
+        {
+          id: 2,
+          name: 'Body Art Expo',
+          description: 'Celebrating all forms of body art and modification',
+          location: 'New York, NY',
+          venue: 'Javits Center',
+          date: '2024-03-22',
+          endDate: '2024-03-24',
+          status: 'published',
+          image: 'https://images.pexels.com/photos/1619799/pexels-photo-1619799.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
+        },
+        {
+          id: 3,
+          name: 'Tattoo Convention',
+          description: 'Traditional and modern tattoo showcase',
+          location: 'Miami, FL',
+          venue: 'Miami Beach Convention Center',
+          date: '2024-04-05',
+          endDate: '2024-04-07',
+          status: 'draft',
+          image: 'https://images.pexels.com/photos/1304469/pexels-photo-1304469.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
+        }
+      ];
+      
+      // In a real implementation, this would fetch from API
+      setEvents(mockEvents);
+      
+      // For demonstration, set the first event as a user event
+      setUserEvents([mockEvents[0]]);
+      
+      // Initialize filtered events
+      setFilteredUserEvents([mockEvents[0]]);
+      setFilteredAllEvents([mockEvents[1], mockEvents[2]]);
     } catch (error) {
       console.error('Error fetching events:', error);
       setEvents([]);
+      setFilteredUserEvents([]);
+      setFilteredAllEvents([]);
     } finally {
       setIsLoading(false);
     }
   };
-
-  // Filter events based on search and status
-  const getFilteredEvents = (eventList: any[]) => eventList.filter(event => {
-    const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         event.location.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || event.status === filterStatus;
-    return matchesSearch && matchesFilter;
-  });
-  
-  // Get filtered events
-  const filteredUserEvents = getFilteredEvents(userEvents);
-  const filteredAllEvents = getFilteredEvents(events).filter(
-    event => !userEvents.some(userEvent => userEvent.id === event.id)
-  );
 
   const isAdmin = user?.role === 'admin';
 
