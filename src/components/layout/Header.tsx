@@ -32,7 +32,8 @@ export function Header() {
   const adminDirectLinks = [
     { name: 'TattScore', href: '/tattscore/admin' },
     { name: 'Studio', href: '/studio/dashboard' },
-    { name: 'Tickets', href: '/ticket-management' }
+    { name: 'Tickets', href: '/ticket-management' },
+    { name: 'Users', href: '/admin/users' }
   ];
 
   // TattScore navigation items - filter based on role

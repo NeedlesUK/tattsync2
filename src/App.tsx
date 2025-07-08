@@ -8,6 +8,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { EventsPage } from './pages/EventsPage';
 import { EventApplicationPage } from './pages/EventApplicationPage';
 import { RegistrationPage } from './pages/RegistrationPage';
+import { AdminUsersPage } from './pages/AdminUsersPage';
 import { RegistrationFormPage } from './pages/RegistrationFormPage';
 import { RegistrationSuccessPage } from './pages/RegistrationSuccessPage';
 import { ProfilePage } from './pages/ProfilePage';
@@ -40,6 +41,7 @@ function App() {
               <Route path="/events" element={<EventsPage />} />
               <Route path="/events/:eventSlug" element={<EventApplicationPage />} />
               <Route path="/login" element={<RegistrationPage />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
               <Route path="/register/:token" element={<RegistrationFormPage />} />
               <Route path="/registration-success" element={<RegistrationSuccessPage />} />
               <Route path="/profile" element={<ProfilePage />} />

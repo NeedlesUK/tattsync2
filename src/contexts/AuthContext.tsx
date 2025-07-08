@@ -19,6 +19,7 @@ interface AuthContextType {
   updateUserRoles: (roles: string[], primaryRole: string) => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>; 
+  updateUserPassword: (userId: string, newPassword: string) => Promise<void>;
   isLoading: boolean;
   updateUserProfile: (profileData: Partial<AuthUser>) => void;
 }
@@ -410,6 +411,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Function to update user password (admin only)
+  const updateUserPassword = async (userId: string, newPassword: string) => {
+    if (!user || user.role !== 'admin') {
+      throw new Error('Only administrators can update user passwords');
+    }
+    
+    try {
+      const response = await api.patch(`/users/${userId}/password`, { 
+        newPassword 
+      }, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      });
+      
+      if (response.status !== 200) {
+        throw new Error('Failed to update user password');
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error updating user password:', error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user,
@@ -420,6 +447,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       updateUserEmail,
       updateUserRoles,
+      updateUserPassword,
       updateUserProfile
     }}>
       {children}

@@ -3,6 +3,40 @@ const { supabase, supabaseAdmin } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
+// Update user password (admin only)
+router.patch('/:id/password', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+    
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Only admins can update user passwords' });
+    }
+
+    // Validate password
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    }
+
+    // Update password in Supabase Auth
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(
+      id,
+      { password: newPassword }
+    );
+
+    if (error) {
+      console.error('Error updating user password:', error);
+      return res.status(500).json({ error: 'Failed to update user password' });
+    }
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Error updating user password:', error);
+    res.status(500).json({ error: 'Failed to update user password' });
+  }
+});
+
 // Get user by ID
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
