@@ -75,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserData = async (userId: string, userEmail: string) => {
     try {
       console.log('🔍 Fetching user data for:', userEmail, 'via API');
+      let userData;
       
       // Try API call first
       if (session?.access_token) {
@@ -82,22 +83,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('🔍 Calling backend API for user data');
           
           // Call the backend API to get user data
-          const response = await api.get(`/users/${userId}`, {
+          const response = await api.get(`/api/users/${userId}`, {
             headers: {
               'Authorization': `Bearer ${session.access_token}`
             }
           });
-          const userData = response.data;
+          userData = response.data;
           
           console.log('✅ User data from API:', userData);
           
-          const result = {
+          return {
             ...userData,
             roles: userData.roles || [userData.role]
           };
-          
-          console.log('Returning user data:', result);
-          return result;
         } catch (error) {
           console.error('❌ Error fetching user data from API:', error);
           // Fall through to the fallback if API call fails
@@ -131,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
       console.log('🔄 Updating user state for session:', session.user.email);
+      setSession(session);
       
       // Set the authorization header for API requests
       if (session?.access_token) {
@@ -243,7 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     try {
       // Clear any previous session first to avoid state conflicts
-      await supabase.auth.signOut();
+      // Removed signOut call as it can cause issues with the subsequent login attempt
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -268,6 +267,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('5. Login completed successfully');
+      
+      // Update session and user state immediately
+      setSession(data.session);
+      await updateUserState(data.session);
+      
       // Return the data so the calling component can handle it
       return true;
     } catch (error) {
