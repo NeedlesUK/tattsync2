@@ -174,15 +174,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase) {
       console.warn('⚠️ Supabase not configured. Please check your environment variables.');
-      console.warn('⚠️ Using mock data for development. Login will still work for testing.');
+      console.warn('⚠️ Using mock data for development');
       setIsLoading(false);
       return;
     }
 
+    // Set a timeout to prevent hanging during initial load
+    const initTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn('Auth initialization timed out after 5 seconds');
+        setIsLoading(false);
+      }
+    }, 5000);
+
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
-      console.log('🔍 Initial session check:', session?.user?.id || 'No session');
+      console.log('🔍 Initial session check:', session?.user?.email || 'No session');
       
       if (session?.access_token) {
         // Set the authorization header for API requests
@@ -191,6 +199,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       await updateUserState(session);
       setIsLoading(false);
+      
+      // Clear the timeout since we've completed initialization
+      clearTimeout(initTimeout);
     });
 
     // Listen for auth changes
@@ -198,7 +209,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       console.log('🔄 Auth state changed:', event, newSession?.user?.email);
-      
+
+      // Set a timeout to prevent hanging during auth state change
+      const stateChangeTimeout = setTimeout(() => {
+        if (isLoading) {
+          setIsLoading(false);
+        }
+      }, 5000);
       // Important: Only update if the session actually changed
       if (JSON.stringify(session) === JSON.stringify(newSession)) {
         console.log('Session unchanged, skipping update');
@@ -219,6 +236,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       await updateUserState(newSession);
       setIsLoading(false);
+      
+      // Clear the timeout
+      clearTimeout(stateChangeTimeout);
     });
 
     return () => subscription.unsubscribe();
@@ -227,15 +247,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     if (!supabase) {
       console.error('Supabase not configured. Using mock authentication.');
-      // Mock successful login for development
-      setUser({
-        id: '00000000-0000-0000-0000-000000000000',
-        name: email.split('@')[0] || 'User',
-        email: email,
-        role: 'admin',
-        roles: ['admin']
-      });
-      setIsLoading(false);
+      
+      setTimeout(() => {
+        // Mock successful login for development
+        setUser({
+          id: '00000000-0000-0000-0000-000000000000',
+          name: email.split('@')[0] || 'User',
+          email: email,
+          role: 'admin',
+          roles: ['admin']
+        });
+        setIsLoading(false);
+      }, 500);
+      
       return true;
     } 
     
@@ -253,6 +277,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('2. Attempting sign in with email:', email);
       
       let data, error;
+      
+      // Set a timeout to prevent hanging
+      const loginTimeout = setTimeout(() => {
+        console.warn('Login operation timed out after 10 seconds');
+        setIsLoading(false);
+      }, 10000);
+      
       try {
         const result = await supabase.auth.signInWithPassword({
           email,
@@ -263,6 +294,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (authError) {
         console.error('Auth API error:', authError);
         error = authError;
+      } finally {
+        // Clear the timeout
+        clearTimeout(loginTimeout);
       }
 
       console.log('3. Auth response received', { success: !!data.session, errorMessage: error?.message });
@@ -270,7 +304,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Login error:', error);
         setIsLoading(false);
-        console.log('4. Error during login, setting loading to false');
+        console.log('4. Error during login, loading state reset');
         throw error;
       }
 
@@ -279,7 +313,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Set authorization header immediately after successful login
       if (data?.session?.access_token) {
         api.defaults.headers.common['Authorization'] = `Bearer ${data.session.access_token}`;
-        console.log('5. Set Authorization header with token');
+        console.log('5. Set Authorization header with token:', data.session.access_token.substring(0, 10) + '...');
       }
 
       console.log('6. Setting session state');
@@ -289,7 +323,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       try {
         console.log('7. Updating user state');
-        if (data?.session) {
+        if (data?.session?.user) {
           await updateUserState(data.session);
         } else {
           console.warn('No session data available for user state update');
@@ -297,7 +331,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         console.log('8. User state updated successfully');
       } catch (userStateError) {
-        console.error('Error updating user state:', userStateError);
+        console.error('Error updating user state:', userStateError.message || userStateError);
         // Continue even if user state update fails
       }
       
@@ -308,7 +342,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return true;
     } catch (error) {
       console.error('Login error in AuthContext:', error);
-      console.log('3. Error during login:', error);
+      console.log('3. Error during login:', error.message || error);
       setIsLoading(false);
       throw error;
     } finally {
