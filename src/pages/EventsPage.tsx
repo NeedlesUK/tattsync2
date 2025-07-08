@@ -3,9 +3,11 @@ import { Plus, Search, Filter, Calendar, MapPin, Users } from 'lucide-react';
 import { EventCard } from '../components/events/EventCard';
 import { CreateEventModal } from '../components/events/CreateEventModal';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export function EventsPage() {
   const { user, supabase } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,7 +55,18 @@ export function EventsPage() {
         // Try to fetch events from Supabase
         const { data: eventsData, error } = await supabase
           .from('events')
-          .select('*')
+          .select(`
+            id,
+            name,
+            description,
+            event_slug,
+            start_date,
+            end_date,
+            location,
+            venue,
+            status,
+            event_manager_id
+          `)
           .order('created_at', { ascending: false });
 
         if (error) {
@@ -66,7 +79,7 @@ export function EventsPage() {
           const formattedEvents = eventsData.map(event => ({
             id: event.id,
             name: event.name,
-            description: event.description || '',
+            description: event.description || 'No description available',
             location: event.location,
             venue: event.venue || '',
             date: event.start_date,
@@ -74,6 +87,7 @@ export function EventsPage() {
             status: event.status,
             image: 'https://images.pexels.com/photos/955938/pexels-photo-955938.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
             event_manager_id: event.event_manager_id
+            
           }));
 
           setEvents(formattedEvents);
@@ -81,7 +95,7 @@ export function EventsPage() {
           // Filter user events (events managed by the current user)
           if (user) {
             const userEvts = formattedEvents.filter(e => e.event_manager_id === user.id);
-            setUserEvents(userEvts);
+            setUserEvents(userEvts || []);
             setFilteredUserEvents(userEvts);
             
             // All events except user events
@@ -242,7 +256,7 @@ export function EventsPage() {
               <EventCard 
                 key={event.id} 
                 event={event} 
-                onView={(id) => console.log('View event', id)}
+                onView={(id) => navigate(`/events/${event.event_slug || id}`)}
                 onEdit={isAdmin ? (id) => console.log('Edit event', id) : undefined}
                 onDelete={isAdmin ? (id) => console.log('Delete event', id) : undefined}
               />

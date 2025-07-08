@@ -234,13 +234,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Starting login process for:', email);
 
-      // First check if we already have a session and sign out if needed
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (sessionData.session) {
-        console.log('Existing session found, signing out first');
-        await supabase.auth.signOut();
-      }
-
       // Perform the login
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -248,20 +241,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
-        console.error('Login error:', error);
+        console.error('Login error:', error.message);
         setIsLoading(false);
         throw error;
       }
 
-      console.log('Login successful for:', email);
+      console.log('✅ Login successful for:', email);
+      console.log('Session:', data.session);
+      
+      // Set session immediately
+      setSession(data.session);
+      
+      // Update user state
+      await updateUserState(data.session);
+      
       return true;
     } catch (error) {
-      console.log('Error during login:', error);
+      console.error('❌ Error during login:', error);
       setIsLoading(false);
       throw error;
     } finally {
       setIsLoading(false);
-      console.log('Login process completed, loading state set to false');
+      console.log('Login process completed');
     }
   };
 

@@ -2,26 +2,28 @@ import React from 'react';
 import { Calendar, MapPin, Edit, Eye, Trash2, Settings } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
-interface Event {
+interface EventProps {
   id: number;
   name: string;
   description: string;
-  date: string; // start_date
+  date?: string; // start_date
+  start_date?: string;
   endDate: string;
+  end_date?: string;
   location: string;
   venue: string;
-  attendees: number;
-  maxAttendees: number;
+  attendees?: number;
+  maxAttendees?: number;
   status: string;
   image: string;
   event_manager_id?: string;
   event_manager_email?: string;
   event_manager_name?: string;
-  event_manager_email?: string;
+  event_slug?: string;
 }
 
 interface EventCardProps {
-  event: Event;
+  event: EventProps;
   onView?: (eventId: number) => void;
   onEdit?: (eventId: number) => void;
   onDelete?: (eventId: number) => void;
@@ -32,9 +34,9 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
   
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-GB', { 
       day: 'numeric',
+      month: 'short',
       year: 'numeric'
     });
   };
@@ -78,7 +80,7 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
         <div className="space-y-2 mb-4">
           <div className="flex items-center text-gray-300 text-sm">
             <Calendar className="w-4 h-4 mr-2" />
-            {formatDate(event.date)} - {formatDate(event.endDate)}
+            {formatDate(event.date || event.start_date || new Date().toISOString())} - {formatDate(event.endDate || event.end_date || new Date().toISOString())}
           </div>
           <div className="flex items-center text-gray-300 text-sm">
             <MapPin className="w-4 h-4 mr-2" />

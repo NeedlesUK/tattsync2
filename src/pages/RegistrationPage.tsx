@@ -13,19 +13,19 @@ export function RegistrationPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const { login, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-
+  
+  // Redirect if already logged in
   useEffect(() => {
     if (user && !authLoading) {
-      // User already logged in, redirect to dashboard
+      console.log('User already logged in, redirecting to dashboard');
       navigate('/dashboard');
     }
   }, [user, navigate, authLoading]);
 
   useEffect(() => {
-    // Clear any error messages when component mounts
-    setErrorMessage('');
-  }, []);
-
+    if (user && !authLoading) {
+      // User already logged in, redirect to dashboard
+      navigate('/dashboard');
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
@@ -41,7 +41,7 @@ export function RegistrationPage() {
     e.preventDefault();
     
     console.log('Login form submitted with email:', formData.email);
-    
+
     // Prevent multiple simultaneous attempts
     if (isLoading) {
       console.log('Login already in progress, ignoring...');
@@ -51,7 +51,7 @@ export function RegistrationPage() {
     setIsLoading(true);
     setErrorMessage('');
     console.log('Attempting login with email:', formData.email);
-
+    
     try {
       await login(formData.email, formData.password);
       // Navigation will be handled by useEffect when user state updates
@@ -59,7 +59,7 @@ export function RegistrationPage() {
       console.error('Authentication error:', error);
       
       // Set error message
-      setErrorMessage(error.message || 'Login failed. Please check your credentials.');
+      setErrorMessage(error.message || 'Login failed. Please check your email and password.');
       setIsLoading(false);
     } finally {
       setIsLoading(false);
@@ -137,6 +137,7 @@ export function RegistrationPage() {
               type="submit"
               disabled={isLoading}
               className="w-full bg-gradient-to-r from-purple-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              onClick={() => console.log('Login button clicked, form will handle submission')}
             >
               {isLoading ? (
                 <>
