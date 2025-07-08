@@ -54,7 +54,7 @@ export function RegistrationPage() {
       console.log('Attempting login with:', formData.email);
       await login(formData.email, formData.password);
       // Don't navigate here - the useEffect will handle it
-      console.log('Login request successful');
+      console.log('Login request completed');
     } catch (error: any) {
       console.error('Authentication error:', error);
       
@@ -146,9 +146,6 @@ export function RegistrationPage() {
               type="submit"
               disabled={isLoading}
               className="w-full bg-gradient-to-r from-purple-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              onClick={(e) => {
-                console.log('Button clicked, loading state:', isLoading);
-              }}
             >
               {isLoading ? (
                 <>
