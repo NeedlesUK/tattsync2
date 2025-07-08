@@ -17,16 +17,6 @@ export function RegistrationPage() {
   useEffect(() => {
     // Clear any error messages when component mounts
     setErrorMessage('');
-  }, []);
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user && !authLoading) {
-      console.log('User already logged in, redirecting to dashboard');
-      navigate('/dashboard');
-    }
-  }, [user, navigate, authLoading]);
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
@@ -217,16 +207,7 @@ export function RegistrationPage() {
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4">
               <h4 className="text-purple-400 font-medium mb-1">Event Management</h4>
               <p className="text-gray-300 text-sm">Complete event organization tools</p>
-            </div>
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4">
-              <h4 className="text-purple-400 font-medium mb-1">Application System</h4>
-              <p className="text-gray-300 text-sm">Streamlined application process</p>
-            </div>
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4">
-              <h4 className="text-purple-400 font-medium mb-1">Secure Platform</h4>
-              <p className="text-gray-300 text-sm">Professional event management</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
