@@ -136,7 +136,7 @@ export function EventsPage() {
           ))}
         </div>
 
-        {filteredEvents.length === 0 && (
+        {filteredUserEvents.length === 0 && filteredAllEvents.length === 0 && (
           <div className="text-center py-12">
             <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-300 mb-2">No events found</h3>
