@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
-import axios from 'axios';
+import api from '../lib/api';
 
 interface AuthUser {
   id: string;
@@ -81,11 +81,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           console.log('🔍 Calling backend API for user data');
           
-          // Set authorization header with the access token
-          axios.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
-          
           // Call the backend API to get user data
-          const response = await axios.get(`/api/users/${userId}`);
+          const response = await api.get(`/users/${userId}`, {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`
+            }
+          });
           const userData = response.data;
           
           console.log('✅ User data from API:', userData);
@@ -133,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Set the authorization header for API requests
       if (session?.access_token) {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
+        api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
       }
       
       try {
@@ -181,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setUser(null);
       // Clear authorization header when no user
-      delete axios.defaults.headers.common['Authorization'];
+      delete api.defaults.headers.common['Authorization'];
     }
   };
 
@@ -200,7 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (session?.access_token) {
         // Set the authorization header for API requests
-        axios.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
+        api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
       }
       
       await updateUserState(session);
@@ -216,10 +217,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (session?.access_token) {
         // Set the authorization header for API requests
-        axios.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
+        api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
       } else {
         // Clear authorization header when no session
-        delete axios.defaults.headers.common['Authorization'];
+        delete api.defaults.headers.common['Authorization'];
         // Clear user state
         setUser(null);
       }
@@ -262,7 +263,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Set authorization header immediately after successful login
       if (data.session?.access_token) {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${data.session.access_token}`;
+        api.defaults.headers.common['Authorization'] = `Bearer ${data.session.access_token}`;
          console.log('4. Set Authorization header with token');
       }
 
@@ -296,7 +297,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
       // Clear authorization header
-      delete axios.defaults.headers.common['Authorization'];
+      delete api.defaults.headers.common['Authorization'];
       
       // Clear user state immediately
       setUser(null);

@@ -1,61 +1,39 @@
-// API configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+import axios from 'axios';
 
-export const api = {
-  baseURL: API_BASE_URL,
-  
-  // Helper method to make requests with proper error handling
-  async request(endpoint: string, options: RequestInit = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
-    
-    console.log(`Making API request to: ${url}`);
-    
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    };
+// Create axios instance with base configuration
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3003/api',
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-    try {
-      const response = await fetch(url, config);
-      console.log(`Response status: ${response.status}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error(`API request failed for ${endpoint}:`, error);
-      throw error;
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    // Get token from localStorage or session storage if available
+    const token = localStorage.getItem('supabase.auth.token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
   },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
-  // Convenience methods
-  get(endpoint: string, options: RequestInit = {}) {
-    return this.request(endpoint, { ...options, method: 'GET' });
-  },
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ECONNREFUSED' || error.message === 'Network Error') {
+      console.error('❌ Backend server is not running or not accessible');
+      console.error('Please start the backend server using: npm run start:backend');
+    }
+    return Promise.reject(error);
+  }
+);
 
-  post(endpoint: string, data?: any, options: RequestInit = {}) {
-    return this.request(endpoint, {
-      ...options,
-      method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-    });
-  },
-
-  put(endpoint: string, data?: any, options: RequestInit = {}) {
-    return this.request(endpoint, {
-      ...options,
-      method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
-    });
-  },
-
-  delete(endpoint: string, options: RequestInit = {}) {
-    return this.request(endpoint, { ...options, method: 'DELETE' });
-  },
-};
+export default api;
