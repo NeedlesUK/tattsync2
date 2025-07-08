@@ -256,7 +256,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Login error:', error);
         setIsLoading(false);
-        return false;
+        throw error;
       }
 
       console.log('Login successful for:', email);
@@ -264,7 +264,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.log('Error during login:', error);
       setIsLoading(false);
-      return false;
+      throw error;
     } finally {
       setIsLoading(false);
       console.log('Login process completed, loading state set to false');
