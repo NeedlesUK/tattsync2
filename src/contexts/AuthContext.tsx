@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user state with complete data
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
-      console.log('🔄 Updating user state for session:', session.user.id);
+      console.log('🔄 Updating user state for session:', session.user.email);
       
       // Set the authorization header for API requests
       if (session?.access_token) {
@@ -136,25 +136,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const userData = await fetchUserData(session.user.id, session.user.email || '');
         
-        setUser({
+        const userObj = {
           id: userData.id,
           name: userData.name,
           email: userData.email,
           role: userData.role || 'artist', 
-          roles: [userData.role || 'artist'],
+          roles: userData.roles || [userData.role || 'artist'],
           avatar: undefined
-        });
+        };
+        
+        console.log('Setting user state:', userObj);
+        setUser(userObj);
+        setIsLoading(false);
       } catch (error: any) {
         console.error('❌ Error updating user state:', error);
         
         // Fallback to basic user info from session
-        setUser({
+        const fallbackUser = {
           id: session.user.id,
           name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
           role: session.user.user_metadata?.role || 'artist',
           roles: [session.user.user_metadata?.role || 'artist']
-        });
+        };
+        
+        console.log('Setting fallback user state:', fallbackUser);
+        setUser(fallbackUser);
+        setIsLoading(false);
       }
     } else {
       setUser(null);
@@ -166,7 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase) {
       console.warn('⚠️ Supabase not configured. Please check your environment variables.');
-      console.warn('⚠️ Using mock data for development');
+      console.warn('⚠️ Using mock data for development. Login will still work for testing.');
       setIsLoading(false);
       return;
     }
@@ -174,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
-      console.log('🔍 Initial session check:', session?.user?.email || 'No session');
+      console.log('🔍 Initial session check:', session?.user?.id || 'No session');
       
       if (session?.access_token) {
         // Set the authorization header for API requests
@@ -188,13 +196,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔄 Auth state changed:', event, session?.user?.email);
-      setSession(session);
+    } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      console.log('🔄 Auth state changed:', event, newSession?.user?.email);
       
-      if (session?.access_token) {
+      // Important: Only update if the session actually changed
+      if (JSON.stringify(session) === JSON.stringify(newSession)) {
+        console.log('Session unchanged, skipping update');
+        return;
+      }
+      
+      console.log('Setting new session state');
+      setSession(newSession);
+      if (newSession?.access_token) {
         // Set the authorization header for API requests
-        api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
+        api.defaults.headers.common['Authorization'] = `Bearer ${newSession.access_token}`;
       } else {
         // Clear authorization header when no session
         delete api.defaults.headers.common['Authorization'];
@@ -202,7 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
       }
       
-      await updateUserState(session);
+      await updateUserState(newSession);
       setIsLoading(false);
     });
 
@@ -211,7 +226,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     if (!supabase) {
-      throw new Error('Supabase not configured. Please check your environment variables.');
+      console.error('Supabase not configured. Using mock authentication.');
+      // Mock successful login for development
+      setUser({
+        id: '00000000-0000-0000-0000-000000000000',
+        name: email.split('@')[0] || 'User',
+        email: email,
+        role: 'admin',
+        roles: ['admin']
+      });
+      setIsLoading(false);
+      return true;
     } 
     
     setIsLoading(true);
@@ -227,10 +252,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('2. Attempting sign in with email:', email);
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      let data, error;
+      try {
+        const result = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        data = result.data;
+        error = result.error;
+      } catch (authError) {
+        console.error('Auth API error:', authError);
+        error = authError;
+      }
 
       console.log('3. Auth response received', { success: !!data.session, errorMessage: error?.message });
       
@@ -244,7 +277,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('4. Login successful for:', email);
       
       // Set authorization header immediately after successful login
-      if (data.session?.access_token) {
+      if (data?.session?.access_token) {
         api.defaults.headers.common['Authorization'] = `Bearer ${data.session.access_token}`;
         console.log('5. Set Authorization header with token');
       }
@@ -252,11 +285,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('6. Setting session state');
       
       // Update session and user state immediately
-      setSession(data.session);
+      setSession(data?.session || null);
       
       try {
         console.log('7. Updating user state');
-        await updateUserState(data.session);
+        if (data?.session) {
+          await updateUserState(data.session);
+        } else {
+          console.warn('No session data available for user state update');
+          setUser(null);
+        }
         console.log('8. User state updated successfully');
       } catch (userStateError) {
         console.error('Error updating user state:', userStateError);
@@ -266,6 +304,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('9. Login completed successfully');
       
       // Return the data so the calling component can handle it
+      setIsLoading(false);
       return true;
     } catch (error) {
       console.error('Login error in AuthContext:', error);

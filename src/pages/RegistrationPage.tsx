@@ -41,7 +41,7 @@ export function RegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('Form submitted, attempting login with:', formData.email);
+    console.log('Form submitted with email:', formData.email);
     // Prevent multiple simultaneous attempts
     if (isLoading) {
       console.log('Sign in already in progress, ignoring...');
@@ -52,9 +52,17 @@ export function RegistrationPage() {
     setErrorMessage('');
 
     try {
-      console.log('Login button clicked, attempting login with:', formData.email);
-      await login(formData.email, formData.password);
-      console.log('Login successful, navigation will be handled by useEffect');
+      console.log('Attempting login with:', formData.email);
+      setIsLoading(true);
+      
+      const result = await login(formData.email, formData.password);
+      console.log('Login result:', result);
+      
+      // Force navigation if login was successful but useEffect didn't trigger
+      if (result && user) {
+        console.log('Login successful, forcing navigation to dashboard');
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       console.error('Authentication error:', error);
       
@@ -69,6 +77,14 @@ export function RegistrationPage() {
       
       setErrorMessage(message);
       setIsLoading(false);
+    } finally {
+      // Ensure loading state is reset
+      setTimeout(() => {
+        if (isLoading) {
+          console.log('Login process timed out, resetting loading state');
+          setIsLoading(false);
+        }
+      }, 5000);
     } finally {
       setIsLoading(false);
       console.log('Login attempt completed');
@@ -149,7 +165,10 @@ export function RegistrationPage() {
               onClick={() => console.log('Login button clicked, form will handle submission')}
             >
               {isLoading ? (
-                <span>Signing In...</span>
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                  <span>Signing In...</span>
+                </>
               ) : (
                 <span>Sign In</span>
               )}
