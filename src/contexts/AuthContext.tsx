@@ -45,6 +45,7 @@ if (supabaseUrl &&
       auth: {
         autoRefreshToken: true,
         persistSession: true, 
+        storage: window.localStorage,
         storageKey: 'tattsync-auth',
         detectSessionInUrl: false
       }
@@ -233,9 +234,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     setIsLoading(true);
+    console.log('Login function called with email:', email);
     
     try {
-      console.log('Attempting login for:', email);
+      console.log('Starting login process for:', email);
 
       // Create a promise that will be rejected after timeout
       const timeoutPromise = new Promise((_, reject) => {
@@ -248,7 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Race the login against the timeout
       const { data, error } = await Promise.race([
         loginPromise,
-        timeoutPromise.then(() => { throw new Error('Login request timed out'); })
+        timeoutPromise
       ]);
 
       if (error) {
@@ -260,7 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Login successful for:', email);
       return true;
     } catch (error) {
-      console.error('Login error:', error);
+      if (data?.session?.access_token) {
       setIsLoading(false);
       return false;
     }
@@ -302,13 +304,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(null);
       console.log('User logged out successfully');      
     } catch (error) {
-      console.error('Logout error:', error);
+      console.log('Error during login:', error);
       setIsLoading(false);
       throw error;
     } finally {
       setIsLoading(false);
-      console.log('Logout process completed');
-    }
+      console.log('Login process completed, loading state set to false');
   };
 
   // Function to update user email
@@ -376,18 +377,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('user_id', user.id);
         
       const existingRoles = currentRoles?.map(r => r.role) || [];
-      console.log('Existing roles:', existingRoles);
+        console.log('Set Authorization header with token');
       
       // Remove roles that are no longer needed
-      for (const existingRole of existingRoles) {
+      console.log('Setting session state');
         if (!roles.includes(existingRole) && existingRole !== primaryRole) {
           console.log('Removing role:', existingRole);
-          const { error: removeRoleError } = await supabase.rpc('remove_user_role', {
+      setSession(data?.session);
             user_uuid: user.id,
             role_to_remove: existingRole
-          });
-          
-          if (removeRoleError) {
+        console.log('Updating user state');
+        await updateUserState(data?.session);
+        console.log('User state updated successfully');
             console.error(`Error removing role ${existingRole}:`, removeRoleError);
           }
         }
@@ -412,7 +413,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(prev => prev ? { 
         ...prev, 
         role: primaryRole as any, 
-        roles: roles
+      console.log('Login completed successfully');
       } : null);
 
       return true;

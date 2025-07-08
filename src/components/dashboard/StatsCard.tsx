@@ -4,7 +4,7 @@ import { LucideIcon } from 'lucide-react';
 interface StatsCardProps {
   title: string;
   value: string;
-  change: string;
+  change?: string;
   icon: LucideIcon;
   color: 'purple' | 'teal' | 'orange' | 'blue';
 }
@@ -22,8 +22,8 @@ export function StatsCard({ title, value, change, icon: Icon, color }: StatsCard
       <div className="flex items-center justify-between">
         <div>
           <p className="text-gray-400 text-sm font-medium">{title}</p>
-          <p className="text-2xl font-bold text-white mt-1">{value}</p>
-          <p className="text-sm text-gray-300 mt-1">{change}</p>
+          <p className="text-2xl font-bold text-white mt-1">{value || '0'}</p>
+          {change && <p className="text-sm text-gray-300 mt-1">{change}</p>}
         </div>
         <div className={`w-12 h-12 bg-gradient-to-r ${colorClasses[color]} rounded-lg flex items-center justify-center`}>
           <Icon className="w-6 h-6 text-white" />

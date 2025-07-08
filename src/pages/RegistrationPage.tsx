@@ -41,10 +41,11 @@ export function RegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('Form submitted with email:', formData.email);
+    console.log('Login form submitted with email:', formData.email);
     
     // Prevent multiple simultaneous attempts
     if (isLoading) {
+      console.log('Login already in progress, ignoring...');
       return;
     }
     
@@ -52,31 +53,14 @@ export function RegistrationPage() {
     setErrorMessage('');
 
     try {
-      // Direct login with Supabase to bypass any issues with the auth context
-      if (supabase) {
-        console.log('Attempting direct login with Supabase');
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password
-        });
-        
-        if (error) {
-          console.error('Supabase login error:', error);
-          throw error;
-        }
-        
-        if (data?.user) {
-          console.log('Login successful, redirecting...');
-          navigate('/dashboard');
-          return;
-        }
+      console.log('Attempting login via AuthContext');
+      const success = await login(formData.email, formData.password);
+      
+      if (success) {
+        console.log('Login successful, redirecting to dashboard');
+        navigate('/dashboard');
       } else {
-        // Fallback to context login if supabase is not available
-        console.log('Falling back to context login');
-        const success = await login(formData.email, formData.password);
-        if (!success) {
-          throw new Error('Login failed. Please check your credentials.');
-        }
+        throw new Error('Login failed. Please check your credentials.');
       }
     } catch (error: any) {
       console.error('Authentication error:', error);
@@ -91,8 +75,10 @@ export function RegistrationPage() {
       }
       
       setErrorMessage(message);
+      setIsLoading(false);
     } finally {
-      // The loading state is managed by the auth context
+      // Make sure loading state is reset
+      setIsLoading(false);
     }
   };
 

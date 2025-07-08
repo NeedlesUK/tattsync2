@@ -20,7 +20,7 @@ interface CalendarEvent {
 export function EventCalendar() {
   const { user } = useAuth();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [filter, setFilter] = useState<'all' | 'my-events' | 'available'>('all');
+  const [filter, setFilter] = useState<'all' | 'my-events' | 'available'>('all'); 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -30,9 +30,9 @@ export function EventCalendar() {
   const fetchEvents = async () => {
     try {
       setIsLoading(true);
-      // In a real implementation, this would fetch from API
-      // For now, we'll just set an empty array
+      // This would fetch real data from an API in production
       setEvents([]);
+      console.log('Calendar events initialized with empty array');
     } catch (error) {
       console.error('Error fetching events:', error);
     } finally {
@@ -42,17 +42,17 @@ export function EventCalendar() {
 
   const handleApply = (eventId: number) => {
     // Handle application logic
-    console.log('Applying to event:', eventId);
+    // This would be implemented in production
   };
 
   const handleBuyTickets = (eventSlug: string) => {
     // Handle ticket purchase logic
-    window.open(`https://tattsync.com/${eventSlug}/tickets`, '_blank');
+    // This would be implemented in production
   };
 
   const handleAddToInterested = (eventId: number) => {
     // Handle adding to interested events
-    console.log('Adding to interested:', eventId);
+    // This would be implemented in production
   };
 
   const formatDate = (dateString: string) => {

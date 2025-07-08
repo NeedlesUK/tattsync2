@@ -6,7 +6,7 @@ import { EventCalendar } from '../components/calendar/EventCalendar';
 
 export function DashboardPage() {
   const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
@@ -19,11 +19,11 @@ export function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      // In a real implementation, fetch from API
-      // For now, we'll just set empty arrays
+      // This would fetch real data from an API in production
       setStats([]);
       setRecentActivity([]);
       setUpcomingEvents([]);
+      console.log('Dashboard data initialized with empty arrays');
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -64,32 +64,32 @@ export function DashboardPage() {
         {!isClient && !isRegularUser && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatsCard 
-              title="Active Events" 
-              value="0" 
-              change="No change" 
-              icon={Calendar} 
-              color="purple" 
+              title="Active Events"
+              value="0"
+              change=""
+              icon={Calendar}
+              color="purple"
             />
             <StatsCard 
-              title="Total Applications" 
-              value="0" 
-              change="No change" 
-              icon={Users} 
-              color="teal" 
+              title="Total Applications"
+              value="0"
+              change=""
+              icon={Users}
+              color="teal"
             />
             <StatsCard 
-              title="Revenue" 
-              value="£0" 
-              change="No change" 
-              icon={CreditCard} 
-              color="orange" 
+              title="Revenue"
+              value="£0"
+              change=""
+              icon={CreditCard}
+              color="orange"
             />
             <StatsCard 
-              title="Messages" 
-              value="0" 
-              change="No unread" 
-              icon={MessageCircle} 
-              color="blue" 
+              title="Messages"
+              value="0"
+              change=""
+              icon={MessageCircle}
+              color="blue"
             />
           </div>
         )}
