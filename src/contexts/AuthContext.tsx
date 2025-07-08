@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { createClient, Session, User } from '@supabase/supabase-js';
 import api from '../lib/api';
+import { shouldUseTempDb, getDbClient } from '../lib/tempDb';
 
 interface AuthUser {
   id: string;
@@ -29,7 +30,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-let supabase: ReturnType<typeof createClient> | null = null;
+let supabase = null;
 
 // Only initialize Supabase if we have valid URL and key (not placeholder values)
 if (supabaseUrl && 
@@ -48,7 +49,7 @@ if (supabaseUrl &&
     console.log('✅ Supabase client initialized');
   } catch (error) {
     console.error("❌ Failed to initialize Supabase client:", error.message);
-    supabase = null;
+    console.error("Error details:", error);
   }
 } else {
   console.warn('⚠️ Supabase not configured properly. Using mock data.');
@@ -58,7 +59,7 @@ if (supabaseUrl &&
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<Session | null>(null); 
   const [isLoading, setIsLoading] = useState(true);
 
   // Function to update user profile data in the context
@@ -74,44 +75,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to fetch user data from our database
   const fetchUserData = async (userId: string, userEmail: string) => {
     try {
-      console.log('🔍 Fetching user data for:', userEmail, 'via API');
+      console.log('🔍 Fetching user data for:', userEmail);
       let userData = null;
       
-      // Try API call first
-      if (session?.access_token) {
-        try {
-          console.log('🔍 Calling backend API for user data');
+      // Use Supabase directly to get user data
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
           
-          // Call the backend API to get user data
-          const response = await api.get(`/users/${userId}`, {
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`
-            }
-          });
-          userData = response.data;
-          
-          console.log('✅ User data from API:', userData);
-          
-          return {
-            ...userData,
-            roles: userData.roles || [userData.role]
-          };
-        } catch (error) {
-          console.error('❌ Error fetching user data from API:', error);
-          // Fall through to the fallback if API call fails
+        if (error) {
+          console.error('Error fetching user data from Supabase:', error);
+          throw error;
+        }
+        
+        if (data) {
+          userData = data;
+          console.log('✅ User data from Supabase:', userData);
         }
       }
-      
-      // Fallback to basic user info
-      console.log('⚠️ Using fallback user data');
 
-      return {
-        id: userId,
-        name: userEmail?.split('@')[0] || 'User',
-        email: userEmail || '',
-        role: 'artist' as const,
-        roles: ['artist']
-      };
+      if (!userData) {
+        // Fallback to basic user info
+        console.log('⚠️ Using fallback user data');
+        return {
+          id: userId,
+          name: userEmail?.split('@')[0] || 'User',
+          email: userEmail || '',
+          role: 'artist' as const,
+          roles: ['artist']
+        };
+      }
+      
+      return userData;
     } catch (error) {
       console.error('❌ Error fetching user data:', error);
       // Fallback to basic user info if API call fails
@@ -128,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user state with complete data
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
-      console.log('🔄 Updating user state for session:', session.user.email);
+      console.log('🔄 Updating user state for session:', session.user.id);
       
       // Set the authorization header for API requests
       if (session?.access_token) {
@@ -138,31 +136,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const userData = await fetchUserData(session.user.id, session.user.email || '');
         
-        // Fetch user roles if supabase is available
-        if (supabase) {
-          try {
-            const { data: rolesData, error: rolesError } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', session.user.id);
-            
-            if (!rolesError && rolesData && rolesData.length > 0) {
-              const roles = rolesData.map(r => r.role);
-              // Update userData with roles
-              userData.roles = roles;
-            }
-          } catch (error) {
-            console.error('Error fetching user roles:', error);
-          }
-        }
-        console.log('✅ Setting user state with data:', userData);
-
         setUser({
           id: userData.id,
           name: userData.name,
           email: userData.email,
-          role: userData.role || session.user.user_metadata?.role || 'artist', 
-          roles: userData.roles || [userData.role || session.user.user_metadata?.role || 'artist'],
+          role: userData.role || 'artist', 
+          roles: [userData.role || 'artist'],
           avatar: undefined
         });
       } catch (error: any) {
@@ -187,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase) {
       console.warn('⚠️ Supabase not configured. Please check your environment variables.');
-      console.warn('Using mock data for development');
+      console.warn('⚠️ Using mock data for development');
       setIsLoading(false);
       return;
     }
@@ -233,28 +212,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     if (!supabase) {
       throw new Error('Supabase not configured. Please check your environment variables.');
-    }
-
+    } 
+    
     setIsLoading(true);
     console.log('=== SIGN IN DEBUG ===');
     console.log('1. Starting sign in process');
     
+    // Simple validation
+    if (!email || !password) {
+      setIsLoading(false);
+      throw new Error('Email and password are required');
+    }
+    
     try {
-      // First check if we already have a session and sign out if needed
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (sessionData.session) {
-        console.log('2. Existing session found, signing out first');
-        await supabase.auth.signOut();
-      } else {
-        console.log('2. No existing session found');
-      }
-
+      console.log('2. Attempting sign in with email:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log('3. Auth response received', { success: !error, errorMessage: error?.message });
+      console.log('3. Auth response received', { success: !!data.session, errorMessage: error?.message });
       
       if (error) {
         console.error('Login error:', error);
@@ -263,29 +241,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
 
-      console.log('✅ Login successful for:', email);
+      console.log('4. Login successful for:', email);
       
       // Set authorization header immediately after successful login
       if (data.session?.access_token) {
         api.defaults.headers.common['Authorization'] = `Bearer ${data.session.access_token}`;
-         console.log('4. Set Authorization header with token');
+        console.log('5. Set Authorization header with token');
       }
 
-      console.log('5. Setting session state');
+      console.log('6. Setting session state');
       
       // Update session and user state immediately
       setSession(data.session);
       
       try {
-        console.log('6. Updating user state');
+        console.log('7. Updating user state');
         await updateUserState(data.session);
-        console.log('7. User state updated successfully');
+        console.log('8. User state updated successfully');
       } catch (userStateError) {
         console.error('Error updating user state:', userStateError);
         // Continue even if user state update fails
       }
       
-      console.log('8. Login completed successfully');
+      console.log('9. Login completed successfully');
       
       // Return the data so the calling component can handle it
       return true;
@@ -303,7 +281,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     if (!supabase) {
-      throw new Error('Supabase not configured');
+      console.error('Supabase not configured');
+      return;
     }
 
     setIsLoading(true);
@@ -337,7 +316,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user email
   const updateUserEmail = async (newEmail: string) => {
     if (!supabase || !user) {
-      throw new Error('Supabase not configured or user not logged in');
+      console.error('Supabase not configured or user not logged in');
+      return false;
     }
 
     try {
@@ -373,7 +353,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user email
   const updateUserRoles = async (roles: string[], primaryRole: string) => {
     if (!supabase || !user) {
-      throw new Error('Supabase not configured or user not logged in');
+      console.error('Supabase not configured or user not logged in');
+      return false;
     }
     
     console.log('Updating user roles:', roles, 'primary:', primaryRole);

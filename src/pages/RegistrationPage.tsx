@@ -41,7 +41,7 @@ export function RegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('Form submitted, attempting login');
+    console.log('Form submitted, attempting login with:', formData.email);
     // Prevent multiple simultaneous attempts
     if (isLoading) {
       console.log('Sign in already in progress, ignoring...');
@@ -52,9 +52,9 @@ export function RegistrationPage() {
     setErrorMessage('');
 
     try {
-      console.log('Attempting login with email:', formData.email);
+      console.log('Login button clicked, attempting login with:', formData.email);
       await login(formData.email, formData.password);
-      console.log('Login request successful, navigation will be handled by useEffect');
+      console.log('Login successful, navigation will be handled by useEffect');
     } catch (error: any) {
       console.error('Authentication error:', error);
       
@@ -64,7 +64,7 @@ export function RegistrationPage() {
       if (error.response && error.response.data && error.response.data.error) {
         message = error.response.data.error;
       } else if (error.message) {
-        message = error.message;
+        message = error.message || 'Login failed. Please check your credentials.';
       }
       
       setErrorMessage(message);
@@ -149,10 +149,7 @@ export function RegistrationPage() {
               onClick={() => console.log('Login button clicked, form will handle submission')}
             >
               {isLoading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Signing In...</span>
-                </>
+                <span>Signing In...</span>
               ) : (
                 <span>Sign In</span>
               )}

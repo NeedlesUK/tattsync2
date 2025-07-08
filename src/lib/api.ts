@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // Create axios instance with base configuration
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3003/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -12,13 +12,6 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    // Log the request for debugging
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
-    
-    // Authorization is handled by the AuthContext
-    if (config.headers.Authorization) {
-      console.log('Request has Authorization header');
-    }
     return config;
   },
   (error) => {
@@ -30,9 +23,6 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Log the error for debugging
-    console.error('API Error:', error);
-    
     if (error.code === 'ECONNABORTED') {
       console.error('❌ Request timeout - backend server might be slow or unresponsive');
     } else if (error.code === 'ECONNREFUSED' || error.message === 'Network Error') {
