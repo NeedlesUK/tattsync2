@@ -3,9 +3,11 @@ import { Calendar, Users, CreditCard, MessageCircle, User, MapPin } from 'lucide
 import { useAuth } from '../contexts/AuthContext';
 import { StatsCard } from '../components/dashboard/StatsCard';
 import { EventCalendar } from '../components/calendar/EventCalendar';
+import { useNavigate } from 'react-router-dom';
 
 export function DashboardPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
@@ -14,6 +16,12 @@ export function DashboardPage() {
   useEffect(() => {
     // In a real implementation, fetch data from API
     fetchDashboardData();
+    
+    // Redirect admin users to the events page
+    if (user?.role === 'admin') {
+      console.log('Admin user detected, redirecting to events page');
+      navigate('/events');
+    }
   }, []);
 
   const fetchDashboardData = async () => {

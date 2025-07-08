@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 
 export function RegistrationPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -51,27 +50,18 @@ export function RegistrationPage() {
     
     setIsLoading(true);
     setErrorMessage('');
+    console.log('Attempting login with email:', formData.email);
 
     try {
-      console.log('Attempting login with email:', formData.email);
       await login(formData.email, formData.password);
-      console.log('Login request successful, navigation will be handled by useEffect');
+      // Navigation will be handled by useEffect when user state updates
     } catch (error: any) {
       console.error('Authentication error:', error);
       
-      // Extract error message from response
-      let message = 'Login failed. Please check your email and password.';
-      
-      if (error.response && error.response.data && error.response.data.error) {
-        message = error.response.data.error;
-      } else if (error.message) {
-        message = error.message;
-      }
-      
-      setErrorMessage(message);
+      // Set error message
+      setErrorMessage(error.message || 'Login failed. Please check your credentials.');
       setIsLoading(false);
     } finally {
-      // Make sure loading state is reset
       setIsLoading(false);
     }
   };
@@ -147,11 +137,10 @@ export function RegistrationPage() {
               type="submit"
               disabled={isLoading}
               className="w-full bg-gradient-to-r from-purple-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-              onClick={() => console.log('Login button clicked')}
             >
               {isLoading ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   <span>Signing In...</span>
                 </>
               ) : (

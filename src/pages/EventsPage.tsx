@@ -49,7 +49,57 @@ export function EventsPage() {
   const fetchEvents = async () => {
     setIsLoading(true);
     try {
-      // Mock data for demonstration
+      if (supabase) {
+        // Try to fetch events from Supabase
+        const { data: eventsData, error } = await supabase
+          .from('events')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching events from Supabase:', error);
+          throw error;
+        }
+
+        if (eventsData && eventsData.length > 0) {
+          // Transform the data to match our expected format
+          const formattedEvents = eventsData.map(event => ({
+            id: event.id,
+            name: event.name,
+            description: event.description || '',
+            location: event.location,
+            venue: event.venue || '',
+            date: event.start_date,
+            endDate: event.end_date,
+            status: event.status,
+            image: 'https://images.pexels.com/photos/955938/pexels-photo-955938.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+            event_manager_id: event.event_manager_id
+          }));
+
+          setEvents(formattedEvents);
+          
+          // Filter user events (events managed by the current user)
+          if (user) {
+            const userEvts = formattedEvents.filter(e => e.event_manager_id === user.id);
+            setUserEvents(userEvts);
+            setFilteredUserEvents(userEvts);
+            
+            // All events except user events
+            const otherEvts = formattedEvents.filter(e => e.event_manager_id !== user.id);
+            setFilteredAllEvents(otherEvts);
+          } else {
+            setUserEvents([]);
+            setFilteredUserEvents([]);
+            setFilteredAllEvents(formattedEvents);
+          }
+          
+          console.log('Fetched events from Supabase:', formattedEvents.length);
+          return;
+        }
+      }
+      
+      // Fallback to mock data if Supabase fetch fails or returns no data
+      console.log('Using mock event data');
       const mockEvents = [
         {
           id: 1,
@@ -86,15 +136,18 @@ export function EventsPage() {
         }
       ];
       
-      // In a real implementation, this would fetch from API
       setEvents(mockEvents);
       
-      // For demonstration, set the first event as a user event
-      setUserEvents([mockEvents[0]]);
-      
-      // Initialize filtered events
-      setFilteredUserEvents([mockEvents[0]]);
-      setFilteredAllEvents([mockEvents[1], mockEvents[2]]);
+      // For demonstration, set the first event as a user event if user is logged in
+      if (user) {
+        setUserEvents([mockEvents[0]]);
+        setFilteredUserEvents([mockEvents[0]]);
+        setFilteredAllEvents([mockEvents[1], mockEvents[2]]);
+      } else {
+        setUserEvents([]);
+        setFilteredUserEvents([]);
+        setFilteredAllEvents(mockEvents);
+      }
     } catch (error) {
       console.error('Error fetching events:', error);
       setEvents([]);

@@ -2,9 +2,6 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import { createClient, Session, User } from '@supabase/supabase-js';
 import api from '../lib/api';
 
-// Define a timeout for auth operations
-const AUTH_TIMEOUT = 15000; // 15 seconds
-
 interface AuthUser {
   id: string;
   name: string;
@@ -45,8 +42,6 @@ if (supabaseUrl &&
       auth: {
         autoRefreshToken: true,
         persistSession: true, 
-        storage: window.localStorage,
-        storageKey: 'tattsync-auth',
         detectSessionInUrl: false
       }
     });
@@ -239,19 +234,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Starting login process for:', email);
 
-      // Create a promise that will be rejected after timeout
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Login request timed out')), AUTH_TIMEOUT);
+      // First check if we already have a session and sign out if needed
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session) {
+        console.log('Existing session found, signing out first');
+        await supabase.auth.signOut();
+      }
+
+      // Perform the login
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-      
-      // Create the actual login promise
-      const loginPromise = supabase.auth.signInWithPassword({ email, password });
-      
-      // Race the login against the timeout
-      const { data, error } = await Promise.race([
-        loginPromise,
-        timeoutPromise.then(() => { throw new Error('Login request timed out'); })
-      ]) as any;
 
       if (error) {
         console.error('Login error:', error);
@@ -280,19 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     console.log('Starting logout process');
     try {
-      // Create a promise that will be rejected after timeout
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Logout request timed out')), AUTH_TIMEOUT);
-      });
-      
-      // Create the actual logout promise
-      const logoutPromise = supabase.auth.signOut();
-      
-      // Race the logout against the timeout
-      const { error } = await Promise.race([
-        logoutPromise,
-        timeoutPromise.then(() => { throw new Error('Logout request timed out'); })
-      ]) as any;
+      const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.error('Logout error:', error);
