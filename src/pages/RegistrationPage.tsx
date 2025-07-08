@@ -17,6 +17,8 @@ export function RegistrationPage() {
   useEffect(() => {
     // Clear any error messages when component mounts
     setErrorMessage('');
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
@@ -53,14 +55,6 @@ export function RegistrationPage() {
         console.log('Login successful, forcing navigation to dashboard');
         navigate('/dashboard');
       }
-      const result = await login(formData.email, formData.password);
-      console.log('Login result:', result);
-      
-      // Force navigation if login was successful but useEffect didn't trigger
-      if (result && user) {
-        console.log('Login successful, forcing navigation to dashboard');
-        navigate('/dashboard');
-      }
     } catch (error: any) {
       console.error('Authentication error:', error);
       
@@ -75,17 +69,7 @@ export function RegistrationPage() {
       
       setErrorMessage(message);
       setIsLoading(false);
-    }
-    
-    // Ensure loading state is reset after a timeout
-    setTimeout(() => {
-      if (isLoading) {
-        console.log('Login process timed out, resetting loading state');
-        setIsLoading(false);
-      }
-    }, 5000);
-    
-    console.log('Login attempt completed');
+    } finally {
       // Ensure loading state is reset
       setTimeout(() => {
         if (isLoading) {
@@ -93,7 +77,7 @@ export function RegistrationPage() {
           setIsLoading(false);
         }
       }, 5000);
-    } finally {
+    }
   };
 
   return (
@@ -207,7 +191,8 @@ export function RegistrationPage() {
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4">
               <h4 className="text-purple-400 font-medium mb-1">Event Management</h4>
               <p className="text-gray-300 text-sm">Complete event organization tools</p>
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4">
+            </div>
+          </div>
         </div>
       </div>
     </div>
