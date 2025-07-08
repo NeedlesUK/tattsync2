@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, CreditCard, MessageCircle, TrendingUp, Clock } from 'lucide-react';
+import { Calendar, Users, CreditCard, MessageCircle, TrendingUp, Clock, User, MapPin } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { StatsCard } from '../components/dashboard/StatsCard';
 import { EventCalendar } from '../components/calendar/EventCalendar';
