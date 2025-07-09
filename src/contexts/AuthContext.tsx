@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user state with complete data
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
-      console.log('Updating user state for:', session.user.email || 'unknown email');
+      console.log('Updating user state for:', session.user.email || 'unknown email', 'User ID:', session.user.id);
       
       // Set the authorization header for API requests
       if (session?.access_token) {
@@ -252,6 +252,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Set session immediately
       setSession(data.session);
+      
+      // Set user immediately with basic info to prevent hanging
+      const userMetadata = data.user?.user_metadata || {};
+      const tempUser = {
+        id: data.user?.id || '',
+        name: userMetadata.name || data.user?.email?.split('@')[0] || 'User',
+        email: data.user?.email || '',
+        role: userMetadata.role || 'artist',
+        roles: [userMetadata.role || 'artist']
+      };
+      setUser(tempUser);
       
       // Update user state
       await updateUserState(data.session);
