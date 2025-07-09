@@ -222,13 +222,11 @@ export function Header() {
               </div>
             )}
 
-              <Link
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden text-gray-300 hover:text-white"
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </div>
             </button>
           </div>
         </div>
