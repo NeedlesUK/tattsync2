@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Info, Gift, Tag, Users, MessageCircle, Calendar, CreditCard, FileText, Bell, Globe, Shield, Mail } from 'lucide-react';
+import { Settings, Info, Gift, Tag, Users, MessageCircle, Calendar, CreditCard, FileText, Bell, Globe, Shield, Mail, Edit } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { EventInformationModal } from '../components/settings/EventInformationModal';
 import { EventDealsModal } from '../components/settings/EventDealsModal';
 import { GlobalDealsModal } from '../components/settings/GlobalDealsModal';
+import { EventDetailsModal } from '../components/settings/EventDetailsModal';
 
 export function EventSettingsPage() {
   const { user, supabase } = useAuth();
@@ -15,7 +16,7 @@ export function EventSettingsPage() {
   const [isInformationModalOpen, setIsInformationModalOpen] = useState(false);
   const [isDealsModalOpen, setIsDealsModalOpen] = useState(false);
   const [isGlobalDealsModalOpen, setIsGlobalDealsModalOpen] = useState(false);
-  const [isEventDetailsModalOpen, setIsEventDetailsModalOpen] = useState(false);
+  const [isEventDetailsModalOpen, setIsEventDetailsModalOpen] = useState(false); 
   const [activeTab, setActiveTab] = useState('general');
   const [event, setEvent] = useState<any>({
     id: 1,
@@ -90,19 +91,52 @@ export function EventSettingsPage() {
 
   const handleEditEventDetails = () => {
     console.log('Editing event details for:', event.id);
-    // For now, we'll just show an alert with the event details
-    // In a real implementation, this would open a modal to edit the event details
-    alert(`
-Event Details:
-ID: ${event.id}
-Name: ${event.name}
-Status: ${event.status}
-Dates: ${event.start_date} to ${event.end_date}
-Location: ${event.location}
-Venue: ${event.venue}
+    setIsEventDetailsModalOpen(true);
+  };
 
-This functionality will be implemented in a future update.
-    `);
+  const handleSaveEventDetails = async (eventData: any) => {
+    try {
+      console.log('Saving event details:', eventData);
+      
+      if (supabase) {
+        const { error } = await supabase
+          .from('events')
+          .update({
+            name: eventData.name,
+            description: eventData.description,
+            event_slug: eventData.event_slug,
+            start_date: eventData.start_date,
+            end_date: eventData.end_date,
+            location: eventData.location,
+            venue: eventData.venue,
+            max_attendees: eventData.max_attendees,
+            status: eventData.status,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', eventData.id);
+          
+        if (error) {
+          console.error('Error updating event:', error);
+          throw error;
+        }
+        
+        // Update local state
+        setEvent({
+          ...event,
+          ...eventData
+        });
+      } else {
+        // Mock update for when Supabase is not available
+        console.log('Supabase not available, mocking update');
+        setEvent({
+          ...event,
+          ...eventData
+        });
+      }
+    } catch (error) {
+      console.error('Error saving event details:', error);
+      throw error;
+    }
   };
 
   const handleSaveInformation = async (information: any) => {
@@ -171,7 +205,7 @@ This functionality will be implemented in a future update.
           title: 'Event Details',
           description: 'Update event name, dates, location, and other basic information',
           icon: Calendar,
-          action: () => handleEditEventDetails()
+          action: handleEditEventDetails
         },
         {
           title: 'Event Information',
@@ -361,6 +395,14 @@ This functionality will be implemented in a future update.
             onSave={handleSaveGlobalDeals}
           />
         )}
+        
+        <EventDetailsModal
+          eventId={eventId || 0}
+          isOpen={isEventDetailsModalOpen}
+          onClose={() => setIsEventDetailsModalOpen(false)}
+          onSave={handleSaveEventDetails}
+          initialData={event}
+        />
       </div>
     </div>
   );
