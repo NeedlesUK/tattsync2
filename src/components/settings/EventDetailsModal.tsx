@@ -218,7 +218,7 @@ export function EventDetailsModal({
                   )}
                   <p className="text-gray-400 text-xs mt-1">
                     This will be used for the public event page URL: /events/<span className="text-purple-400">{formData.event_slug}</span>
-                  )}
+                  </p>
                 </div>
               </div>
 
