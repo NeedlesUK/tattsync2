@@ -174,7 +174,8 @@ export function EventsPage() {
 
   const handleViewEvent = (eventId: number) => {
     // Combine all events to search through
-    const allEvents = [...events];
+    // Make sure we don't have duplicate events
+    const allEvents = events.filter(e => e.id === eventId);
     const event = allEvents.find(e => e.id === eventId);
     console.log('View event:', eventId, 'Event found:', event);
     

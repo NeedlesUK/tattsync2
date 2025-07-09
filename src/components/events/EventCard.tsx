@@ -68,7 +68,7 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
   const handleView = () => {
     if (event.event_slug) {
       console.log('Viewing event with slug:', event.event_slug);
-      window.open(`/events/${event.event_slug}`, '_blank');
+      window.open(`/events/${event.event_slug}`, '_blank').focus();
     } else if (onView) {
       console.log('Viewing event with ID:', event.id);
       onView(event.id);

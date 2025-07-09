@@ -329,8 +329,12 @@ export function EventSettingsPage() {
           <div className="mt-4 sm:mt-0">
             <button
               onClick={() => {
+                console.log('Preview event:', event);
                 if (event.event_slug) {
-                  window.open(`/events/${event.event_slug}`, '_blank').focus();
+                  const url = `/events/${event.event_slug}`;
+                  console.log('Opening URL:', url);
+                  const newWindow = window.open(url, '_blank');
+                  if (newWindow) newWindow.focus();
                 } else {
                   alert('This event has no public URL yet. Please set an event slug first.');
                 }
