@@ -120,25 +120,74 @@ export function AdminDashboardPage() {
   const toggleEventModule = async (eventId: number, module: 'ticketing' | 'consent' | 'tattscore', currentValue: boolean) => {
     if (!supabase) return;
     
+    console.log('Toggling module:', module, 'for event:', eventId, 'current value:', currentValue);
+    
     try {
       // Find the event module record
       const event = events.find(e => e.id === eventId);
-      if (!event || !event.event_modules) {
+      
+      if (!event) {
         console.error('Event modules not found for event:', eventId);
         return;
       }
       
-      // Normalize event_modules to always be an array
-      const eventModules = Array.isArray(event.event_modules) 
-        ? event.event_modules 
-        : [event.event_modules];
+      // Check if event_modules exists
+      if (!event.event_modules || 
+          (Array.isArray(event.event_modules) && event.event_modules.length === 0)) {
+        console.log('No event modules found, creating new module record');
+        
+        // Create a new event_modules record
+        const { data: newModule, error: createError } = await supabase
+          .from('event_modules')
+          .insert({
+            event_id: eventId,
+            ticketing_enabled: module === 'ticketing' ? !currentValue : false,
+            consent_forms_enabled: module === 'consent' ? !currentValue : false,
+            tattscore_enabled: module === 'tattscore' ? !currentValue : false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+          
+        if (createError) {
+          console.error('Error creating event module:', createError);
+          return;
+        }
+        
+        // Update local state
+        setEvents(events.map(e => {
+          if (e.id === eventId) {
+            return {
+              ...e,
+              event_modules: [newModule]
+            };
+          }
+          return e;
+        }));
+        
+        console.log(`${module} module enabled for event ${eventId}`);
+        return;
+      }
       
-      if (eventModules.length === 0) {
+      // Normalize event_modules to always be an array
+      let eventModules;
+      if (Array.isArray(event.event_modules)) {
+        eventModules = event.event_modules.length > 0 ? event.event_modules : null;
+      } else {
+        eventModules = event.event_modules ? [event.event_modules] : null;
+      }
+      
+      if (!eventModules) {
         console.error('Event modules array is empty for event:', eventId);
         return;
       }
       
-      const moduleId = eventModules[0].id;
+      const moduleId = eventModules[0]?.id;
+      if (!moduleId) {
+        console.error('No module ID found for event:', eventId);
+        return;
+      }
       
       // Prepare the update data
       const updateData: any = {
@@ -167,22 +216,19 @@ export function AdminDashboardPage() {
       // Update local state
       setEvents(events.map(e => {
         if (e.id === eventId && e.event_modules) {
-          // Normalize event_modules for state update
-          const currentModules = Array.isArray(e.event_modules) 
-            ? e.event_modules 
-            : [e.event_modules];
-          
-          if (currentModules.length === 0) return e;
+          let currentModules;
+          if (Array.isArray(e.event_modules)) {
+            currentModules = e.event_modules.length > 0 ? e.event_modules : [updateData];
+          } else {
+            currentModules = e.event_modules ? [e.event_modules] : [updateData];
+          }
           
           return {
             ...e,
-            event_modules: Array.isArray(e.event_modules) ? [{
+            event_modules: [{
               ...currentModules[0],
               ...updateData
-            }] : {
-              ...currentModules[0],
-              ...updateData
-            }
+            }]
           };
         }
         return e;
