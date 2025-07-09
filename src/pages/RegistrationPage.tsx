@@ -58,12 +58,12 @@ export function RegistrationPage() {
     try {
       const success = await login(formData.email, formData.password);
       console.log('Login result:', success);
-      
+
       if (success) {
         console.log('Login successful, navigating to dashboard');
         // Force navigation to dashboard
         setTimeout(() => {
-          navigate('/dashboard');
+          window.location.href = '/dashboard';
         }, 500);
       }
       // Navigation will be handled by useEffect when user state updates

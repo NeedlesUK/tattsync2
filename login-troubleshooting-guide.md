@@ -28,32 +28,23 @@ If the issue persists, implement these fixes:
 In `AuthContext.tsx`, ensure the user state is set immediately after login success:
 
 ```typescript
-// After successful login
-const { data, error } = await supabase.auth.signInWithPassword({
-  email,
-  password,
-});
-
-if (error) {
-  throw error;
+// In updateUserState function
+if (session?.user) {
+  // Set user immediately with basic information from session
+  const userMetadata = session.user.user_metadata || {};
+  const initialUser = {
+    id: session.user.id,
+    name: userMetadata.name || session.user.email?.split('@')[0] || 'User',
+    email: session.user.email || '',
+    role: userMetadata.role || 'artist', 
+    roles: userMetadata.roles || [userMetadata.role || 'artist']
+  };
+  
+  setUser(initialUser);
+  setIsLoading(false);
+  
+  // Then continue with the full user data fetch...
 }
-
-// Set session immediately
-setSession(data.session);
-
-// Set user immediately with basic info to prevent hanging
-const userMetadata = data.user?.user_metadata || {};
-const tempUser = {
-  id: data.user?.id || '',
-  name: userMetadata.name || data.user?.email?.split('@')[0] || 'User',
-  email: data.user?.email || '',
-  role: userMetadata.role || 'artist',
-  roles: [userMetadata.role || 'artist']
-};
-setUser(tempUser);
-
-// Then continue with the full user data fetch
-await updateUserState(data.session);
 ```
 
 #### Fix 2: Add Null Checks in Components
@@ -75,46 +66,74 @@ In the login handler, force navigation after successful login:
 ```typescript
 const success = await login(formData.email, formData.password);
 if (success) {
-  // Force navigation to dashboard
+  // Force navigation to dashboard using window.location for a hard refresh
   setTimeout(() => {
-    navigate('/dashboard');
+    window.location.href = '/dashboard';
   }, 500);
 }
 ```
 
-#### Fix 4: Add Error Boundaries
+#### Fix 4: Avoid Redundant State Updates
 
-Add React error boundaries around components that might fail if user data is not available:
+Ensure you're not setting user state multiple times in quick succession:
 
 ```typescript
-<ErrorBoundary fallback={<div>Something went wrong</div>}>
-  <UserDependentComponent />
-</ErrorBoundary>
+// In login function
+// Don't set user state here if updateUserState will do it
+// Let updateUserState handle all user state updates
 ```
 
 ### 4. Debugging Techniques
 
 If issues persist:
 
-1. Add more detailed logging throughout the authentication flow
-2. Check network requests in the browser's Network tab
-3. Verify that the Supabase client is properly initialized
-4. Check that environment variables are correctly set
-5. Verify that the database has the correct user records
+1. Add more detailed logging throughout the authentication flow:
+   ```typescript
+   console.log('User state before update:', user);
+   console.log('Session data:', session);
+   console.log('User metadata:', session?.user?.user_metadata);
+   ```
 
-### 5. Database Checks
+2. Check network requests in the browser's Network tab:
+   - Look for the auth request to `/auth/v1/token`
+   - Check for any subsequent requests to fetch user data
+   - Verify that all requests complete successfully
 
-Ensure the database has the correct structure:
+3. Verify that the Supabase client is properly initialized:
+   ```typescript
+   console.log('Supabase client initialized:', !!supabase);
+   ```
 
-1. Check that the `users` table has all required columns
-2. Verify that user roles are correctly set in both `auth.users` and your custom `users` table
-3. Check that RLS policies are correctly configured
+4. Check that environment variables are correctly set:
+   ```typescript
+   console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL?.substring(0, 10) + '...');
+   console.log('VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+   ```
 
-### 6. Last Resort
+### 5. Database Structure Issues
+
+If you have both `users` and `user_profiles` tables:
+
+1. Ensure the relationship is correctly established:
+   - `users` table should have the core user data (id, name, email, role)
+   - `user_profiles` table should have extended profile information
+   - They should be linked by the user's ID
+
+2. Check that your `fetchUserData` function correctly queries both tables if needed:
+   ```typescript
+   const { data: userData } = await supabase
+     .from('users')
+     .select('*, user_profiles(*)')
+     .eq('id', userId)
+     .single();
+   ```
+
+3. Ensure RLS policies allow the user to read their own data
+
+### 6. Last Resort Solutions
 
 If all else fails:
 
-1. Clear all browser storage (localStorage, sessionStorage, cookies)
-2. Restart the development server
-3. Recreate the user account
-4. Check for any middleware that might be interfering with the authentication flow
+1. Use `window.location.href` instead of React Router's `navigate` for a hard page refresh after login
+2. Implement a simple loading page that appears during authentication
+3. Consider using localStorage as a temporary cache for user data to prevent UI flashing

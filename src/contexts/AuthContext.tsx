@@ -127,6 +127,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
       console.log('Updating user state for:', session.user.email || 'unknown email', 'User ID:', session.user.id);
+
+      // Set user immediately with basic information from session
+      const userMetadata = session.user.user_metadata || {};
+      const initialUser: AuthUser = {
+        id: session.user.id,
+        name: userMetadata.name || session.user.email?.split('@')[0] || 'User',
+        email: session.user.email || '',
+        role: userMetadata.role || 'artist', 
+        roles: userMetadata.roles || [userMetadata.role || 'artist'],
+        avatar: undefined
+      };
+      
+      setUser(initialUser);
+      setIsLoading(false);
       
       // Set the authorization header for API requests
       if (session?.access_token) {
@@ -136,33 +150,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const userData = await fetchUserData(session.user.id, session.user.email || '');
         
-        const userObj: AuthUser = {
+        // Only update if we got richer data
+        if (userData) {
+          const userObj: AuthUser = {
           id: userData.id,
           name: userData.name,
           email: userData.email || session.user.email || '',
           role: userData.role || 'artist', 
           roles: userData.roles || [userData.role || 'artist'],
           avatar: undefined
-        };
-        
-        console.log('User state updated successfully');
-        setUser(userObj);
-        setIsLoading(false);
+          };
+          
+          console.log('User state updated with database data');
+          setUser(userObj);
+        }
       } catch (error: any) {
         console.error('❌ Error updating user state:', error);
-        
-        // Fallback to basic user info from session
-        const fallbackUser = {
-          id: session.user.id,
-          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
-          role: session.user.user_metadata?.role || 'artist',
-          roles: [session.user.user_metadata?.role || 'artist']
-        };
-        
-        console.log('Using fallback user state');
-        setUser(fallbackUser);
-        setIsLoading(false);
+        // We already set the user with basic info, so just log the error
+        console.log('Using initial user state due to error fetching extended data');
       }
     } else {
       setUser(null);
@@ -234,7 +239,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     try {
       console.log('Starting login process for:', email);
-
+      
       // Perform the login
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -250,6 +255,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('✅ Login successful for:', email);
       console.log('Session:', data.session);
       
+      // Set session immediately
       // Set session immediately
       setSession(data.session);
       
@@ -267,6 +273,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Update user state
       await updateUserState(data.session);
       
+      console.log('Login process completed successfully');
       return true;
     } catch (error) {
       console.error('❌ Error during login:', error);
@@ -274,7 +281,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     } finally {
       setIsLoading(false);
-      console.log('Login process completed');
     }
   };
 
