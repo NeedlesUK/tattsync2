@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Settings, Database, Key, Server, Globe, FileText, AlertCircle, CheckCircle, User, Mail, Calendar, CreditCard, X, Shield, ToggleLeft as Toggle, Eye, EyeOff } from 'lucide-react';
+import { Plus, Search, Filter, Settings, Database, Key, Server, Globe, FileText, AlertCircle, CheckCircle, User, Mail, Calendar, CreditCard, X, Shield, ToggleLeft as Toggle, Eye, EyeOff, Building, FileText2, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { ChangeUserPassword } from '../components/admin/ChangeUserPassword';
+import { useNavigate } from 'react-router-dom';
 
 export function AdminDashboardPage() {
   const { user, supabase } = useAuth();
@@ -17,6 +18,9 @@ export function AdminDashboardPage() {
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+
+  // Add state for active section
+  const [activeSection, setActiveSection] = useState<'modules' | 'users' | 'system' | 'applications'>('modules');
 
   useEffect(() => {
     // Only allow admin access
@@ -240,6 +244,10 @@ export function AdminDashboardPage() {
     }
   };
 
+  const navigateToPage = (path: string) => {
+    navigate(path);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
@@ -266,6 +274,48 @@ export function AdminDashboardPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
           <p className="text-gray-300">System-wide management and controls</p>
+          
+          {/* Quick access buttons */}
+          <div className="flex flex-wrap gap-3 mt-4">
+            <button
+              onClick={() => setActiveSection('modules')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeSection === 'modules' ? 'bg-purple-600 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'
+              }`}
+            >
+              Event Modules
+            </button>
+            <button
+              onClick={() => setActiveSection('users')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeSection === 'users' ? 'bg-purple-600 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'
+              }`}
+            >
+              User Management
+            </button>
+            <button
+              onClick={() => setActiveSection('applications')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeSection === 'applications' ? 'bg-purple-600 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'
+              }`}
+            >
+              Applications
+            </button>
+            <button
+              onClick={() => setActiveSection('system')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeSection === 'system' ? 'bg-purple-600 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'
+              }`}
+            >
+              System Status
+            </button>
+            <button
+              onClick={() => navigateToPage('/event-settings')}
+              className="px-4 py-2 rounded-lg font-medium bg-teal-600 hover:bg-teal-700 text-white transition-colors"
+            >
+              Global Deals
+            </button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -309,9 +359,9 @@ export function AdminDashboardPage() {
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Event Module Management */}
-          <div className="lg:col-span-2">
+        <div className="space-y-8">
+          {/* Event Module Management Section */}
+          {activeSection === 'modules' && (
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-white">Event Module Management</h2>
@@ -422,8 +472,11 @@ export function AdminDashboardPage() {
                 </ul>
               </div>
             </div>
-            
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+          )}
+
+          {/* System Status Section */}
+          {activeSection === 'system' && (
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
               <h2 className="text-xl font-semibold text-white mb-4">System Status</h2>
               
               <div className="space-y-4">
@@ -460,11 +513,11 @@ export function AdminDashboardPage() {
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Recent Users */}
-          <div>
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+          {/* User Management Section */}
+          {activeSection === 'users' && (
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-white">Recent Users</h2>
                 <button 
@@ -507,31 +560,77 @@ export function AdminDashboardPage() {
                   </div>
                 )}
               </div>
-            </div>
-            
-            {/* Global Deals */}
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mt-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-white">Global Deals</h2>
-                <button 
-                  onClick={() => navigate('/event-settings')}
-                  className="text-purple-400 hover:text-purple-300 text-sm transition-colors"
+              
+              <div className="flex justify-end mt-4">
+                <button
+                  onClick={() => navigate('/admin/users')}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
                 >
-                  Manage Deals
+                  Manage All Users
                 </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Applications Management Section */}
+          {activeSection === 'applications' && (
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+              <div className="flex items-center space-x-3 mb-6">
+                <FileText2 className="w-6 h-6 text-orange-400" />
+                <h2 className="text-xl font-semibold text-white">Applications Management</h2>
               </div>
               
-              <div className="text-center py-4">
-                <p className="text-gray-400">Manage global deals and offers that can be applied across all events</p>
-                <button
-                  onClick={() => navigate('/event-settings')}
-                  className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                >
-                  Global Deals Settings
-                </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-white/5 border border-white/10 rounded-lg p-6 hover:bg-white/10 transition-all">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-orange-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">Application Types</h3>
+                  </div>
+                  <p className="text-gray-300 text-sm mb-4">Configure application types and forms for events</p>
+                  <button
+                    onClick={() => navigateToPage('/event-settings')}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Manage Types
+                  </button>
+                </div>
+                
+                <div className="bg-white/5 border border-white/10 rounded-lg p-6 hover:bg-white/10 transition-all">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                      <Users className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">Applicants</h3>
+                  </div>
+                  <p className="text-gray-300 text-sm mb-4">View and manage all applicants across events</p>
+                  <button
+                    onClick={() => navigateToPage('/admin/applications')}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    View Applicants
+                  </button>
+                </div>
+                
+                <div className="bg-white/5 border border-white/10 rounded-lg p-6 hover:bg-white/10 transition-all">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                      <Settings className="w-5 h-5 text-green-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">Settings</h3>
+                  </div>
+                  <p className="text-gray-300 text-sm mb-4">Configure global application settings</p>
+                  <button
+                    onClick={() => navigateToPage('/event-settings')}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Application Settings
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -564,4 +663,4 @@ export function AdminDashboardPage() {
 }
 
 // Import useNavigate at the top
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom'; - already imported above
