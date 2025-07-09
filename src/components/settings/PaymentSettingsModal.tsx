@@ -249,11 +249,6 @@ export function PaymentSettingsModal({
                   </div>
                 </button>
               </div>
-                    <h4 className="text-white font-medium mb-1">Registration Requirements</h4>
-                    <p className="text-gray-400 text-sm">Set payment requirements, agreement text, and profile deadlines</p>
-                  </div>
-                </button>
-              </div>
 
               {/* Cash Payments */}
               <div className="bg-white/5 rounded-lg p-6 border border-white/10">
