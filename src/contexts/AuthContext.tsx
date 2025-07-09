@@ -6,7 +6,7 @@ interface AuthUser {
   id: string;
   name: string;
   email: string; 
-  role: 'admin' | 'artist' | 'piercer' | 'performer' | 'trader' | 'volunteer' | 'event_manager' | 'event_admin' | 'client' | 'studio_manager' | 'judge' | 'loading';
+  role: 'admin' | 'artist' | 'piercer' | 'performer' | 'trader' | 'volunteer' | 'event_manager' | 'event_admin' | 'client' | 'studio_manager' | 'judge';
   roles?: string[];
   avatar?: string;
 }
@@ -77,24 +77,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('🔍 Fetching user data for:', userEmail);
       console.log('🔍 User ID:', userId);
-      let userData = null;
+      let userData: any = null;
       
       // Use Supabase directly to get user data
       if (supabase) {
-        const { data, error } = await supabase
+        console.log('📊 Querying database for user data with ID:', userId);
+        const { data, error, status } = await supabase
           .from('users')
           .select('*')
           .eq('id', userId)
           .single();
           
         if (error) {
-          console.error('Error fetching user data from Supabase:', error);
+          console.error('❌ Error fetching user data from Supabase:', error, 'Status:', status);
           throw error;
         }
         
         if (data && Object.keys(data).length > 0) {
           userData = data;
-          console.log('✅ DATABASE READ CONFIRMED: User data retrieved from database:', {
+          console.log('✅ DATABASE READ CONFIRMED - User data retrieved from database:', {
             id: userData.id,
             name: userData.name,
             email: userData.email,
@@ -102,13 +103,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             created_at: userData.created_at
           });
         } else {
-          console.warn('⚠️ No user data found in database for ID:', userId);
+          console.warn('⚠️ DATABASE READ FAILED - No user data found in database for ID:', userId);
+          console.log('Supabase query returned empty data:', data);
         }
       }
 
       if (!userData) {
         // Fallback to basic user info
-        console.log('⚠️ Using fallback user data');
+        console.log('⚠️ DATABASE READ FAILED - Using fallback user data');
         return {
           id: userId,
           name: userEmail?.split('@')[0] || 'User',
@@ -135,14 +137,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user state with complete data
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
-      console.log('Updating user state for:', session.user.email || 'unknown email', 'User ID:', session.user.id);
+      console.log('🔄 Updating user state for:', session.user.email || 'unknown email', 'User ID:', session.user.id);
       
+      // Set user immediately with basic information from session
+      const userMetadata = session.user.user_metadata || {};
+      const initialUser: AuthUser = {
+        id: session.user.id,
+        name: userMetadata.name || session.user.email?.split('@')[0] || 'User',
+        email: session.user.email || '',
+        role: userMetadata.role || 'artist', 
+        roles: userMetadata.roles || [userMetadata.role || 'artist'],
+        avatar: undefined
+      };
+      
+      console.log('🔄 Setting initial user state:', initialUser);
+      setUser(initialUser);
+      
+      // Set the authorization header for API requests
+      if (session?.access_token) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      
+      // Now fetch complete user data from database
       try {
-        // Fetch user data from database first
+        console.log('🔍 Fetching complete user data from database...');
         const userData = await fetchUserData(session.user.id, session.user.email || '');
-        console.log('Fetched user data result:', userData ? 'Data found' : 'No data found');
         
-        // Only update if we got data from database
+        // Only update if we got valid data from database
         if (userData && userData.id) {
           const userObj: AuthUser = {
             id: userData.id,
@@ -153,49 +174,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             avatar: undefined
           };
           
-          console.log('DATABASE READ CONFIRMED: Setting user state with database data:', {
+          console.log('✅ DATABASE READ CONFIRMED - Setting user state with database data:', {
             id: userData.id,
             name: userData.name,
             email: userData.email,
-            role: userData.role,
-            created_at: userData.created_at
+            role: userData.role
           });
           
-          // Set the authorization header for API requests
-          if (session?.access_token) {
-            api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
-          }
-          
           setUser(userObj);
-          setIsLoading(false);
-          return;
         } else {
-          console.warn('⚠️ No valid user data returned from fetchUserData, falling back to basic info');
+          console.warn('⚠️ DATABASE READ FAILED - No valid user data returned, keeping basic info');
         }
       } catch (error: any) {
-        console.error('❌ Error fetching user data from database:', error);
+        console.error('❌ Error updating user state with database data:', error);
+        console.log('⚠️ Using initial user state due to error fetching extended data');
+      } finally {
+        setIsLoading(false);
       }
-
-      // Set user immediately with basic information from session
-      const userMetadata = session.user.user_metadata || {};
-      const initialUser: AuthUser = {
-        id: session.user.id || '',
-        name: 'Loading Database Data...' + (session.user.id ? ` (ID: ${session.user.id.substring(0, 8)}...)` : ''),
-        email: session.user.email || 'unknown@email.com',
-        role: 'loading', 
-        roles: ['loading'],
-        avatar: undefined
-      };
-      
-      console.log('Setting initial placeholder user state while waiting for database:', initialUser);
-      
-      // Set the authorization header for API requests
-      if (session?.access_token) {
-        api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
-      }
-      
-      setUser(initialUser);
-      setIsLoading(false);
     } else {
       setUser(null);
       // Clear authorization header when no user
@@ -263,6 +258,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     setIsLoading(true);
     console.log('Starting login process for:', email);
+    console.log('⏱️ Login attempt started at:', new Date().toISOString());
     
     try {
       console.log('Authenticating with Supabase for:', email);
@@ -280,7 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('✅ Login successful for:', email);
-      console.log('Session:', data.session);
+      console.log('✅ Session obtained at:', new Date().toISOString());
       
       // Set session
       setSession(data.session);
@@ -288,7 +284,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Update user state
       await updateUserState(data.session);
       
-      console.log('Login process completed successfully');
+      console.log('✅ Login process completed successfully at:', new Date().toISOString());
+      
+      // Force navigation to dashboard after a short delay to ensure state is updated
+      setTimeout(() => {
+        console.log('🔄 Forcing navigation to dashboard');
+        if (window.location.pathname !== '/dashboard') {
+          console.log('🧭 Redirecting to dashboard...');
+          window.location.href = '/dashboard';
+        } else {
+          console.log('🏠 Already on dashboard page');
+        }
+      }, 1000);
+      
       return true;
     } catch (error) {
       console.error('❌ Error during login:', error);

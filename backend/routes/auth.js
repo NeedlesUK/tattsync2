@@ -31,28 +31,37 @@ router.post('/register', async (req, res) => {
         error: 'Supabase not configured. Please check environment variables.' 
       });
     }
-
+        console.log('📊 Fetching user data from database for ID:', data.user.id);
+        const { data: userResult, error: userError, status } = await supabaseAdmin
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          name,
+        if (!userError && userResult) {
           role
+          console.log('✅ DATABASE READ CONFIRMED - User data retrieved from database:', {
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            role: userData.role
+          });
+        } else {
+          console.warn('⚠️ DATABASE READ FAILED - Error or no data:', userError, 'Status:', status);
+          console.log('Query result:', userResult);
         }
       }
     });
 
     if (error) {
       return res.status(400).json({ error: error.message });
-    }
+        console.error('❌ Error fetching user data from database:', dbError);
 
     // Insert user data into our custom users table using admin client
     if (data.user) {
       const { error: insertError } = await supabaseAdmin
         .from('users')
         .upsert({
-          id: data.user.id,
           name,
           email,
           role,
@@ -89,9 +98,11 @@ router.post('/login', async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
-
-    if (!supabase) {
-      return res.status(500).json({ 
+          id: userData?.id || data.user.id,
+          name: userData?.name || data.user.user_metadata?.name || `DB_FALLBACK_${data.user.id.substring(0, 6)}`,
+          email: userData?.email || data.user.email,
+          role: userData?.role || data.user.user_metadata?.role || 'artist',
+          fromDatabase: !!userData
         error: 'Supabase not configured. Please check environment variables.' 
       });
     }

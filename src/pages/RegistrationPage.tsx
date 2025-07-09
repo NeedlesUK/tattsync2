@@ -44,6 +44,7 @@ export function RegistrationPage() {
     e.preventDefault();
     
     console.log('Login form submitted with email:', formData.email, 'at', new Date().toISOString());
+    console.log('⏱️ Form submission timestamp:', new Date().toISOString());
 
     // Prevent multiple simultaneous attempts
     if (isLoading) {
@@ -54,14 +55,22 @@ export function RegistrationPage() {
     setIsLoading(true);
     setErrorMessage(''); 
     console.log('Attempting login with email:', formData.email, 'at', new Date().toISOString());
+    console.log('⏱️ Login attempt timestamp:', new Date().toISOString());
     
     try {
       const success = await login(formData.email, formData.password);
       console.log('Login result:', success, 'at', new Date().toISOString());
+      console.log('⏱️ Login completed timestamp:', new Date().toISOString());
 
       if (success) {
-        console.log('Login successful, AuthContext will handle navigation');
-        // Navigation is now handled by AuthContext
+        console.log('✅ Login successful, navigation will be handled by AuthContext');
+        console.log('⏱️ Success confirmation timestamp:', new Date().toISOString());
+        
+        // Force navigation to dashboard after a short delay
+        setTimeout(() => {
+          console.log('🧭 Forcing navigation to dashboard from RegistrationPage');
+          window.location.href = '/dashboard';
+        }, 1500);
       }
       // Navigation will be handled by useEffect when user state updates
     } catch (error: any) {

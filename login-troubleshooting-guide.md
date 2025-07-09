@@ -85,13 +85,13 @@ Ensure you're not setting user state multiple times in quick succession:
 
 ### 4. Debugging Techniques
 
-If issues persist:
+If login issues persist:
 
 1. Add more detailed logging throughout the authentication flow:
    ```typescript
-   console.log('User state before update:', user);
-   console.log('Session data:', session);
-   console.log('User metadata:', session?.user?.user_metadata);
+   console.log('⏱️ Login attempt timestamp:', new Date().toISOString());
+   console.log('📊 Database query result:', data);
+   console.log('🔄 User state update:', {id, name, email, role});
    ```
 
 2. Check network requests in the browser's Network tab:
@@ -106,8 +106,9 @@ If issues persist:
 
 4. Check that environment variables are correctly set:
    ```typescript
-   console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL?.substring(0, 10) + '...');
-   console.log('VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+   console.log('🔑 VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL?.substring(0, 10) + '...');
+   console.log('🔑 VITE_SUPABASE_ANON_KEY exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
+   console.log('🔑 API_URL:', import.meta.env.VITE_API_URL);
    ```
 
 ### 5. Database Structure Issues
@@ -134,6 +135,24 @@ If you have both `users` and `user_profiles` tables:
 
 If all else fails:
 
-1. Use `window.location.href` instead of React Router's `navigate` for a hard page refresh after login
-2. Implement a simple loading page that appears during authentication
-3. Consider using localStorage as a temporary cache for user data to prevent UI flashing
+1. Force a hard navigation with timeout:
+   ```typescript
+   setTimeout(() => {
+     console.log('🧭 Forcing navigation to dashboard');
+     window.location.href = '/dashboard';
+   }, 1000);
+   ```
+
+2. Implement a loading state indicator:
+   ```typescript
+   {isLoading ? (
+     <div className="loading-spinner">Loading user data...</div>
+   ) : (
+     <UserDashboard user={user} />
+   )}
+   ```
+
+3. Add database read verification:
+   ```typescript
+   console.log('✅ DATABASE READ CONFIRMED - User data:', userData);
+   ```
