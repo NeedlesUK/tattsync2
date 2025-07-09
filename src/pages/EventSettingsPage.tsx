@@ -286,7 +286,7 @@ export function EventSettingsPage() {
           title: 'Ticketing',
           description: `Configure ticket types, pricing, and sales${eventModules?.ticketing_enabled ? ' (Enabled)' : ' (Disabled)'}`,
           icon: Ticket,
-          action: () => console.log('Configure ticketing')
+          action: () => navigate('/ticket-management')
         },
         {
           title: 'Consent Forms',

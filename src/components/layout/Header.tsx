@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, LogOut, Settings, Crown, Calendar, Award, Building } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, Crown, Calendar, Award, Building, MessageCircle, Ticket, Users } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function Header() {
@@ -19,12 +19,50 @@ export function Header() {
     }
   }, [user]);
 
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard' },
-    { name: 'Events', href: '/events' },
-    { name: 'Messages', href: '/messages' },
-    { name: 'Deals', href: '/deals' },
-  ];
+  // Define navigation based on user role
+  const getNavigation = () => {
+    // Default navigation for all users
+    const baseNavigation = [
+      { name: 'Dashboard', href: '/dashboard' }
+    ];
+    
+    // For event managers, show specific navigation
+    if (user?.role === 'event_manager' || user?.role === 'event_admin') {
+      return [
+        ...baseNavigation,
+        { 
+          name: 'Messages', 
+          href: '/messages',
+          badge: 0, // Replace with actual unread count
+          badgeColor: 'bg-green-500'
+        },
+        { 
+          name: 'Tickets', 
+          href: '/ticket-management',
+          requiresModule: 'ticketing'
+        },
+        { 
+          name: 'Attendees', 
+          href: '/attendees'
+        },
+        { 
+          name: 'Leaderboard', 
+          href: '/tattscore/judging',
+          requiresModule: 'tattscore'
+        }
+      ];
+    }
+    
+    // For regular users
+    return [
+      ...baseNavigation,
+      { name: 'Events', href: '/events' },
+      { name: 'Messages', href: '/messages' },
+      { name: 'Deals', href: '/deals' },
+    ];
+  };
+
+  const navigation = getNavigation();
 
   // For Master Admin, direct links instead of dropdowns
   const adminDirectLinks = [
@@ -62,6 +100,13 @@ export function Header() {
   };
 
   const roleDisplay = user ? getRoleDisplay(user.role) : null;
+  
+  // Check if a module is enabled for the current user
+  const isModuleEnabled = (moduleName: string) => {
+    // This is a placeholder - in a real implementation, you would check if the module is enabled
+    // for the current user's event
+    return true;
+  };
 
   // Filter navigation items based on user role
   const filteredTattscoreNavigation = tattscoreNavigation.filter(item => 
@@ -89,19 +134,43 @@ export function Header() {
 
           {user && (
             <nav className="hidden md:flex space-x-8">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href} 
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive(item.href)
-                      ? 'text-purple-400 bg-purple-400/10'
-                      : 'text-gray-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {navigation.map((item) => {
+                // Skip items that require a module if the module is not enabled
+                if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
+                  return null;
+                }
+                
+                {navigation.map((item) => {
+                  // Skip items that require a module if the module is not enabled
+                  if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
+                    return null;
+                  }
+                  
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href} 
+                      className={`flex items-center px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                        isActive(item.href)
+                          ? 'text-purple-400 bg-purple-400/10'
+                          : 'text-gray-300 hover:text-white hover:bg-white/10'
+                      }`}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {item.name}
+                      {item.badge !== undefined && (
+                        <span className={`ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${item.badge > 0 ? 'bg-red-500 text-white' : item.badgeColor + ' text-white'}`}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
               
               {/* For Master Admin, show direct links */}
               {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
