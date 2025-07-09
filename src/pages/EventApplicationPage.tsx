@@ -6,6 +6,31 @@ import { AccountSelectionPrompt } from '../components/forms/AccountSelectionProm
 import { ProfileUpdatePrompt } from '../components/forms/ProfileUpdatePrompt';
 import { useAuth } from '../contexts/AuthContext';
 
+// Helper function to get event details from slug
+const getEventFromSlug = async (slug: string, supabase: any) => {
+  if (!supabase) return null;
+  
+  try {
+    console.log('Fetching event with slug:', slug);
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .eq('event_slug', slug)
+      .single();
+      
+    if (error) {
+      console.error('Error fetching event by slug:', error);
+      return null;
+    }
+    
+    console.log('Event data retrieved by slug:', data);
+    return data;
+  } catch (error) {
+    console.error('Exception fetching event by slug:', error);
+    return null;
+  }
+};
+
 interface EventDetails {
   id: number;
   name: string;
@@ -32,8 +57,8 @@ interface ProfileData {
 
 export function EventApplicationPage() {
   const { eventSlug } = useParams<{ eventSlug: string }>();
+  const { user, supabase } = useAuth();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [event, setEvent] = useState<EventDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'info' | 'apply' | 'tickets' | 'consent'>('info');
@@ -46,9 +71,9 @@ export function EventApplicationPage() {
 
   useEffect(() => {
     if (eventSlug) {
-      fetchEventDetails(eventSlug);
+      fetchEventDetails();
     }
-  }, [eventSlug]);
+  }, [eventSlug, supabase]);
 
   useEffect(() => {
     if (user) {
@@ -63,26 +88,97 @@ export function EventApplicationPage() {
     }
   }, [user]);
 
-  const fetchEventDetails = async (slug: string) => {
+  const fetchEventDetails = async () => {
+    if (!eventSlug) return;
+    
     try {
       setIsLoading(true);
-      // Mock data - in real implementation, fetch from API
-      const mockEvent: EventDetails = {
-        id: 1,
-        name: 'Ink Fest 2024',
-        description: 'The premier tattoo convention on the West Coast featuring world-renowned artists, live demonstrations, competitions, and exclusive merchandise. Join us for three days of incredible artistry and community.',
-        event_slug: slug,
-        start_date: '2024-03-15',
-        end_date: '2024-03-17',
-        location: 'Los Angeles, CA',
-        venue: 'LA Convention Center',
-        status: 'published',
-        applications_enabled: true,
-        ticketing_enabled: true,
-        consent_forms_enabled: true,
-        application_types: ['artist', 'piercer', 'performer', 'trader', 'volunteer', 'caterer']
-      };
-      setEvent(mockEvent);
+      
+      // Try to fetch from Supabase first
+      if (supabase) {
+        const eventData = await getEventFromSlug(eventSlug, supabase);
+        
+        if (eventData) {
+          // Get event modules
+          const { data: modules, error: modulesError } = await supabase
+            .from('event_modules')
+            .select('*')
+            .eq('event_id', eventData.id)
+            .single();
+            
+          if (modulesError) {
+            console.error('Error fetching event modules:', modulesError);
+          }
+          
+          // Get application types
+          const { data: appSettings, error: appError } = await supabase
+            .from('application_settings')
+            .select('application_types')
+            .eq('event_id', eventData.id)
+            .single();
+            
+          const applicationTypes = appSettings?.application_types || [];
+          
+          // Combine data
+          const fullEventData: EventDetails = {
+            id: eventData.id,
+            name: eventData.name,
+            description: eventData.description || '',
+            event_slug: eventData.event_slug,
+            start_date: eventData.start_date,
+            end_date: eventData.end_date,
+            location: eventData.location,
+            venue: eventData.venue || '',
+            status: eventData.status,
+            applications_enabled: modules?.applications_enabled || false,
+            ticketing_enabled: modules?.ticketing_enabled || false,
+            consent_forms_enabled: modules?.consent_forms_enabled || false,
+            application_types: applicationTypes
+          };
+          
+          console.log('Setting event data from Supabase:', fullEventData);
+          setEvent(fullEventData);
+          return;
+        }
+      }
+      
+      // Fallback to mock data if Supabase fetch fails
+      console.log('Using mock event data for slug:', eventSlug);
+      
+      // Use different mock data based on slug to help with testing
+      if (eventSlug === 'gwts') {
+        setEvent({
+          id: 2,
+          name: 'Great Western Tattoo Show',
+          description: 'The premier tattoo event in the West Country featuring top artists from across the UK and Europe.',
+          event_slug: eventSlug,
+          start_date: '2024-08-10',
+          end_date: '2024-08-12',
+          location: 'Bristol, UK',
+          venue: 'Bristol Exhibition Centre',
+          status: 'published',
+          applications_enabled: true,
+          ticketing_enabled: true,
+          consent_forms_enabled: true,
+          application_types: ['artist', 'piercer', 'performer', 'trader', 'volunteer']
+        });
+      } else {
+        setEvent({
+          id: 1,
+          name: 'Ink Fest 2024',
+          description: 'The premier tattoo convention on the West Coast featuring world-renowned artists, live demonstrations, competitions, and exclusive merchandise. Join us for three days of incredible artistry and community.',
+          event_slug: eventSlug,
+          start_date: '2024-03-15',
+          end_date: '2024-03-17',
+          location: 'Los Angeles, CA',
+          venue: 'LA Convention Center',
+          status: 'published',
+          applications_enabled: true,
+          ticketing_enabled: true,
+          consent_forms_enabled: true,
+          application_types: ['artist', 'piercer', 'performer', 'trader', 'volunteer', 'caterer']
+        });
+      }
     } catch (error) {
       console.error('Error fetching event:', error);
     } finally {

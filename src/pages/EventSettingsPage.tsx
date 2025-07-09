@@ -331,10 +331,16 @@ export function EventSettingsPage() {
               onClick={() => {
                 console.log('Preview event:', event);
                 if (event.event_slug) {
-                  const url = `/events/${event.event_slug}`;
+                  const baseUrl = window.location.origin;
+                  const url = `${baseUrl}/events/${event.event_slug}`;
                   console.log('Opening URL:', url);
-                  const newWindow = window.open(url, '_blank');
-                  if (newWindow) newWindow.focus();
+                  try {
+                    const newWindow = window.open(url, '_blank');
+                    if (newWindow) newWindow.focus();
+                  } catch (error) {
+                    console.error('Error opening window:', error);
+                    alert('Could not open preview. Please check your browser settings.');
+                  }
                 } else {
                   alert('This event has no public URL yet. Please set an event slug first.');
                 }
