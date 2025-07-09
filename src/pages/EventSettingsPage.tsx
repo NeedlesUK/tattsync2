@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Info, Gift, Tag, Users, MessageCircle, Calendar, CreditCard, FileText, Bell, Globe, Shield, Mail, Edit } from 'lucide-react';
+import { Settings, Info, Gift, Tag, Users, MessageCircle, Calendar, CreditCard, FileText, Bell, Globe, Shield, Mail, Edit, Eye } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { EventInformationModal } from '../components/settings/EventInformationModal';
@@ -314,6 +314,15 @@ export function EventSettingsPage() {
             <p className="text-gray-300">
               {isEventManager ? `Manage settings for ${event.name}` : 'System-wide settings and controls'}
             </p>
+          </div>
+          <div className="mt-4 sm:mt-0">
+            <button
+              onClick={() => event.event_slug ? window.open(`/events/${event.event_slug}`, '_blank') : alert('This event has no public URL yet. Please set an event slug first.')}
+              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+            >
+              <Eye className="w-5 h-5" />
+              <span>Preview Event</span>
+            </button>
           </div>
         </div>
 

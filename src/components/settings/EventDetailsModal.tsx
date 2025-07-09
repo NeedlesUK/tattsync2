@@ -190,6 +190,7 @@ export function EventDetailsModal({
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Event Slug (URL)
+                    <span className="text-xs text-gray-400 ml-2">(Used for public event page)</span>
                   </label>
                   <div className="flex space-x-2">
                     <div className="relative flex-1">
@@ -214,6 +215,9 @@ export function EventDetailsModal({
                   </div>
                   {errors.event_slug && (
                     <p className="text-red-400 text-sm mt-1">{errors.event_slug}</p>
+                  )}
+                  <p className="text-gray-400 text-xs mt-1">
+                    This will be used for the public event page URL: /events/<span className="text-purple-400">{formData.event_slug}</span>
                   )}
                 </div>
               </div>
