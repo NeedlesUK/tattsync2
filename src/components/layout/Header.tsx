@@ -107,7 +107,7 @@ export function Header() {
               ))}
               
               {/* For Master Admin, show direct links */}
-              {(user?.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
+              {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
@@ -190,33 +190,33 @@ export function Header() {
                   <div className="hidden sm:block">
                     <span className="block font-medium">{user.name || 'User'}</span>
                     {(roleDisplay || user.email === 'gary@tattscore.com') && (
-                      <div className="flex items-center space-x-1 text-xs">
-                        {user?.email === 'gary@tattscore.com' ? (
+                      <div className="flex items-center space-x-1">
+                        {user.email === 'gary@tattscore.com' ? (
                           <>
                             <Crown className="w-3 h-3 text-purple-400" />
                             <span className="text-xs text-purple-400">Master Admin</span>
                           </>
                         ) : (
                           <>
-                            <roleDisplay.icon className="w-3 h-3 text-gray-400" />
-                            <span className="text-gray-400">{roleDisplay.label}</span>
+                            {roleDisplay && <roleDisplay.icon className="w-3 h-3" />}
+                            <span className="text-xs text-gray-400">{roleDisplay?.label}</span>
                           </>
                         )}
                       </div>
                     )}
                   </div>
                 </Link>
-                {(roleDisplay || user?.email === 'gary@tattscore.com') && (
+                {user && (roleDisplay || user.email === 'gary@tattscore.com') && (
                   <span className={`${roleDisplay?.color || 'bg-purple-600'} text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1`}>
-                    {user?.role === 'admin' ? (
+                    {user.role === 'admin' ? (
                       <>
                         <Crown className="w-3 h-3" />
                         <span className="hidden sm:inline">{roleDisplay?.label || 'Master Admin'}</span>
                       </>
                     ) : (
                       <>
-                        <roleDisplay?.icon className="w-3 h-3" />
-                        <span className="hidden sm:inline">{roleDisplay?.label}</span>
+                        {roleDisplay && <roleDisplay.icon className="w-3 h-3" />}
+                        <span className="hidden sm:inline">{roleDisplay?.label || ''}</span>
                       </>
                     )}
                   </span>
@@ -231,7 +231,7 @@ export function Header() {
               </div>
             ) : (
               <Link
-                to={user?.role === 'admin' ? '/dashboard' : '/profile'}
+                to="/login"
                 className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
               >
                 Sign In
@@ -266,7 +266,7 @@ export function Header() {
               ))}
               
               {/* For Master Admin, show direct links in mobile menu too */}
-              {(user?.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
+              {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
