@@ -227,8 +227,7 @@ export function PaymentSettingsModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <button
                   onClick={() => setIsPricingModalOpen(true)}
-                  className="bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
-                >
+                  className="bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3">
                   <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
                     <DollarSign className="w-5 h-5 text-purple-400" />
                   </div>
@@ -240,12 +239,16 @@ export function PaymentSettingsModal({
                 
                 <button
                   onClick={() => setIsRequirementsModalOpen(true)}
-                  className="bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
-                >
+                  className="bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3">
                   <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
                     <FileText className="w-5 h-5 text-blue-400" />
                   </div>
                   <div>
+                    <h4 className="text-white font-medium mb-1">Registration Requirements</h4>
+                    <p className="text-gray-400 text-sm">Set payment requirements, agreement text, and profile deadlines</p>
+                  </div>
+                </button>
+              </div>
                     <h4 className="text-white font-medium mb-1">Registration Requirements</h4>
                     <p className="text-gray-400 text-sm">Set payment requirements, agreement text, and profile deadlines</p>
                   </div>
