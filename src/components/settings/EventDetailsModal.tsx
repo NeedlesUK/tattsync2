@@ -41,7 +41,7 @@ export function EventDetailsModal({
     location: '',
     venue: '',
     max_attendees: 500,
-    status: 'draft'
+    status: 'draft',
     logo_url: '',
     banner_image_url: ''
   });
