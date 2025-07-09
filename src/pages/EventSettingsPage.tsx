@@ -3,10 +3,11 @@ import { Settings, Info, Gift, Tag, Users, MessageCircle, Calendar, CreditCard, 
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { EventInformationModal } from '../components/settings/EventInformationModal';
-import { EventDealsModal } from '../components/settings/EventDealsModal';
+import { EventDealsModal } from '../components/settings/EventDealsModal'; 
 import { GlobalDealsModal } from '../components/settings/GlobalDealsModal';
 import { PaymentSettingsModal } from '../components/settings/PaymentSettingsModal';
 import { EventDetailsModal } from '../components/settings/EventDetailsModal';
+import { Heart, Award } from 'lucide-react';
 
 export function EventSettingsPage() {
   const { user, supabase } = useAuth();
@@ -19,7 +20,10 @@ export function EventSettingsPage() {
   const [isGlobalDealsModalOpen, setIsGlobalDealsModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isEventDetailsModalOpen, setIsEventDetailsModalOpen] = useState(false); 
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isEventDetailsModalOpen, setIsEventDetailsModalOpen] = useState(false); 
   const [activeTab, setActiveTab] = useState('general');
+  const [eventModules, setEventModules] = useState<any>(null);
   const [event, setEvent] = useState<any>({
     id: 1,
     name: 'Loading...',
@@ -43,10 +47,38 @@ export function EventSettingsPage() {
     if (eventIdParam) {
       setEventId(parseInt(eventIdParam));
       fetchEventDetails(parseInt(eventIdParam));
+      fetchEventModules(parseInt(eventIdParam));
     } else {
       setIsLoading(false);
     }
   }, [location.search]);
+  
+  const fetchEventModules = async (id: number) => {
+    try {
+      if (supabase) {
+        console.log('Fetching event modules for ID:', id);
+        const { data, error } = await supabase
+          .from('event_modules')
+          .select('*')
+          .eq('event_id', id)
+          .single();
+          
+        if (error) {
+          console.error('Error fetching event modules:', error);
+          return;
+        }
+        
+        if (data) {
+          console.log('Event modules retrieved:', data);
+          setEventModules(data);
+        } else {
+          console.log('No event modules found for ID:', id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching event modules:', error);
+    }
+  };
   
   const fetchEventDetails = async (id: number) => {
     try {
@@ -238,23 +270,35 @@ export function EventSettingsPage() {
       id: 'modules',
       title: 'Event Modules',
       icon: Tag,
-      description: 'Enable or disable event features',
+      description: 'Configure event features and functionality',
       items: [
         {
           title: 'Applications',
-          description: 'Configure application types, forms, and approval process',
+          description: `Configure application types, forms, and approval process${eventModules?.applications_enabled ? ' (Enabled)' : ' (Disabled)'}`,
           icon: FileText,
-          action: () => console.log('Configure applications') 
+          action: () => console.log('Configure applications')
         },
         {
           title: 'Payments',
-          description: 'Set up payment methods, pricing, and installment options',
+          description: `Set up payment methods, pricing, and installment options${eventModules?.ticketing_enabled ? ' (Enabled)' : ' (Disabled)'}`,
           icon: CreditCard,
           action: () => setIsPaymentModalOpen(true)
         },
         {
+          title: 'Consent Forms',
+          description: `Configure medical history and consent form functionality${eventModules?.consent_forms_enabled ? ' (Enabled)' : ' (Disabled)'}`,
+          icon: Heart,
+          action: () => console.log('Configure consent forms')
+        },
+        {
+          title: 'TattScore',
+          description: `Configure competition judging system${eventModules?.tattscore_enabled ? ' (Enabled)' : ' (Disabled)'}`,
+          icon: Award,
+          action: () => console.log('Configure TattScore')
+        },
+        {
           title: 'Messaging',
-          description: 'Configure messaging settings and templates',
+          description: `Configure messaging settings and templates${eventModules?.messaging_enabled ? ' (Enabled)' : ' (Disabled)'}`,
           icon: MessageCircle,
           action: () => console.log('Configure messaging')
         }
