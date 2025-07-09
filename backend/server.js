@@ -7,7 +7,7 @@ const { pool, supabase } = require('./config/database');
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 3004;
+const PORT = process.env.PORT || 3003;
 
 // Middleware
 app.use(helmet());

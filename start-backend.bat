@@ -1,4 +1,21 @@
 @echo off
+
+REM Function to kill process on port 3003
+echo 🔍 Checking for processes on port 3003...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :3003') do (
+    set PID=%%a
+    goto :found
+)
+echo ✅ Port 3003 is available
+goto :continue
+
+:found
+echo ⚠️  Port 3003 is in use by process %PID%. Terminating...
+taskkill /PID %PID% /F >nul 2>&1
+timeout /t 2 >nul
+echo ✅ Process terminated
+
+:continue
 echo 🚀 Starting TattSync Backend Server...
 echo.
 
@@ -37,6 +54,7 @@ if not exist "node_modules" (
 )
 
 REM Start the server
+set PORT=3003
 echo 🔥 Starting backend server on port 3003...
 echo 📊 Health check will be available at: http://localhost:3003/api/health
 echo.

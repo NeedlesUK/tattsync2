@@ -1,5 +1,19 @@
 #!/bin/bash
 
+# Function to kill process on port 3003
+kill_port_3003() {
+    echo "🔍 Checking for processes on port 3003..."
+    PID=$(lsof -ti:3003)
+    if [ ! -z "$PID" ]; then
+        echo "⚠️  Port 3003 is in use by process $PID. Terminating..."
+        kill -9 $PID 2>/dev/null
+        sleep 2
+        echo "✅ Process terminated"
+    else
+        echo "✅ Port 3003 is available"
+    fi
+}
+
 echo "🚀 Starting TattSync Backend Server..."
 echo ""
 
@@ -35,7 +49,11 @@ if [ ! -d "node_modules" ]; then
     echo ""
 fi
 
+# Kill any existing process on port 3003
+kill_port_3003
+
 # Start the server
+export PORT=3003
 echo "🔥 Starting backend server on port 3003..."
 echo "📊 Health check will be available at: http://localhost:3003/api/health"
 echo ""
