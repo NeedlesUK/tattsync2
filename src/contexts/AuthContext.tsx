@@ -201,12 +201,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Set user immediately with basic information from session
       const userMetadata = session.user.user_metadata || {};
       const initialUser: AuthUser = {
-        id: session.user.id || '',
-        name: userMetadata.name || session.user.email?.split('@')[0] || 'User',
+        id: session.user.id,
+        name: userMetadata.name || session.user.email?.split('@')[0] || 'User', 
         email: session.user.email || '',
-        role: session.user.email === 'admin@tattsync.com' ? 'admin' : (userMetadata.role || 'artist'),
-        roles: session.user.email === 'admin@tattsync.com' ? ['admin'] : (userMetadata.roles || [userMetadata.role || 'artist']),
-        avatar: userMetadata.avatar
+        role: session.user.email === 'admin@tattsync.com' ? 'admin' : (userMetadata.role || 'artist'), 
+        roles: session.user.email === 'admin@tattsync.com' ? ['admin'] : (userMetadata.roles || [userMetadata.role || 'artist']), 
+        avatar: userMetadata.avatar || ''
       };
       
       console.log('🔄 Setting initial user state at:', new Date().toISOString());
@@ -228,11 +228,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (userData && userData.id) {
           const userObj: AuthUser = {
             id: userData.id,
-            name: userData.name || session.user.email?.split('@')[0] || 'User',
-            email: userData.email || session.user.email || '',
-            role: session.user.email === 'admin@tattsync.com' ? 'admin' : (userData.role || 'artist'),
-            roles: session.user.email === 'admin@tattsync.com' ? ['admin'] : (userData.roles || [userData.role || 'artist']),
-            avatar: userMetadata.avatar
+            name: userData.name || session.user.email?.split('@')[0] || 'User', 
+            email: userData.email || session.user.email || '', 
+            role: session.user.email === 'admin@tattsync.com' ? 'admin' : (userData.role || 'artist'), 
+            roles: session.user.email === 'admin@tattsync.com' ? ['admin'] : (userData.roles || [userData.role || 'artist']), 
+            avatar: initialUser.avatar || userMetadata.avatar || ''
           };
           
           console.log('✅ DATABASE READ CONFIRMED - Setting user state with database data:', {
