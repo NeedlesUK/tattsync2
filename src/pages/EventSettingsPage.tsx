@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Info, Gift, Tag, Users, MessageCircle, Calendar, CreditCard, FileText, Bell, Globe, Shield } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext'; 
+import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { EventInformationModal } from '../components/settings/EventInformationModal';
 import { EventDealsModal } from '../components/settings/EventDealsModal';
 import { GlobalDealsModal } from '../components/settings/GlobalDealsModal';
 
 export function EventSettingsPage() {
-  const { user } = useAuth();
+  const { user, supabase } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [eventId, setEventId] = useState<number | null>(null);
@@ -49,6 +49,7 @@ export function EventSettingsPage() {
       setIsLoading(true);
       
       if (supabase) {
+        console.log('Fetching event details for ID:', id);
         const { data, error } = await supabase
           .from('events')
           .select('*')
@@ -56,13 +57,28 @@ export function EventSettingsPage() {
           .single();
           
         if (error) {
-          console.error('Error fetching event:', error);
+          console.error('Error fetching event details:', error);
           throw error;
         }
         
         if (data) {
+          console.log('Event data retrieved:', data);
           setEvent(data);
+        } else {
+          console.log('No event data found for ID:', id);
         }
+      } else {
+        console.error('Supabase client not available');
+        // Use mock data if supabase is not available
+        setEvent({
+          id: id,
+          name: 'Event ' + id,
+          status: 'draft',
+          start_date: '2024-07-15',
+          end_date: '2024-07-17',
+          location: 'Sample Location',
+          venue: 'Sample Venue'
+        });
       }
     } catch (error) {
       console.error('Error fetching event details:', error);

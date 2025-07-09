@@ -61,17 +61,16 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
                          user?.email === event.event_manager_email;
                           
   const handleManage = () => {
-    if (event.event_slug) {
-      navigate(`/event-settings?event=${event.id}`);
-    } else if (onView) {
-      onView(event.id);
-    }
+    console.log('Managing event:', event.id);
+    navigate(`/event-settings?event=${event.id}`);
   };
   
   const handleView = () => {
     if (event.event_slug) {
+      console.log('Viewing event with slug:', event.event_slug);
       navigate(`/events/${event.event_slug}`);
     } else if (onView) {
+      console.log('Viewing event with ID:', event.id);
       onView(event.id);
     }
   };
