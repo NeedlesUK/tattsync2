@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Info, ChevronDown, ChevronUp, FileText, Tabs, Tab, Image, File, Paperclip } from 'lucide-react';
+import { Info, ChevronDown, ChevronUp, FileText, Table as Tabs, Table as Tab, Image, File, Paperclip } from 'lucide-react';
 
 interface InformationItem {
   id: number;
