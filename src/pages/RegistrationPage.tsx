@@ -25,6 +25,7 @@ export function RegistrationPage() {
   useEffect(() => {
     if (user && !authLoading) {
       // User already logged in, redirect to dashboard
+      console.log('🔄 User already logged in, redirecting to dashboard from RegistrationPage');
       navigate('/dashboard');
     }
   }, [user, navigate, authLoading]);
@@ -65,12 +66,6 @@ export function RegistrationPage() {
       if (success) {
         console.log('✅ Login successful, navigation will be handled by AuthContext');
         console.log('⏱️ Success confirmation timestamp:', new Date().toISOString());
-        
-        // Force navigation to dashboard after a short delay
-        setTimeout(() => {
-          console.log('🧭 Forcing navigation to dashboard from RegistrationPage');
-          window.location.href = '/dashboard';
-        }, 1500);
       }
       // Navigation will be handled by useEffect when user state updates
     } catch (error: any) {

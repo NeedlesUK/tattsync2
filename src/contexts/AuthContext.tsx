@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Function to update user state with complete data
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
-      console.log('🔄 Updating user state for:', session.user.email || 'unknown email', 'User ID:', session.user.id);
+      console.log('🔄 Updating user state for:', session.user.email || 'unknown email', 'User ID:', session.user.id, 'at', new Date().toISOString());
       
       // Set user immediately with basic information from session
       const userMetadata = session.user.user_metadata || {};
@@ -150,8 +150,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         avatar: undefined
       };
       
-      console.log('🔄 Setting initial user state:', initialUser);
+      console.log('🔄 Setting initial user state at:', new Date().toISOString());
       setUser(initialUser);
+      setIsLoading(false);
       
       // Set the authorization header for API requests
       if (session?.access_token) {
@@ -161,7 +162,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Now fetch complete user data from database
       try {
         console.log('🔍 Fetching complete user data from database...');
-        const userData = await fetchUserData(session.user.id, session.user.email || '');
+        
+        // Use a timeout to prevent hanging if the database query takes too long
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timeout')), 5000)
+        );
+        
+        const userData = await Promise.race([
+          fetchUserData(session.user.id, session.user.email || ''),
+          timeoutPromise
+        ]);
         
         // Only update if we got valid data from database
         if (userData && userData.id) {
@@ -182,14 +192,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
           
           setUser(userObj);
+          console.log('✅ User state updated with database data at:', new Date().toISOString());
         } else {
           console.warn('⚠️ DATABASE READ FAILED - No valid user data returned, keeping basic info');
         }
       } catch (error: any) {
-        console.error('❌ Error updating user state with database data:', error);
+        console.error('❌ Error updating user state with database data:', error.message);
         console.log('⚠️ Using initial user state due to error fetching extended data');
-      } finally {
-        setIsLoading(false);
       }
     } else {
       setUser(null);
@@ -278,15 +287,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('✅ Login successful for:', email);
       console.log('✅ Session obtained at:', new Date().toISOString());
       
-      // Set session
+      // Set session immediately
       setSession(data.session);
       
-      // Update user state
-      await updateUserState(data.session);
+      // Set user immediately with basic info to prevent hanging
+      const userMetadata = data.user?.user_metadata || {};
+      const tempUser = {
+        id: data.user?.id || '',
+        name: userMetadata.name || data.user?.email?.split('@')[0] || 'User',
+        email: data.user?.email || '',
+        role: userMetadata.role || 'artist',
+        roles: [userMetadata.role || 'artist']
+      };
+      setUser(tempUser);
+      
+      // Then update user state with complete data
+      try {
+        await updateUserState(data.session);
+      } catch (error) {
+        console.error('❌ Error updating user state, but login succeeded:', error);
+        // Continue with login even if user state update fails
+      }
       
       console.log('✅ Login process completed successfully at:', new Date().toISOString());
       
-      // Force navigation to dashboard after a short delay to ensure state is updated
+      // Force navigation to dashboard immediately
       setTimeout(() => {
         console.log('🔄 Forcing navigation to dashboard');
         if (window.location.pathname !== '/dashboard') {
@@ -295,7 +320,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           console.log('🏠 Already on dashboard page');
         }
-      }, 1000);
+      }, 500);
       
       return true;
     } catch (error) {
