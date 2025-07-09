@@ -20,7 +20,7 @@ export function AdminDashboardPage() {
 
   useEffect(() => {
     // Only allow admin access
-    if (user?.role !== 'admin' && user?.email !== 'admin@tattsync.com') {
+    if (!user || (user.role !== 'admin' && user.email !== 'admin@tattsync.com')) {
       console.log('Non-admin user detected, redirecting to dashboard');
       navigate('/dashboard');
       return;
@@ -95,10 +95,22 @@ export function AdminDashboardPage() {
     });
   };
 
-  if (user?.role !== 'admin' && user?.email !== 'admin@tattsync.com') {
+  if (isLoading) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+  
+  // Double-check admin access after loading
+  if (!user || (user.role !== 'admin' && user.email !== 'admin@tattsync.com')) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
+          <p className="text-gray-300 mb-6">You don't have permission to access this page.</p>
+        </div>
       </div>
     );
   }

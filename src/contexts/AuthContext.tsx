@@ -201,12 +201,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Set user immediately with basic information from session
       const userMetadata = session.user.user_metadata || {};
       const initialUser: AuthUser = {
-        id: session.user.id,
+        id: session.user.id || '',
         name: userMetadata.name || session.user.email?.split('@')[0] || 'User',
         email: session.user.email || '',
-        role: userMetadata.role || 'artist', 
-        roles: userMetadata.roles || [userMetadata.role || 'artist'],
-        avatar: undefined
+        role: session.user.email === 'admin@tattsync.com' ? 'admin' : (userMetadata.role || 'artist'),
+        roles: session.user.email === 'admin@tattsync.com' ? ['admin'] : (userMetadata.roles || [userMetadata.role || 'artist']),
+        avatar: userMetadata.avatar
       };
       
       console.log('🔄 Setting initial user state at:', new Date().toISOString());
@@ -228,11 +228,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (userData && userData.id) {
           const userObj: AuthUser = {
             id: userData.id,
-            name: userData.name,
+            name: userData.name || session.user.email?.split('@')[0] || 'User',
             email: userData.email || session.user.email || '',
-            role: userData.role || 'artist', 
-            roles: userData.roles || [userData.role || 'artist'],
-            avatar: undefined
+            role: session.user.email === 'admin@tattsync.com' ? 'admin' : (userData.role || 'artist'),
+            roles: session.user.email === 'admin@tattsync.com' ? ['admin'] : (userData.roles || [userData.role || 'artist']),
+            avatar: userMetadata.avatar
           };
           
           console.log('✅ DATABASE READ CONFIRMED - Setting user state with database data:', {
@@ -363,11 +363,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Set user immediately with basic info to prevent hanging
       const userMetadata = data.user?.user_metadata || {};
       const tempUser = {
-        id: data.user?.id || '',
+        id: data.user?.id || '', 
         name: userMetadata.name || data.user?.email?.split('@')[0] || 'User',
-        email: data.user?.email || '',
-        role: userMetadata.role || 'artist',
-        roles: [userMetadata.role || 'artist']
+        email: data.user?.email || '', 
+        role: data.user?.email === 'admin@tattsync.com' ? 'admin' : (userMetadata.role || 'artist'),
+        roles: data.user?.email === 'admin@tattsync.com' ? ['admin'] : [userMetadata.role || 'artist'],
+        avatar: userMetadata.avatar
       };
       setUser(tempUser);
       
