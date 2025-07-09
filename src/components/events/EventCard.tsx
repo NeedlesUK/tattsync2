@@ -60,16 +60,12 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
   const isEventManager = user?.id === event.event_manager_id || 
                          user?.email === event.event_manager_email;
                           
-  const handleManage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleManage = () => {
     console.log('Managing event:', event.id);
     navigate(`/event-settings?event=${event.id}`);
   };
   
-  const handleView = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleView = () => {
     if (event.event_slug) {
       console.log('Viewing event with slug:', event.event_slug);
       window.open(`/events/${event.event_slug}`, '_blank');
@@ -113,7 +109,7 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
         <div className="flex space-x-2 mt-2">
           {isEventManager ? (
             <button
-              onClick={(e) => handleManage(e)}
+              onClick={() => handleManage()}
               className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1"
             >
               <Settings className="w-4 h-4" />
@@ -121,7 +117,7 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
             </button>
           ) : (
             <button 
-              onClick={(e) => handleView(e)}
+              onClick={() => handleView()}
               className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1"
             >
               <Eye className="w-4 h-4" />

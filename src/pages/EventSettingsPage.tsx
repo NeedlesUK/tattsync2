@@ -328,7 +328,13 @@ export function EventSettingsPage() {
           </div>
           <div className="mt-4 sm:mt-0">
             <button
-              onClick={() => event.event_slug ? window.open(`/events/${event.event_slug}`, '_blank') : alert('This event has no public URL yet. Please set an event slug first.')}
+              onClick={() => {
+                if (event.event_slug) {
+                  window.open(`/events/${event.event_slug}`, '_blank').focus();
+                } else {
+                  alert('This event has no public URL yet. Please set an event slug first.');
+                }
+              }}
               className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
             >
               <Eye className="w-5 h-5" />
