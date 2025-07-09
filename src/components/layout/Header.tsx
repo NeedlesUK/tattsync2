@@ -211,20 +211,24 @@ export function Header() {
                   <LogOut className="w-5 h-5" />
                 </button>
               </div>
+            ) : (
               <div className="hidden sm:block">
-              <Link
-                to="/login"
-                className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
-              >
-                Sign In
-              </Link>
+                <Link
+                  to="/login"
+                  className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
+                >
+                  Sign In
+                </Link>
+              </div>
             )}
 
+              <Link
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden text-gray-300 hover:text-white"
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </div>
             </button>
           </div>
         </div>
