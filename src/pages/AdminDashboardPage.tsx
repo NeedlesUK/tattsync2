@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Users, Shield, Settings, Database, Key, Server, Globe, FileText, AlertTriangle, CheckCircle, User, Mail, Calendar, CreditCard, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Users, Shield, Settings, Database, Key, Server, Globe, FileText, AlertTriangle, CheckCircle, User, Mail, Calendar, CreditCard, ToggleLeft, ToggleRight, Trophy, Tag, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { ChangeUserPassword } from '../components/admin/ChangeUserPassword';
 
@@ -680,12 +680,4 @@ export function AdminDashboardPage() {
       )}
     </div>
   );
-  
-  function Trophy(props: any) {
-    return (
-      <div className="w-5 h-5 flex items-center justify-center">
-        🏆
-      </div>
-    );
-  }
 }
