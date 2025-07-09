@@ -6,7 +6,7 @@ interface AuthUser {
   id: string;
   name: string;
   email: string; 
-  role: 'admin' | 'artist' | 'piercer' | 'performer' | 'trader' | 'volunteer' | 'event_manager' | 'event_admin' | 'client' | 'studio_manager' | 'judge';
+  role: 'admin' | 'artist' | 'piercer' | 'performer' | 'trader' | 'volunteer' | 'event_manager' | 'event_admin' | 'client' | 'studio_manager' | 'judge' | 'loading';
   roles?: string[];
   avatar?: string;
 }
@@ -76,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserData = async (userId: string, userEmail: string) => {
     try {
       console.log('🔍 Fetching user data for:', userEmail);
+      console.log('🔍 User ID:', userId);
       let userData = null;
       
       // Use Supabase directly to get user data
@@ -91,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw error;
         }
         
-        if (data) {
+        if (data && Object.keys(data).length > 0) {
           userData = data;
           console.log('✅ DATABASE READ CONFIRMED: User data retrieved from database:', {
             id: userData.id,
@@ -100,6 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             role: userData.role,
             created_at: userData.created_at
           });
+        } else {
+          console.warn('⚠️ No user data found in database for ID:', userId);
         }
       }
 
@@ -137,9 +140,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         // Fetch user data from database first
         const userData = await fetchUserData(session.user.id, session.user.email || '');
+        console.log('Fetched user data result:', userData ? 'Data found' : 'No data found');
         
         // Only update if we got data from database
-        if (userData) {
+        if (userData && userData.id) {
           const userObj: AuthUser = {
             id: userData.id,
             name: userData.name,
@@ -157,9 +161,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             created_at: userData.created_at
           });
           
+          // Set the authorization header for API requests
+          if (session?.access_token) {
+            api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
+          }
+          
           setUser(userObj);
           setIsLoading(false);
           return;
+        } else {
+          console.warn('⚠️ No valid user data returned from fetchUserData, falling back to basic info');
         }
       } catch (error: any) {
         console.error('❌ Error fetching user data from database:', error);
@@ -168,13 +179,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Set user immediately with basic information from session
       const userMetadata = session.user.user_metadata || {};
       const initialUser: AuthUser = {
-        id: session.user.id,
-        name: 'Loading Database Data...',
-        email: session.user.email || '',
-        role: userMetadata.role || 'artist', 
-        roles: userMetadata.roles || [userMetadata.role || 'artist'],
+        id: session.user.id || '',
+        name: 'Loading Database Data...' + (session.user.id ? ` (ID: ${session.user.id.substring(0, 8)}...)` : ''),
+        email: session.user.email || 'unknown@email.com',
+        role: 'loading', 
+        roles: ['loading'],
         avatar: undefined
       };
+      
+      console.log('Setting initial placeholder user state while waiting for database:', initialUser);
+      
+      // Set the authorization header for API requests
+      if (session?.access_token) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
+      }
       
       setUser(initialUser);
       setIsLoading(false);

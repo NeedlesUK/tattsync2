@@ -43,7 +43,7 @@ export function RegistrationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('Login form submitted with email:', formData.email);
+    console.log('Login form submitted with email:', formData.email, 'at', new Date().toISOString());
 
     // Prevent multiple simultaneous attempts
     if (isLoading) {
@@ -52,19 +52,16 @@ export function RegistrationPage() {
     }
     
     setIsLoading(true);
-    setErrorMessage('');
-    console.log('Attempting login with email:', formData.email);
+    setErrorMessage(''); 
+    console.log('Attempting login with email:', formData.email, 'at', new Date().toISOString());
     
     try {
       const success = await login(formData.email, formData.password);
-      console.log('Login result:', success);
+      console.log('Login result:', success, 'at', new Date().toISOString());
 
       if (success) {
-        console.log('Login successful, navigating to dashboard');
-        // Force navigation to dashboard
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 500);
+        console.log('Login successful, AuthContext will handle navigation');
+        // Navigation is now handled by AuthContext
       }
       // Navigation will be handled by useEffect when user state updates
     } catch (error: any) {
