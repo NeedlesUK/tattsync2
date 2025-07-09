@@ -44,6 +44,19 @@ if (supabaseUrl &&
         autoRefreshToken: true,
         persistSession: true, 
         detectSessionInUrl: false
+      },
+      global: {
+        headers: {
+          'apikey': supabaseAnonKey
+        }
+      },
+      db: {
+        schema: 'public'
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
       }
     });
     console.log('✅ Supabase client initialized');
@@ -83,38 +96,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (supabase) {
         console.log('📊 Querying database for user data with ID:', userId);
         
-        // Add timeout and better error handling for the database query
-        const queryPromise = supabase
+        // Query user data with proper error handling
+        const { data, error, status } = await supabase
           .from('users')
           .select('*')
           .eq('id', userId)
           .single();
-          
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database query timeout after 10 seconds')), 10000)
-        );
-        
-        const { data, error, status } = await Promise.race([queryPromise, timeoutPromise]) as any;
         
         if (error) {
           console.error('❌ Error fetching user data from Supabase:', error, 'Status:', status);
           
-          // Check if it's a network error
-          if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError') || error.message?.includes('fetch')) {
-            console.error('🌐 Network connectivity issue detected. Using fallback user data.');
-            throw new Error('NETWORK_ERROR');
+          // Check if user doesn't exist in database yet
+          if (error.code === 'PGRST116' || error.message?.includes('No rows returned')) {
+            console.log('📝 User not found in database, creating new user record...');
+            
+            // Create user record in database
+            const newUserData = {
+              id: userId,
+              name: userEmail?.split('@')[0] || 'User',
+              email: userEmail || '',
+              role: 'artist',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+            
+            const { data: insertData, error: insertError } = await supabase
+              .from('users')
+              .insert([newUserData])
+              .select()
+              .single();
+              
+            if (insertError) {
+              console.error('❌ Error creating user record:', insertError);
+              // Return fallback data if insert fails
+              return {
+                id: userId,
+                name: userEmail?.split('@')[0] || 'User',
+                email: userEmail || '',
+                role: 'artist' as const,
+                roles: ['artist']
+              };
+            }
+            
+            console.log('✅ User record created successfully:', insertData);
+            userData = insertData;
+          } else {
+            // For other errors, log and use fallback
+            console.error('❌ Database error:', error);
+            return {
+              id: userId,
+              name: userEmail?.split('@')[0] || 'User',
+              email: userEmail || '',
+              role: 'artist' as const,
+              roles: ['artist']
+            };
           }
-          
-          // Check if it's a timeout
-          if (error.message?.includes('timeout')) {
-            console.error('⏱️ Database query timeout. Using fallback user data.');
-            throw new Error('TIMEOUT_ERROR');
-          }
-          
-          throw error;
-        }
-        
-        if (data && Object.keys(data).length > 0) {
+        } else if (data && Object.keys(data).length > 0) {
           userData = data;
           console.log('✅ DATABASE READ CONFIRMED - User data retrieved from database:', {
             id: userData.id,
@@ -144,18 +181,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return userData;
     } catch (error: any) {
       console.error('❌ Error fetching user data:', error);
-      
-      // Handle specific error types
-      if (error.message === 'NETWORK_ERROR' || error.message === 'TIMEOUT_ERROR') {
-        console.log('🔄 Using fallback user data due to connectivity issues');
-      } else if (error.message?.includes('Failed to fetch')) {
-        console.error('🌐 Network connectivity issue: Cannot reach Supabase servers');
-        console.error('💡 Please check:');
-        console.error('   1. Internet connection');
-        console.error('   2. Supabase service status at status.supabase.com');
-        console.error('   3. Firewall/VPN settings');
-        console.error('   4. VITE_SUPABASE_URL in .env file');
-      }
       
       // Fallback to basic user info if API call fails
       return {
