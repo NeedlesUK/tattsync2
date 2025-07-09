@@ -18,6 +18,8 @@ export function EventSettingsPage() {
   const [isInformationModalOpen, setIsInformationModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isEventDetailsModalOpen, setIsEventDetailsModalOpen] = useState(false); 
+  const [isDealsModalOpen, setIsDealsModalOpen] = useState(false);
+  const [isGlobalDealsModalOpen, setIsGlobalDealsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [eventModules, setEventModules] = useState<any>(null);
   const [event, setEvent] = useState<any>({
