@@ -20,7 +20,7 @@ export function AdminDashboardPage() {
 
   useEffect(() => {
     // Only allow admin access
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin' && user?.email !== 'admin@tattsync.com') {
       console.log('Non-admin user detected, redirecting to dashboard');
       navigate('/dashboard');
       return;
@@ -95,7 +95,7 @@ export function AdminDashboardPage() {
     });
   };
 
-  if (isLoading) {
+  if (user?.role !== 'admin' && user?.email !== 'admin@tattsync.com') {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
