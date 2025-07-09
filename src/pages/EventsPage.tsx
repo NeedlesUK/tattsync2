@@ -175,13 +175,16 @@ export function EventsPage() {
   const handleViewEvent = (eventId: number) => {
     // Combine all events to search through
     // Make sure we don't have duplicate events
-    const allEvents = events.filter(e => e.id === eventId);
+    const allEvents = [...events];
     const event = allEvents.find(e => e.id === eventId);
-    console.log('View event:', eventId, 'Event found:', event);
+    console.log('View event:', eventId, 'Event found:', event, 'All events:', allEvents.length);
     
     if (event && event.event_slug) {
       // Open in new tab if it has a slug
-      window.open(`/events/${event.event_slug}`, '_blank').focus();
+      const baseUrl = window.location.origin;
+      const url = `${baseUrl}/events/${event.event_slug}`;
+      console.log('Opening URL:', url);
+      window.open(url, '_blank')?.focus();
     } else {
       console.log('No event slug found, navigating to settings');
       navigate(`/event-settings?event=${eventId}`);
