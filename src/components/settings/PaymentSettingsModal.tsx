@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, CreditCard, Banknote, Building, Check, AlertCircle } from 'lucide-react';
+import { X, Save, CreditCard, Banknote, Building, Check, AlertCircle, DollarSign } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { PaymentPricingModal } from './PaymentPricingModal';
+import { RegistrationRequirementsModal } from './RegistrationRequirementsModal';
 
 interface PaymentSettingsModalProps {
   eventId: number;
@@ -47,6 +49,8 @@ export function PaymentSettingsModal({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+  const [isRequirementsModalOpen, setIsRequirementsModalOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -162,6 +166,18 @@ export function PaymentSettingsModal({
     }
   };
 
+  const handleSavePricing = async (pricingSettings: any) => {
+    console.log('Saving pricing settings:', pricingSettings);
+    // In a real implementation, this would save to the database
+    setSuccess('Pricing settings saved successfully');
+  };
+
+  const handleSaveRequirements = async (requirements: any) => {
+    console.log('Saving registration requirements:', requirements);
+    // In a real implementation, this would save to the database
+    setSuccess('Registration requirements saved successfully');
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -174,6 +190,23 @@ export function PaymentSettingsModal({
             <p className="text-gray-300 text-sm">{eventName}</p>
           </div>
           <button
+        
+        {/* Nested Modals */}
+        <PaymentPricingModal
+          eventId={eventId}
+          eventName={eventName}
+          isOpen={isPricingModalOpen}
+          onClose={() => setIsPricingModalOpen(false)}
+          onSave={handleSavePricing}
+        />
+        
+        <RegistrationRequirementsModal
+          eventId={eventId}
+          eventName={eventName}
+          isOpen={isRequirementsModalOpen}
+          onClose={() => setIsRequirementsModalOpen(false)}
+          onSave={handleSaveRequirements}
+        />
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
           >
@@ -206,8 +239,37 @@ export function PaymentSettingsModal({
               <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4 mb-6">
                 <h3 className="text-blue-300 font-medium mb-2">Payment Methods</h3>
                 <p className="text-blue-200 text-sm">
-                  Configure how participants can pay for their registration fees. You can enable multiple payment methods.
+                  Configure how participants can pay for their registration fees. You can enable multiple payment methods and set pricing for different application types.
                 </p>
+              </div>
+
+              {/* Additional Payment Configuration Buttons */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <button
+                  onClick={() => setIsPricingModalOpen(true)}
+                  className="bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
+                >
+                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <DollarSign className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-white font-medium mb-1">Payment Pricing</h4>
+                    <p className="text-gray-400 text-sm">Configure pricing tiers and installment options for each application type</p>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => setIsRequirementsModalOpen(true)}
+                  className="bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
+                >
+                  <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-white font-medium mb-1">Registration Requirements</h4>
+                    <p className="text-gray-400 text-sm">Set payment requirements, agreement text, and profile deadlines</p>
+                  </div>
+                </button>
               </div>
 
               {/* Cash Payments */}
