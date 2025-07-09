@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Plus, Trash2, FileText, Users, Edit, Image, File, Paperclip, Ticket, CheckCircle, Table as Tabs } from 'lucide-react';
+import { X, Save, Plus, Trash2, FileText, Users, Edit, Image, File, Paperclip, CheckCircle, Table as Tabs } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -10,7 +10,6 @@ interface EventInformation {
   application_types: string[];
   is_active: boolean;
   category: string;
-  ticket_holders: boolean;
   media_items?: MediaItem[];
 }
 
@@ -48,7 +47,6 @@ export function EventInformationModal({
       application_types: [],
       is_active: true,
       category: 'General',
-      ticket_holders: false
     },
     {
       id: '2',
@@ -57,7 +55,6 @@ export function EventInformationModal({
       application_types: ['artist'],
       is_active: true,
       category: 'Setup',
-      ticket_holders: false
     }
   ]);
 
@@ -261,8 +258,8 @@ export function EventInformationModal({
 
   const applicationTypes = [
     { value: 'artist', label: 'Artists' },
-    { value: 'piercer', label: 'Piercers' },
     { value: 'public', label: 'Public' },
+    { value: 'piercer', label: 'Piercers' },
     { value: 'trader', label: 'Traders' },
     { value: 'caterer', label: 'Caterers' },
     { value: 'performer', label: 'Performers' },
@@ -337,11 +334,6 @@ export function EventInformationModal({
                       <span className="bg-teal-500/20 text-teal-400 px-2 py-0.5 rounded-full flex items-center">
                         <Users className="w-3 h-3 mr-1" />
                         {item.application_types.length}
-                      </span>
-                    ) : item.ticket_holders ? (
-                      <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full flex items-center">
-                        <Ticket className="w-3 h-3 mr-1" />
-                        Ticket Holders
                       </span>
                     ) : (
                       <span className="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
@@ -532,21 +524,6 @@ export function EventInformationModal({
                     </div>
                     
                     <div>
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                         type="checkbox"
-                         checked={editingItem.is_active}
-                         onChange={(e) => updateInformationItem(editingItem.id, { is_active: e.target.checked })}
-                         className="text-purple-600 focus:ring-purple-500 rounded"
-                       />
-                       <span className="text-gray-300">Active</span>
-                     </label>
-                     <p className="text-gray-400 text-xs ml-6 mt-1">
-                       When disabled, this information will not be visible to anyone
-                     </p>
-                   </div>
-                   
-                   <div>
                      <label className="block text-sm font-medium text-gray-300 mb-2">
                        Visible to Specific Attendee Types
                      </label>
@@ -578,8 +555,8 @@ export function EventInformationModal({
                      </div>
                      <p className="text-gray-400 text-xs mt-2">
                        {editingItem.application_types.length === 0
-                         ? 'This information is visible to everyone'
-                         : `This information is only visible to selected attendee types`
+                        ? 'This information is visible to everyone (including the public)'
+                        : `This information is only visible to the selected attendee types`
                        }
                      </p>
                    </div>
