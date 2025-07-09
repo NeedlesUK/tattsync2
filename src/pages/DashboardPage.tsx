@@ -16,12 +16,6 @@ export function DashboardPage() {
   useEffect(() => {
     // In a real implementation, fetch data from API
     fetchDashboardData();
-    
-    // Redirect admin users to the events page
-    if (user?.role === 'admin') {
-      console.log('Admin user detected, redirecting to events page');
-      navigate('/events');
-    }
   }, []);
 
   const fetchDashboardData = async () => {

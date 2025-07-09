@@ -14,6 +14,7 @@ import { RegistrationSuccessPage } from './pages/RegistrationSuccessPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { MessagesPage } from './pages/MessagesPage';
 import { DealsPage } from './pages/DealsPage';
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { TicketManagementPage } from './pages/TicketManagementPage';
 import { ClientTicketsPage } from './pages/ClientTicketsPage';
 import { ConsentFormsPage } from './pages/ConsentFormsPage';
@@ -36,8 +37,8 @@ function App() {
           <Header />
           <main className="flex-grow">
             <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/" element={user ? <DashboardPage /> : <HomePage />} />
+              <Route path="/dashboard" element={user?.role === 'admin' ? <AdminDashboardPage /> : <DashboardPage />} />
               <Route path="/events" element={<EventsPage />} />
               <Route path="/events/:eventSlug" element={<EventApplicationPage />} />
               <Route path="/login" element={<RegistrationPage />} />

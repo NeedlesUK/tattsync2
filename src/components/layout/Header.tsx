@@ -190,7 +190,7 @@ export function Header() {
                   <div className="hidden sm:block">
                     <span className="block font-medium">{user.name || 'User'}</span>
                     {(roleDisplay || user.email === 'gary@tattscore.com') && (
-                      <div className="flex items-center space-x-1">
+                      <div className="flex items-center space-x-1 text-xs">
                         {user.email === 'gary@tattscore.com' ? (
                           <>
                             <Crown className="w-3 h-3 text-purple-400" />
@@ -198,8 +198,8 @@ export function Header() {
                           </>
                         ) : (
                           <>
-                            <roleDisplay.icon className="w-3 h-3" />
-                            <span className="text-xs text-gray-400">{roleDisplay.label}</span>
+                            <roleDisplay.icon className="w-3 h-3 text-gray-400" />
+                            <span className="text-gray-400">{roleDisplay.label}</span>
                           </>
                         )}
                       </div>
@@ -231,7 +231,7 @@ export function Header() {
               </div>
             ) : (
               <Link
-                to="/login"
+                to={user.role === 'admin' ? '/dashboard' : '/profile'}
                 className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
               >
                 Sign In
