@@ -614,12 +614,6 @@ export function EventDetailsModal({
                     <option value="archived" className="bg-gray-800">Archived</option>
                   </select>
                 </div>
-                
-                <div className="col-span-1 md:col-span-2 mt-2">
-                  <p className="text-gray-400 text-sm">
-                    You can upload images directly or use external URLs from services like Pexels or Unsplash.
-                  </p>
-                </div>
               </div>
             </div>
           </div>
