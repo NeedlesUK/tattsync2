@@ -177,7 +177,7 @@ export function RegistrationPage() {
               <h4 className="text-blue-300 font-medium mb-2">Need an Account?</h4>
               <p className="text-blue-200 text-sm">
                 Accounts are created by administrators or through event applications. 
-                Contact your event organizer for access.
+                Please email <a href="mailto:admin@tattsync.com" className="text-blue-300 hover:text-blue-200 underline">admin@tattsync.com</a> for access.
               </p>
             </div>
           </div>
@@ -189,7 +189,7 @@ export function RegistrationPage() {
           <div className="grid grid-cols-1 gap-4">
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4">
               <h4 className="text-purple-400 font-medium mb-1">Event Management</h4>
-              <p className="text-gray-300 text-sm">Complete event organization tools</p>
+              <p className="text-gray-300 text-sm">Complete event organisation tools</p>
             </div>
           </div>
         </div>

@@ -148,12 +148,12 @@ export function HomePage() {
               Streamline your entire tattoo business with our integrated solutions.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/login"
+              <a
+                href="mailto:admin@tattsync.com"
                 className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-8 py-3 rounded-lg font-medium hover:shadow-lg transition-all transform hover:scale-105"
               >
-                Sign In
-              </Link>
+                Get in Touch
+              </a>
               <Link
                 to="/events"
                 className="border border-purple-500 text-purple-400 px-8 py-3 rounded-lg font-medium hover:bg-purple-500/10 transition-all"
@@ -239,12 +239,12 @@ export function HomePage() {
             <p className="text-gray-300 mb-6">
               Join thousands of professionals who trust TattSync for their events, studios, and competitions.
             </p>
-            <Link
-              to="/login"
+            <a
+              href="mailto:admin@tattsync.com"
               className="inline-block bg-gradient-to-r from-purple-600 to-teal-600 text-white px-8 py-3 rounded-lg font-medium hover:shadow-lg transition-all transform hover:scale-105"
             >
-              Sign In to Get Started
-            </Link>
+              Get in Touch
+            </a>
           </div>
         </div>
       </section>

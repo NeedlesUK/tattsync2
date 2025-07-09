@@ -11,8 +11,7 @@ export function AdminDashboardPage() {
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalEvents: 0,
-    totalApplications: 0,
-    totalTickets: 0
+    totalStudios: 0
   });
   const [events, setEvents] = useState<any[]>([]);
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
@@ -20,7 +19,7 @@ export function AdminDashboardPage() {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   // Add state for active section
-  const [activeSection, setActiveSection] = useState<'modules' | 'users' | 'system' | 'applications'>('modules');
+  const [activeSection, setActiveSection] = useState<'modules' | 'users' | 'system' | 'statistics'>('modules');
 
   useEffect(() => {
     // Only allow admin access
@@ -39,26 +38,23 @@ export function AdminDashboardPage() {
       
       if (supabase) {
         console.log('Fetching admin dashboard data...');
-        // Fetch stats
-        const [usersResult, eventsResult, applicationsResult, ticketsResult] = await Promise.all([
+        // Fetch stats - removed applications and tickets, added studios
+        const [usersResult, eventsResult, studiosResult] = await Promise.all([
           supabase.from('users').select('count'),
           supabase.from('events').select('count'),
-          supabase.from('applications').select('count'),
-          supabase.from('tickets').select('count')
+          supabase.from('studios').select('count')
         ]);
         
         console.log('Stats results:', { 
           users: usersResult, 
           events: eventsResult, 
-          applications: applicationsResult, 
-          tickets: ticketsResult 
+          studios: studiosResult
         });
         
         setStats({
           totalUsers: usersResult.data?.[0]?.count || 0,
           totalEvents: eventsResult.data?.[0]?.count || 0,
-          totalApplications: applicationsResult.data?.[0]?.count || 0,
-          totalTickets: ticketsResult.data?.[0]?.count || 0
+          totalStudios: studiosResult.data?.[0]?.count || 0
         });
         
         // Fetch recent users
@@ -286,7 +282,7 @@ export function AdminDashboardPage() {
               Event Modules
             </button>
             <button
-              onClick={() => setActiveSection('users')}
+              onClick={() => setActiveSection('users')} 
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 activeSection === 'users' ? 'bg-purple-600 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'
               }`}
@@ -294,12 +290,12 @@ export function AdminDashboardPage() {
               User Management
             </button>
             <button
-              onClick={() => setActiveSection('applications')}
+              onClick={() => setActiveSection('statistics')}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeSection === 'applications' ? 'bg-purple-600 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                activeSection === 'statistics' ? 'bg-purple-600 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'
               }`}
             >
-              Applications
+              Statistics
             </button>
             <button
               onClick={() => setActiveSection('system')}
@@ -341,19 +337,10 @@ export function AdminDashboardPage() {
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Applications</p>
-                <p className="text-2xl font-bold text-white">{stats.totalApplications}</p>
+                <p className="text-gray-400 text-sm">Studios</p>
+                <p className="text-2xl font-bold text-white">{stats.totalStudios}</p>
               </div>
-              <FileText className="w-8 h-8 text-orange-400" />
-            </div>
-          </div>
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">Tickets Sold</p>
-                <p className="text-2xl font-bold text-white">{stats.totalTickets}</p>
-              </div>
-              <CreditCard className="w-8 h-8 text-blue-400" />
+              <Building className="w-8 h-8 text-orange-400" />
             </div>
           </div>
         </div>
@@ -573,61 +560,19 @@ export function AdminDashboardPage() {
           )}
           
           {/* Applications Management Section */}
-          {activeSection === 'applications' && (
+          {activeSection === 'statistics' && (
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
               <div className="flex items-center space-x-3 mb-6">
-                <FileText2 className="w-6 h-6 text-orange-400" />
-                <h2 className="text-xl font-semibold text-white">Applications Management</h2>
+                <BarChart className="w-6 h-6 text-orange-400" />
+                <h2 className="text-xl font-semibold text-white">System Statistics</h2>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="bg-white/5 border border-white/10 rounded-lg p-6 hover:bg-white/10 transition-all">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-orange-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-white">Application Types</h3>
-                  </div>
-                  <p className="text-gray-300 text-sm mb-4">Configure application types and forms for events</p>
-                  <button
-                    onClick={() => navigateToPage('/event-settings')}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    Manage Types
-                  </button>
-                </div>
-                
-                <div className="bg-white/5 border border-white/10 rounded-lg p-6 hover:bg-white/10 transition-all">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                      <Users className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-white">Applicants</h3>
-                  </div>
-                  <p className="text-gray-300 text-sm mb-4">View and manage all applicants across events</p>
-                  <button
-                    onClick={() => navigateToPage('/admin/applications')}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    View Applicants
-                  </button>
-                </div>
-                
-                <div className="bg-white/5 border border-white/10 rounded-lg p-6 hover:bg-white/10 transition-all">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                      <Settings className="w-5 h-5 text-green-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-white">Settings</h3>
-                  </div>
-                  <p className="text-gray-300 text-sm mb-4">Configure global application settings</p>
-                  <button
-                    onClick={() => navigateToPage('/event-settings')}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    Application Settings
-                  </button>
-                </div>
+              <div className="text-center py-12">
+                <BarChart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-300 mb-2">Statistics Coming Soon</h3>
+                <p className="text-gray-400">
+                  Detailed system statistics and reporting will be available in a future update.
+                </p>
               </div>
             </div>
           )}
