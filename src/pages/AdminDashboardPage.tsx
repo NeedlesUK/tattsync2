@@ -123,12 +123,22 @@ export function AdminDashboardPage() {
     try {
       // Find the event module record
       const event = events.find(e => e.id === eventId);
-      if (!event || !event.event_modules || event.event_modules.length === 0) {
+      if (!event || !event.event_modules) {
         console.error('Event modules not found for event:', eventId);
         return;
       }
       
-      const moduleId = event.event_modules[0].id;
+      // Normalize event_modules to always be an array
+      const eventModules = Array.isArray(event.event_modules) 
+        ? event.event_modules 
+        : [event.event_modules];
+      
+      if (eventModules.length === 0) {
+        console.error('Event modules array is empty for event:', eventId);
+        return;
+      }
+      
+      const moduleId = eventModules[0].id;
       
       // Prepare the update data
       const updateData: any = {
@@ -156,13 +166,23 @@ export function AdminDashboardPage() {
       
       // Update local state
       setEvents(events.map(e => {
-        if (e.id === eventId && e.event_modules && e.event_modules.length > 0) {
+        if (e.id === eventId && e.event_modules) {
+          // Normalize event_modules for state update
+          const currentModules = Array.isArray(e.event_modules) 
+            ? e.event_modules 
+            : [e.event_modules];
+          
+          if (currentModules.length === 0) return e;
+          
           return {
             ...e,
-            event_modules: [{
-              ...e.event_modules[0],
+            event_modules: Array.isArray(e.event_modules) ? [{
+              ...currentModules[0],
               ...updateData
-            }]
+            }] : {
+              ...currentModules[0],
+              ...updateData
+            }
           };
         }
         return e;
@@ -268,8 +288,13 @@ export function AdminDashboardPage() {
                   </thead>
                   <tbody className="divide-y divide-white/10">
                     {events.map((event) => {
-                      const modules = event.event_modules && event.event_modules.length > 0 
-                        ? event.event_modules[0] 
+                      // Normalize event_modules to always be an array for safe access
+                      const eventModules = event.event_modules 
+                        ? (Array.isArray(event.event_modules) ? event.event_modules : [event.event_modules])
+                        : [];
+                      
+                      const modules = eventModules.length > 0 
+                        ? eventModules[0] 
                         : { ticketing_enabled: false, consent_forms_enabled: false, tattscore_enabled: false };
                       
                       return (
