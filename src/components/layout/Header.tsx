@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, LogOut, Settings, Crown, Calendar, Award, Building, MessageCircle, Ticket, Users } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, Crown, Calendar, Award, Building, MessageCircle, Ticket, Users, Bell } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function Header() {
@@ -20,35 +20,37 @@ export function Header() {
   }, [user]);
 
   // Define navigation based on user role
-  const getNavigation = () => {
+  const getNavigation = (): any[] => {
     // Default navigation for all users
     const baseNavigation = [
       { name: 'Dashboard', href: '/dashboard' }
     ];
     
     // For event managers, show specific navigation
-    if (user?.role === 'event_manager' || user?.role === 'event_admin') {
+    if (userRoles.includes('event_manager') || userRoles.includes('event_admin')) {
       return [
         ...baseNavigation,
         { 
           name: 'Messages', 
           href: '/messages',
-          badge: 0, // Replace with actual unread count
-          badgeColor: 'bg-green-500'
+          badge: {
+            count: 0, // Replace with actual unread count
+            color: 'bg-green-500 text-white'
+          }
         },
         { 
           name: 'Tickets', 
           href: '/ticket-management',
-          requiresModule: 'ticketing'
+          requiresModule: 'ticketing_enabled'
         },
         { 
           name: 'Attendees', 
-          href: '/attendees'
+          href: '/applications'
         },
         { 
           name: 'Leaderboard', 
           href: '/tattscore/judging',
-          requiresModule: 'tattscore'
+          requiresModule: 'tattscore_enabled'
         }
       ];
     }
@@ -62,7 +64,7 @@ export function Header() {
     ];
   };
 
-  const navigation = getNavigation();
+  const navigationItems = getNavigation();
 
   // For Master Admin, direct links instead of dropdowns
   const adminDirectLinks = [
@@ -105,6 +107,16 @@ export function Header() {
   const isModuleEnabled = (moduleName: string) => {
     // This is a placeholder - in a real implementation, you would check if the module is enabled
     // for the current user's event
+    if (!user) return false;
+    
+    // For demo purposes, enable all modules for admin users
+    if (user.role === 'admin' || user.email === 'admin@tattsync.com') {
+      return true;
+    }
+    
+    // For event managers, check if the module is enabled in their event
+    // This would typically be fetched from the database
+    // For now, we'll just return true for all modules
     return true;
   };
 
@@ -129,43 +141,24 @@ export function Header() {
                 className="w-10 h-10 object-contain"
               />
               <span className="text-white font-bold text-xl">TattSync</span>
-            </Link>
-          </div>
-
-          {user && (
-            <nav className="hidden md:flex space-x-8">
-              {navigation.map((item) => {
-                // Skip items that require a module if the module is not enabled
-                if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
-                  return null;
-                }
-                
-                {navigation.map((item) => {
-                  // Skip items that require a module if the module is not enabled
-                  if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
-                    return null;
-                  }
-                  
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href} 
-                      className={`flex items-center px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                        isActive(item.href)
-                          ? 'text-purple-400 bg-purple-400/10'
-                          : 'text-gray-300 hover:text-white hover:bg-white/10'
-                      }`}
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      {item.name}
-                      {item.badge !== undefined && (
-                        <span className={`ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${item.badge > 0 ? 'bg-red-500 text-white' : item.badgeColor + ' text-white'}`}>
-                          {item.badge}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href} 
+                    className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive(item.href)
+                        ? 'text-purple-400 bg-purple-400/10'
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {item.name}
+                    {item.badge && (
+                      <span className={`ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${
+                        item.badge.count > 0 
+                          ? 'bg-red-500 text-white' 
+                          : item.badge.color
+                      }`}>
+                        {item.badge.count}
                       </span>
                     )}
                   </Link>
@@ -272,6 +265,21 @@ export function Header() {
                     )}
                   </div>
                 </Link>
+                {user && (roleDisplay || user.email === 'admin@tattsync.com' || user.role === 'admin') && (
+                  <span className={`${roleDisplay?.color || 'bg-purple-600'} text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1`}>
+                    {user.role === 'admin' || user.email === 'admin@tattsync.com' ? (
+                      <>
+                        <Crown className="w-3 h-3" />
+                        <span className="hidden sm:inline">{roleDisplay?.label || 'Master Admin'}</span>
+                      </>
+                    ) : (
+                      <>
+                        {roleDisplay && <roleDisplay.icon className="w-3 h-3" />}
+                        <span className="hidden sm:inline">{roleDisplay?.label || ''}</span>
+                      </>
+                    )}
+                  </span>
+                )}
                 <button
                   onClick={logout}
                   className="text-gray-300 hover:text-white transition-colors"
@@ -303,20 +311,36 @@ export function Header() {
         {isMenuOpen && user && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href} 
-                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                    isActive(item.href)
-                      ? 'text-purple-400 bg-purple-400/10'
-                      : 'text-gray-300 hover:text-white hover:bg-white/10'
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {navigationItems.map((item) => {
+                // Skip items that require a module if the module is not enabled
+                if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
+                  return null;
+                }
+                
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href} 
+                    className={`flex items-center px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                      isActive(item.href)
+                        ? 'text-purple-400 bg-purple-400/10'
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                    }`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.name}
+                    {item.badge && (
+                      <span className={`ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${
+                        item.badge.count > 0 
+                          ? 'bg-red-500 text-white' 
+                          : item.badge.color
+                      }`}>
+                        {item.badge.count}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
               
               {/* For Master Admin, show direct links in mobile menu too */}
               {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
