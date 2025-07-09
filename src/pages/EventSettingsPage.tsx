@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Settings, Info, Gift, Tag, Users, MessageCircle, Calendar, CreditCard, FileText, Bell, Globe, Shield, Mail, Edit, Eye } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { EventInformationModal } from '../components/settings/EventInformationModal';
 import { EventDealsModal } from '../components/settings/EventDealsModal';
 import { GlobalDealsModal } from '../components/settings/GlobalDealsModal';
-import { EventDetailsModal } from '../components/settings/EventDetailsModal';
 import { EventDetailsModal } from '../components/settings/EventDetailsModal';
 
 export function EventSettingsPage() {
@@ -15,25 +13,11 @@ export function EventSettingsPage() {
   const location = useLocation();
   const [eventId, setEventId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [eventId, setEventId] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isInformationModalOpen, setIsInformationModalOpen] = useState(false);
   const [isDealsModalOpen, setIsDealsModalOpen] = useState(false);
   const [isGlobalDealsModalOpen, setIsGlobalDealsModalOpen] = useState(false);
   const [isEventDetailsModalOpen, setIsEventDetailsModalOpen] = useState(false); 
-  const [isEventDetailsModalOpen, setIsEventDetailsModalOpen] = useState(false); 
   const [activeTab, setActiveTab] = useState('general');
-  const [event, setEvent] = useState<any>({
-    id: 1,
-    name: 'Loading...',
-    status: 'draft',
-    start_date: '',
-    end_date: '',
-    location: '',
-    venue: ''
-  });
   const [event, setEvent] = useState<any>({
     id: 1,
     name: 'Loading...',
@@ -48,112 +32,6 @@ export function EventSettingsPage() {
   const isAdmin = user?.role === 'admin';
   // Check if user is event manager
   const isEventManager = user?.role === 'event_manager' || user?.role === 'event_admin';
-
-  useEffect(() => {
-    // Get event ID from query params
-    const params = new URLSearchParams(location.search);
-    const eventIdParam = params.get('event');
-    
-    if (eventIdParam) {
-      setEventId(parseInt(eventIdParam));
-      fetchEventDetails(parseInt(eventIdParam));
-    } else {
-      setIsLoading(false);
-    }
-  }, [location.search]);
-  
-  const fetchEventDetails = async (id: number) => {
-    try {
-      setIsLoading(true);
-      
-      if (supabase) {
-        console.log('Fetching event details for ID:', id);
-        const { data, error } = await supabase
-          .from('events')
-          .select('*')
-          .eq('id', id)
-          .single();
-          
-        if (error) {
-          console.error('Error fetching event details:', error);
-          throw error;
-        }
-        
-        if (data) {
-          console.log('Event data retrieved:', data);
-          setEvent(data);
-        } else {
-          console.log('No event data found for ID:', id);
-        }
-      } else {
-        console.error('Supabase client not available');
-        // Use mock data if supabase is not available
-        setEvent({
-          id: id,
-          name: 'Event ' + id,
-          status: 'draft',
-          start_date: '2024-07-15',
-          end_date: '2024-07-17',
-          location: 'Sample Location',
-          venue: 'Sample Venue'
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching event details:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleEditEventDetails = () => {
-    console.log('Editing event details for:', event.id);
-    setIsEventDetailsModalOpen(true);
-  };
-
-  const handleSaveEventDetails = async (eventData: any) => {
-    try {
-      console.log('Saving event details:', eventData);
-      
-      if (supabase) {
-        const { error } = await supabase
-          .from('events')
-          .update({
-            name: eventData.name,
-            description: eventData.description,
-            event_slug: eventData.event_slug,
-            start_date: eventData.start_date,
-            end_date: eventData.end_date,
-            location: eventData.location,
-            venue: eventData.venue,
-            max_attendees: eventData.max_attendees,
-            status: eventData.status,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', eventData.id);
-          
-        if (error) {
-          console.error('Error updating event:', error);
-          throw error;
-        }
-        
-        // Update local state
-        setEvent({
-          ...event,
-          ...eventData
-        });
-      } else {
-        // Mock update for when Supabase is not available
-        console.log('Supabase not available, mocking update');
-        setEvent({
-          ...event,
-          ...eventData
-        });
-      }
-    } catch (error) {
-      console.error('Error saving event details:', error);
-      throw error;
-    }
-  };
 
   useEffect(() => {
     // Get event ID from query params
@@ -305,23 +183,6 @@ export function EventSettingsPage() {
             <h1 className="text-3xl font-bold text-white mb-4">No Event Selected</h1>
             <p className="text-gray-300 mb-6">Please select an event to manage from the events page.</p>
             <button
-  if (isLoading) {
-    return (
-      <div className="min-h-screen pt-16 flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-  
-  // If no event ID was provided or event not found
-  if (!eventId) {
-    return (
-      <div className="min-h-screen pt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-white mb-4">No Event Selected</h1>
-            <p className="text-gray-300 mb-6">Please select an event to manage from the events page.</p>
-            <button
               onClick={() => navigate('/events')}
               className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
             >
@@ -453,15 +314,17 @@ export function EventSettingsPage() {
             <p className="text-gray-300">
               {isEventManager ? `Manage settings for ${event.name}` : 'System-wide settings and controls'} 
             </p>
-          </div>
-          <div className="mt-4 sm:mt-0">
-            <button
-              onClick={() => event.event_slug ? window.open(`/events/${event.event_slug}`, '_blank') : alert('This event has no public URL yet. Please set an event slug first.')}
-              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
-            >
-              <Eye className="w-5 h-5" />
-              <span>Preview Event</span>
-            </button>
+            <div className="mt-2">
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                event.status === 'published' 
+                  ? 'bg-green-500/20 text-green-400' 
+                  : event.status === 'draft'
+                  ? 'bg-yellow-500/20 text-yellow-400'
+                  : 'bg-gray-500/20 text-gray-400'
+              }`}>
+                {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+              </span>
+            </div>
           </div>
           <div className="mt-4 sm:mt-0">
             <button
@@ -552,14 +415,6 @@ export function EventSettingsPage() {
             onSave={handleSaveGlobalDeals}
           />
         )}
-        
-        <EventDetailsModal
-          eventId={eventId || 0}
-          isOpen={isEventDetailsModalOpen}
-          onClose={() => setIsEventDetailsModalOpen(false)}
-          onSave={handleSaveEventDetails}
-          initialData={event}
-        />
         
         <EventDetailsModal
           eventId={eventId || 0}

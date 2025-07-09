@@ -2,7 +2,6 @@ import React from 'react';
 import { Calendar, MapPin, Edit, Eye, Trash2, Settings } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
 
 interface EventProps {
   id: number;
@@ -33,7 +32,6 @@ interface EventCardProps {
 
 export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const navigate = useNavigate();
   
   const formatDate = (dateString: string) => {
@@ -70,22 +68,7 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
   const handleView = () => {
     if (event.event_slug) {
       console.log('Viewing event with slug:', event.event_slug);
-      navigate(`/events/${event.event_slug}`);
-    } else if (onView) {
-      console.log('Viewing event with ID:', event.id);
-      onView(event.id);
-    }
-  };
-                          
-  const handleManage = () => {
-    console.log('Managing event:', event.id);
-    navigate(`/event-settings?event=${event.id}`);
-  };
-  
-  const handleView = () => {
-    if (event.event_slug) {
-      console.log('Viewing event with slug:', event.event_slug);
-      navigate(`/events/${event.event_slug}`);
+      window.open(`/events/${event.event_slug}`, '_blank');
     } else if (onView) {
       console.log('Viewing event with ID:', event.id);
       onView(event.id);

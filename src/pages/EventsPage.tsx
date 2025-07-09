@@ -183,17 +183,6 @@ export function EventsPage() {
     }
   };
 
-  const handleViewEvent = (eventId: number) => {
-    const event = [...events, ...userEvents].find(e => e.id === eventId);
-    console.log('View event:', eventId, 'Event found:', event);
-    if (event && event.event_slug) {
-      navigate(`/events/${event.event_slug}`);
-    } else {
-      console.log('No event slug found, navigating to settings');
-      navigate(`/event-settings?event=${eventId}`);
-    }
-  };
-
   const isAdmin = user?.role === 'admin';
 
   if (isLoading) {
