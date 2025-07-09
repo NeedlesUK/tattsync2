@@ -26,47 +26,82 @@ export function DashboardPage() {
       console.log('Fetching dashboard data...');
       setIsLoading(true);
       
+      // Check if Supabase is properly configured before attempting to fetch data
+      if (!supabase) {
+        console.warn('⚠️ Supabase not configured. Using fallback data.');
+        setActiveEvents(0);
+        setTotalApplications(0);
+        setTotalRevenue(0);
+        setTotalMessages(0);
+        setUpcomingEvents([]);
+        return;
+      }
+      
       if (supabase && user) {
         // Fetch active events count
-        const { data: eventsData, error: eventsError } = await supabase
-          .from('events')
-          .select('id, name, status')
-          .eq('status', 'published')
-          .eq('event_manager_id', user.id);
+        try {
+          const { data: eventsData, error: eventsError } = await supabase
+            .from('events')
+            .select('id, name, status')
+            .eq('status', 'published')
+            .eq('event_manager_id', user.id);
+            
+          if (eventsError) {
+            console.error('Error fetching events:', eventsError);
+            // Set fallback values on error
+            setActiveEvents(0);
+            setUpcomingEvents([]);
+          } else {
+            console.log('Active events:', eventsData?.length);
+            setActiveEvents(eventsData?.length || 0);
+            setUpcomingEvents(eventsData || []);
+          }
           
-        if (eventsError) {
-          console.error('Error fetching events:', eventsError);
-        } else {
-          console.log('Active events:', eventsData?.length);
-          setActiveEvents(eventsData?.length || 0);
-          setUpcomingEvents(eventsData || []);
-        }
-        
-        // Fetch applications count
-        const { data: applicationsData, error: applicationsError } = await supabase
-          .from('applications')
-          .select('id')
-          .in('event_id', eventsData?.map(e => e.id) || []);
-          
-        if (applicationsError) {
-          console.error('Error fetching applications:', applicationsError);
-        } else {
-          console.log('Total applications:', applicationsData?.length);
-          setTotalApplications(applicationsData?.length || 0);
+          // Only fetch applications if we have events data
+          if (eventsData && eventsData.length > 0) {
+            const { data: applicationsData, error: applicationsError } = await supabase
+              .from('applications')
+              .select('id')
+              .in('event_id', eventsData.map(e => e.id));
+              
+            if (applicationsError) {
+              console.error('Error fetching applications:', applicationsError);
+              setTotalApplications(0);
+            } else {
+              console.log('Total applications:', applicationsData?.length);
+              setTotalApplications(applicationsData?.length || 0);
+            }
+          } else {
+            setTotalApplications(0);
+          }
+        } catch (networkError) {
+          console.error('Network error fetching dashboard data:', networkError);
+          // Set fallback values on network error
+          setActiveEvents(0);
+          setTotalApplications(0);
+          setUpcomingEvents([]);
         }
         
         // For now, set mock data for other stats
         setTotalRevenue(0);
         setTotalMessages(0);
       } else {
-        // This would fetch real data from an API in production
-        setStats([]);
-        setRecentActivity([]);
+        // No user or supabase client - set fallback values
+        setActiveEvents(0);
+        setTotalApplications(0);
+        setTotalRevenue(0);
+        setTotalMessages(0);
         setUpcomingEvents([]);
-        console.log('Dashboard data initialized with empty arrays');
+        console.log('Dashboard data initialized with fallback values');
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      // Set fallback values on any error
+      setActiveEvents(0);
+      setTotalApplications(0);
+      setTotalRevenue(0);
+      setTotalMessages(0);
+      setUpcomingEvents([]);
     } finally {
       setIsLoading(false);
     }
