@@ -287,26 +287,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     if (!supabase) {
       console.error('Supabase not configured');
+      setUser(null);
+      setSession(null);
       return;
     }
 
     setIsLoading(true);
     console.log('Starting logout process');
     try {
-      const { error } = await supabase.auth.signOut();
+      // Clear user state immediately for responsive UI
+      setUser(null);
+      setSession(null);
+      
+      // Clear authorization header
+      delete api.defaults.headers.common['Authorization'];
+      
+      // Then perform the actual signout
+      const { error } = await supabase.auth.signOut({
+        scope: 'global'  // Sign out from all tabs/devices
+      });
       
       if (error) {
         console.error('Logout error:', error);
         setIsLoading(false);
         throw error;
       }
-      // Clear authorization header
-      delete api.defaults.headers.common['Authorization'];
+
+      console.log('User logged out successfully');
       
-      // Clear user state immediately
-      setUser(null);
-      setSession(null);
-      console.log('User logged out successfully');      
+      // Force page reload to ensure clean state
+      window.location.href = '/';
     } catch (error) {
       console.error('Error during logout:', error);
       setIsLoading(false);

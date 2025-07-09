@@ -22,8 +22,6 @@ export function Header() {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard' },
     { name: 'Events', href: '/events' },
-    // Only show Applications for Event Managers and regular users (not Master Admins)
-    ...(user?.role !== 'admin' ? [{ name: 'Applications', href: '/applications' }] : []),
     { name: 'Messages', href: '/messages' },
     { name: 'Deals', href: '/deals' },
   ];
@@ -33,7 +31,6 @@ export function Header() {
     { name: 'TattScore', href: '/tattscore/admin' },
     { name: 'Studio', href: '/studio/dashboard' },
     { name: 'Tickets', href: '/ticket-management' },
-    { name: 'Users', href: '/admin/users' }
   ];
 
   // TattScore navigation items - filter based on role

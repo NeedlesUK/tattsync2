@@ -44,7 +44,7 @@ function AppContent() {
             <Route path="/events" element={<EventsPage />} />
             <Route path="/events/:eventSlug" element={<EventApplicationPage />} />
             <Route path="/login" element={<RegistrationPage />} />
-            <Route path="/admin/users" element={<AdminUsersPage />} />
+           <Route path="/admin/users" element={user?.role === 'admin' ? <AdminUsersPage /> : <DashboardPage />} />
             <Route path="/register/:token" element={<RegistrationFormPage />} />
             <Route path="/registration-success" element={<RegistrationSuccessPage />} />
             <Route path="/profile" element={<ProfilePage />} />

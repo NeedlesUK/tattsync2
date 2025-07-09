@@ -197,17 +197,15 @@ export function AdminDashboardPage() {
                   <p className="text-gray-400 text-sm">Manage competition system</p>
                 </div>
                 
-                <div 
-                  className="bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 transition-all cursor-pointer"
-                  onClick={() => navigate('/studio/dashboard')}
-                >
+                <div className="bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 transition-all cursor-pointer"
+                  onClick={() => navigate('/admin/users')}>
                   <div className="flex items-center space-x-3 mb-2">
                     <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                      <Globe className="w-5 h-5 text-blue-400" />
+                      <Users className="w-5 h-5 text-blue-400" />
                     </div>
-                    <h3 className="text-white font-medium">Studio Management</h3>
+                    <h3 className="text-white font-medium">User Management</h3>
                   </div>
-                  <p className="text-gray-400 text-sm">Manage studio operations</p>
+                  <p className="text-gray-400 text-sm">Manage user accounts and permissions</p>
                 </div>
               </div>
             </div>
