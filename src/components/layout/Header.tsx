@@ -141,6 +141,14 @@ export function Header() {
                 className="w-10 h-10 object-contain"
               />
               <span className="text-white font-bold text-xl">TattSync</span>
+            </Link>
+            <nav className="hidden md:flex ml-10 space-x-4">
+              {navigationItems.map((item) => {
+                // Skip items that require a module if the module is not enabled
+                if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
+                  return null;
+                }
+                
                 return (
                   <Link
                     key={item.name}
@@ -226,7 +234,7 @@ export function Header() {
                 </div>
               )}
             </nav>
-          )}
+          </div>
 
           <div className="flex items-center space-x-4">
             {user ? (
