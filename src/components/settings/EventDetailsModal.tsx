@@ -25,6 +25,10 @@ export interface EventData {
   status: 'draft' | 'published' | 'archived';
   logo_url?: string;
   banner_image_url?: string;
+  website?: string;
+  instagram?: string;
+  facebook?: string;
+  tiktok?: string;
 }
 
 // Helper function to convert file to base64
@@ -56,7 +60,11 @@ export function EventDetailsModal({
     max_attendees: 500,
     status: 'draft',
     logo_url: '',
-    banner_image_url: ''
+    banner_image_url: '',
+    website: '',
+    instagram: '',
+    facebook: '',
+    tiktok: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -574,6 +582,120 @@ export function EventDetailsModal({
                 <p className="text-blue-300 text-sm">
                   For best results, use a square image for the logo and a wide rectangular image for the banner.
                   You can use services like Pexels, Unsplash, or your own hosted images.
+                </p>
+              </div>
+            </div>
+
+            {/* Social Media and Website */}
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4">Social Media & Website</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Website URL
+                  </label>
+                  <div className="relative">
+                    <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="url"
+                      value={formData.website || ''}
+                      onChange={(e) => handleInputChange('website', e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Instagram
+                  </label>
+                  <div className="relative">
+                    <svg 
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                    </svg>
+                    <input
+                      type="text"
+                      value={formData.instagram || ''}
+                      onChange={(e) => handleInputChange('instagram', e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="@username"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Facebook
+                  </label>
+                  <div className="relative">
+                    <svg 
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                    </svg>
+                    <input
+                      type="text"
+                      value={formData.facebook || ''}
+                      onChange={(e) => handleInputChange('facebook', e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="page-name or profile URL"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    TikTok
+                  </label>
+                  <div className="relative">
+                    <svg 
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    >
+                      <path d="M9 12a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"></path>
+                      <path d="M15 8a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
+                      <path d="M15 8v8a4 4 0 0 1-4 4"></path>
+                      <path d="M15 8h-4"></path>
+                    </svg>
+                    <input
+                      type="text"
+                      value={formData.tiktok || ''}
+                      onChange={(e) => handleInputChange('tiktok', e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="@username"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3 mt-2">
+                <p className="text-blue-300 text-sm">
+                  Adding social media links will display them as buttons on the public event page, helping attendees connect with your event online.
                 </p>
               </div>
             </div>

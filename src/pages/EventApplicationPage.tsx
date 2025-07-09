@@ -520,6 +520,94 @@ export function EventApplicationPage() {
             <div className="p-8">
               <p className="text-gray-300 mb-6">{event.description}</p>
               
+              {/* Social Media Links */}
+              {(event.website || event.instagram || event.facebook || event.tiktok) && (
+                <div className="flex flex-wrap gap-3 mb-6">
+                  {event.website && (
+                    <a 
+                      href={event.website.startsWith('http') ? event.website : `https://${event.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center space-x-2"
+                    >
+                      <Globe className="w-4 h-4" />
+                      <span>Website</span>
+                    </a>
+                  )}
+                  
+                  {event.instagram && (
+                    <a 
+                      href={`https://instagram.com/${event.instagram.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center space-x-2"
+                    >
+                      <svg 
+                        className="w-4 h-4" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                      >
+                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                      </svg>
+                      <span>Instagram</span>
+                    </a>
+                  )}
+                  
+                  {event.facebook && (
+                    <a 
+                      href={event.facebook.startsWith('http') ? event.facebook : `https://facebook.com/${event.facebook}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center space-x-2"
+                    >
+                      <svg 
+                        className="w-4 h-4" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                      >
+                        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                      </svg>
+                      <span>Facebook</span>
+                    </a>
+                  )}
+                  
+                  {event.tiktok && (
+                    <a 
+                      href={`https://tiktok.com/@${event.tiktok.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-black hover:bg-gray-900 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center space-x-2"
+                    >
+                      <svg 
+                        className="w-4 h-4" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                      >
+                        <path d="M9 12a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"></path>
+                        <path d="M15 8a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"></path>
+                        <path d="M15 8v8a4 4 0 0 1-4 4"></path>
+                        <path d="M15 8h-4"></path>
+                      </svg>
+                      <span>TikTok</span>
+                    </a>
+                  )}
+                </div>
+              )}
+              
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="flex items-center text-gray-300">
                   <Calendar className="w-5 h-5 mr-3" />
