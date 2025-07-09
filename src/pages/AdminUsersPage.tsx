@@ -46,12 +46,14 @@ export function AdminUsersPage() {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
+      console.log('Fetching users from Supabase...');
 
       if (supabase) {
         const { data, error } = await supabase
           .from('users')
           .select('id, name, email, role, created_at, updated_at')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(100);
 
         if (error) {
           console.error('Error fetching users:', error);
@@ -60,7 +62,7 @@ export function AdminUsersPage() {
           return;
         }
 
-        console.log('Fetched users:', data);
+        console.log('Fetched users:', data.length, 'users found');
         if (data && data.length > 0) {
           setUsers(data);
           setFilteredUsers(data);
@@ -72,22 +74,27 @@ export function AdminUsersPage() {
       } else {
         // Fallback to mock data
         console.log('Supabase client not available, using mock data');
-        const mockUsers = [
-          {
-            id: '1',
-            name: 'System Administrator',
-            email: 'admin@tattsync.com',
-            role: 'admin',
-            created_at: new Date().toISOString()
-          },
-          {
-            id: '2',
-            name: 'Gary Watts',
-            email: 'gary@gwts.co.uk',
-            role: 'event_manager',
-            created_at: new Date().toISOString()
-          }
-        ];
+        const mockUsers = [];
+        
+        // Add admin user
+        mockUsers.push({
+          id: '1',
+          name: 'System Administrator',
+          email: 'admin@tattsync.com',
+          role: 'admin',
+          created_at: new Date().toISOString()
+        });
+        
+        // Add event manager
+        mockUsers.push({
+          id: '2',
+          name: 'Gary Watts',
+          email: 'gary@gwts.co.uk',
+          role: 'event_manager',
+          created_at: new Date().toISOString()
+        });
+        
+        console.log('Using mock data with', mockUsers.length, 'users');
         setUsers(mockUsers);
         setFilteredUsers(mockUsers);
       }
@@ -98,6 +105,12 @@ export function AdminUsersPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Add a refresh function that can be called from the UI
+  const refreshUsers = () => {
+    console.log('Manually refreshing users list...');
+    fetchUsers();
   };
 
   const handleChangePassword = (selectedUser: any) => {
@@ -136,10 +149,10 @@ export function AdminUsersPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">User Management</h1>
-            <p className="text-gray-300">Manage user accounts and permissions</p>
+            <p className="text-gray-300">Manage user accounts and permissions ({users.length} users found)</p>
           </div>
           <button
-            onClick={fetchUsers}
+            onClick={refreshUsers}
             className="mt-4 sm:mt-0 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
           >
             <Users className="w-5 h-5" />
