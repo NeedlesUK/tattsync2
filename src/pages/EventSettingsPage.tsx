@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { EventInformationModal } from '../components/settings/EventInformationModal';
 import { EventDealsModal } from '../components/settings/EventDealsModal';
 import { GlobalDealsModal } from '../components/settings/GlobalDealsModal';
+import { useState, useEffect } from 'react';
 
 export function EventSettingsPage() {
   const { user, supabase } = useAuth();
@@ -15,6 +16,7 @@ export function EventSettingsPage() {
   const [isInformationModalOpen, setIsInformationModalOpen] = useState(false);
   const [isDealsModalOpen, setIsDealsModalOpen] = useState(false);
   const [isGlobalDealsModalOpen, setIsGlobalDealsModalOpen] = useState(false);
+  const [isEventDetailsModalOpen, setIsEventDetailsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [event, setEvent] = useState<any>({
     id: 1,
@@ -87,6 +89,23 @@ export function EventSettingsPage() {
     }
   };
 
+  const handleEditEventDetails = () => {
+    console.log('Editing event details for:', event.id);
+    // For now, we'll just show an alert with the event details
+    // In a real implementation, this would open a modal to edit the event details
+    alert(`
+Event Details:
+ID: ${event.id}
+Name: ${event.name}
+Status: ${event.status}
+Dates: ${event.start_date} to ${event.end_date}
+Location: ${event.location}
+Venue: ${event.venue}
+
+This functionality will be implemented in a future update.
+    `);
+  };
+
   const handleSaveInformation = async (information: any) => {
     try {
       // In real implementation, save to API
@@ -153,7 +172,7 @@ export function EventSettingsPage() {
           title: 'Event Details',
           description: 'Update event name, dates, location, and other basic information',
           icon: Calendar,
-          action: () => console.log('Edit event details')
+          action: () => handleEditEventDetails()
         },
         {
           title: 'Event Information',
