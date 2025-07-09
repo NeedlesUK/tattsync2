@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { EventInformationModal } from '../components/settings/EventInformationModal';
 import { EventDealsModal } from '../components/settings/EventDealsModal';
 import { GlobalDealsModal } from '../components/settings/GlobalDealsModal';
+import { PaymentSettingsModal } from '../components/settings/PaymentSettingsModal';
 import { EventDetailsModal } from '../components/settings/EventDetailsModal';
 
 export function EventSettingsPage() {
@@ -16,6 +17,7 @@ export function EventSettingsPage() {
   const [isInformationModalOpen, setIsInformationModalOpen] = useState(false);
   const [isDealsModalOpen, setIsDealsModalOpen] = useState(false);
   const [isGlobalDealsModalOpen, setIsGlobalDealsModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isEventDetailsModalOpen, setIsEventDetailsModalOpen] = useState(false); 
   const [activeTab, setActiveTab] = useState('general');
   const [event, setEvent] = useState<any>({
@@ -168,6 +170,15 @@ export function EventSettingsPage() {
     }
   };
 
+  const handleSavePaymentSettings = async (settings: any) => {
+    try {
+      // In real implementation, save to API
+      console.log('Saving payment settings:', settings);
+    } catch (error) {
+      console.error('Error saving payment settings:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
@@ -233,13 +244,13 @@ export function EventSettingsPage() {
           title: 'Applications',
           description: 'Configure application types, forms, and approval process',
           icon: FileText,
-          action: () => console.log('Configure applications')
+          action: () => console.log('Configure applications') 
         },
         {
           title: 'Payments',
           description: 'Set up payment methods, pricing, and installment options',
           icon: CreditCard,
-          action: () => console.log('Configure payments')
+          action: () => setIsPaymentModalOpen(true)
         },
         {
           title: 'Messaging',
@@ -433,6 +444,14 @@ export function EventSettingsPage() {
             onSave={handleSaveGlobalDeals}
           />
         )}
+        
+        <PaymentSettingsModal
+          eventId={eventId || 0}
+          eventName={event.name}
+          isOpen={isPaymentModalOpen}
+          onClose={() => setIsPaymentModalOpen(false)}
+          onSave={handleSavePaymentSettings}
+        />
         
         <EventDetailsModal
           eventId={eventId || 0}
