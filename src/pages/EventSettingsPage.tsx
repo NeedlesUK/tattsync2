@@ -5,7 +5,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { EventInformationModal } from '../components/settings/EventInformationModal';
 import { EventDealsModal } from '../components/settings/EventDealsModal';
 import { GlobalDealsModal } from '../components/settings/GlobalDealsModal';
-import { useState, useEffect } from 'react';
 
 export function EventSettingsPage() {
   const { user, supabase } = useAuth();
