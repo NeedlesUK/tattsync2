@@ -672,12 +672,4 @@ export function AdminDashboardPage() {
               <ChangeUserPassword 
                 userId={selectedUser.id} 
                 userName={selectedUser.name}
-                onComplete={handlePasswordChangeComplete}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
 }
