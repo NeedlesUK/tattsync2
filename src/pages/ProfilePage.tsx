@@ -5,7 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 
 
 export function ProfilePage() {
-  const { user, logout, updateUserEmail, updateUserRoles, supabase } = useAuth();
+  const { user, logout, updateAuthUser, updateUserRoles, supabase } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [profileDbId, setProfileDbId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
@@ -178,31 +178,15 @@ export function ProfilePage() {
     setSaveError('');
     
     try {
-      // Update user name in auth.users
-      const { error: nameError } = await supabase.auth.updateUser({
-        data: { 
+      // Update user auth data (name and email)
+      try {
+        await updateAuthUser({
           name: formData.name,
           email: formData.email
-        }
-      });
-      
-      if (nameError) {
-        console.error('Error updating name:', nameError);
-        setSaveError('Failed to update name. Please try again.');
-        setIsSaving(false);
-        return;
-      }
-      
-      // Update user name in users table
-      const { error: userError } = await supabase
-        .from('users')
-        .update({ name: formData.name, updated_at: new Date().toISOString() })
-        .eq('id', user.id)
-        .select();
-      
-      if (userError) {
-        console.error('Error updating user:', userError);
-        setSaveError('Failed to update user. Please try again.');
+        });
+      } catch (error) {
+        console.error('Error updating auth user:', error);
+        setSaveError('Failed to update user information. Please try again.');
         setIsSaving(false);
         return;
       }
@@ -236,18 +220,6 @@ export function ProfilePage() {
         setSaveError('Failed to update profile. Please try again.');
         setIsSaving(false);
         return;
-      }
-      
-      // Update email if changed
-      if (user.email !== formData.email) {
-        try {
-          await updateUserEmail(formData.email);
-        } catch (emailError) {
-          console.error('Error updating email:', emailError);
-          setSaveError('Failed to update email. Please try again.');
-          setIsSaving(false);
-          return;
-        }
       }
       
       // Success
@@ -366,17 +338,15 @@ export function ProfilePage() {
       // For now, we'll just simulate an API call
       console.log('Uploading profile picture:', file);
      
-     // Update the user avatar in the auth context
-     if (user) {
-       user.avatar = previewUrl;
-     }
-     
-     // Update user data in context
-     updateUserProfile({
-       name: formData.name,
-       email: formData.email,
-       avatar: profilePicture
-     });
+      // Update the user avatar in the auth context
+      if (user) {
+        // Update user data in context
+        await updateAuthUser({
+          name: formData.name,
+          email: formData.email,
+          avatar: previewUrl
+        });
+      }
      
       await new Promise(resolve => setTimeout(resolve, 1500));
 

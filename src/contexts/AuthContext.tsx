@@ -15,7 +15,7 @@ interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
   supabase: ReturnType<typeof createClient> | null;
-  updateUserEmail: (newEmail: string) => Promise<void>;
+  updateAuthUser: (updates: {email?: string, name?: string, avatar?: string, role?: string}) => Promise<void>;
   updateUserRoles: (roles: string[], primaryRole: string) => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>; 
@@ -350,27 +350,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Function to update user email
-  const updateUserEmail = async (newEmail: string) => {
+  // Function to update user auth data (email, metadata, etc)
+  const updateAuthUser = async (updates: {email?: string, name?: string, avatar?: string, role?: string}) => {
     if (!supabase || !user) {
-      console.error('Supabase not configured or user not logged in');
-      throw new Error('Supabase not configured or user not logged in');
+      console.error('❌ Supabase not configured or user not logged in');
+      throw new Error('Authentication service not configured or user not logged in');
     }
 
     try {
-      // Update email in Supabase Auth
-      const { error: authError } = await supabase.auth.updateUser({
-        email: newEmail
-      });
+      // Prepare update data for auth
+      const authUpdates: any = {};
+      const metadataUpdates: any = {};
+      
+      // Add email if provided
+      if (updates.email) {
+        authUpdates.email = updates.email;
+      }
+      
+      // Add name to metadata if provided
+      if (updates.name) {
+        metadataUpdates.name = updates.name;
+      }
+      
+      // Add role to metadata if provided
+      if (updates.role) {
+        metadataUpdates.role = updates.role;
+      }
+      
+      // Only update metadata if there are changes
+      if (Object.keys(metadataUpdates).length > 0) {
+        authUpdates.data = metadataUpdates;
+      }
+      
+      // Only proceed if there are updates to make
+      if (Object.keys(authUpdates).length === 0) {
+        console.log('No auth updates to make');
+        return;
+      }
+      
+      console.log('Updating user auth data:', authUpdates);
+      
+      // Update in Supabase Auth
+      const { error: authError } = await supabase.auth.updateUser(authUpdates);
 
       if (authError) {
         throw authError;
       }
 
-      // Update email in users table
+      // Prepare database updates
+      const dbUpdates: any = {
+        updated_at: new Date().toISOString()
+      };
+      
+      if (updates.email) {
+        dbUpdates.email = updates.email;
+      }
+      
+      if (updates.name) {
+        dbUpdates.name = updates.name;
+      }
+      
+      if (updates.role) {
+        dbUpdates.role = updates.role;
+      }
+      
+      // Update in users table
       const { error: dbError } = await supabase
         .from('users')
-        .update({ email: newEmail, updated_at: new Date().toISOString() })
+        .update(dbUpdates)
         .eq('id', user.id);
 
       if (dbError) {
@@ -378,12 +425,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Update local user state
-      setUser(prev => prev ? { ...prev, email: newEmail } : null);
+      setUser(prev => {
+        if (!prev) return null;
+        
+        const updatedUser = { ...prev };
+        
+        if (updates.email) updatedUser.email = updates.email;
+        if (updates.name) updatedUser.name = updates.name;
+        if (updates.role) updatedUser.role = updates.role as any;
+        if (updates.avatar) updatedUser.avatar = updates.avatar;
+        
+        return updatedUser;
+      });
+      
+      console.log('✅ User auth data updated successfully');
 
       return true;
     } catch (error) {
-      console.error('Error updating email:', error);
-      throw error;
+      console.error('❌ Error updating user auth data:', error);
+      throw new Error('Failed to update user information. Please try again.');
     }
   };
 
@@ -495,7 +555,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       isLoading,
-      updateUserEmail,
+      updateAuthUser,
       updateUserRoles,
       updateUserPassword,
       updateUserProfile
