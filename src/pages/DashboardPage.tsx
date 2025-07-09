@@ -3,7 +3,6 @@ import { Calendar, Users, CreditCard, MessageCircle, User, MapPin } from 'lucide
 import { useAuth } from '../contexts/AuthContext';
 import { StatsCard } from '../components/dashboard/StatsCard';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
 
 export function DashboardPage() {
   const { user, supabase } = useAuth();
