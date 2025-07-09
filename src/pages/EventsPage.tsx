@@ -168,11 +168,16 @@ export function EventsPage() {
       setFilteredUserEvents([]);
       setFilteredAllEvents([]);
     } finally {
-      if (event.event_slug) {
-        navigate(`/events/${event.event_slug}`);
-      } else {
-        navigate(`/event-settings?event=${eventId}`);
-      }
+      setIsLoading(false);
+    }
+  };
+
+  const handleViewEvent = (eventId: number) => {
+    const event = [...events, ...userEvents].find(e => e.id === eventId);
+    if (event && event.event_slug) {
+      navigate(`/events/${event.event_slug}`);
+    } else {
+      navigate(`/event-settings?event=${eventId}`);
     }
   };
 
