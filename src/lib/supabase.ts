@@ -9,6 +9,11 @@ function validateCredentials() {
     console.error('❌ Missing Supabase credentials in environment variables');
     console.error('VITE_SUPABASE_URL:', supabaseUrl ? 'Present' : 'Missing');
     console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Present' : 'Missing');
+    console.error('💡 To fix this:');
+    console.error('   1. Create a .env file in your project root');
+    console.error('   2. Copy values from .env.example');
+    console.error('   3. Replace with your actual Supabase project credentials');
+    console.error('   4. Restart your development server');
     return false;
   }
   
@@ -18,11 +23,13 @@ function validateCredentials() {
       supabaseAnonKey === 'your_supabase_anon_key') {
     console.error('❌ Default placeholder Supabase credentials detected');
     console.error('Please update your .env file with actual Supabase credentials from your project dashboard');
+    console.error('💡 Get your credentials from: https://supabase.com/dashboard/project/YOUR_PROJECT/settings/api');
     return false;
   }
   
   if (!supabaseUrl.startsWith('https://')) {
     console.error('❌ Invalid Supabase URL format. URL must start with https://');
+    console.error('💡 Expected format: https://your-project-id.supabase.co');
     return false;
   }
   
@@ -47,13 +54,26 @@ try {
     console.log('✅ Supabase client created successfully');
     
     // Test the connection
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (error) {
-        console.error('❌ Error testing Supabase connection:', error.message);
-      } else {
-        console.log('✅ Supabase connection test successful');
-      }
-    });
+    supabase.auth.getSession()
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('❌ Error testing Supabase connection:', error.message);
+          if (error.message?.includes('Failed to fetch')) {
+            console.error('🌐 Network connectivity issue detected');
+            console.error('💡 Please check:');
+            console.error('   1. Internet connection');
+            console.error('   2. Supabase service status at status.supabase.com');
+            console.error('   3. Firewall/VPN settings blocking Supabase');
+            console.error('   4. Your Supabase project URL is correct');
+          }
+        } else {
+          console.log('✅ Supabase connection test successful');
+        }
+      })
+      .catch((error) => {
+        console.error('❌ Failed to test Supabase connection:', error.message);
+        console.error('🌐 This may indicate a network connectivity issue');
+      });
   }
 } catch (error) {
   console.error('❌ Error creating Supabase client:', error);

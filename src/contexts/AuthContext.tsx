@@ -82,14 +82,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Use Supabase directly to get user data
       if (supabase) {
         console.log('📊 Querying database for user data with ID:', userId);
-        const { data, error, status } = await supabase
+        
+        // Add timeout and better error handling for the database query
+        const queryPromise = supabase
           .from('users')
           .select('*')
           .eq('id', userId)
           .single();
           
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timeout after 10 seconds')), 10000)
+        );
+        
+        const { data, error, status } = await Promise.race([queryPromise, timeoutPromise]) as any;
+        
         if (error) {
           console.error('❌ Error fetching user data from Supabase:', error, 'Status:', status);
+          
+          // Check if it's a network error
+          if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError') || error.message?.includes('fetch')) {
+            console.error('🌐 Network connectivity issue detected. Using fallback user data.');
+            throw new Error('NETWORK_ERROR');
+          }
+          
+          // Check if it's a timeout
+          if (error.message?.includes('timeout')) {
+            console.error('⏱️ Database query timeout. Using fallback user data.');
+            throw new Error('TIMEOUT_ERROR');
+          }
+          
           throw error;
         }
         
@@ -121,8 +142,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       return userData;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error fetching user data:', error);
+      
+      // Handle specific error types
+      if (error.message === 'NETWORK_ERROR' || error.message === 'TIMEOUT_ERROR') {
+        console.log('🔄 Using fallback user data due to connectivity issues');
+      } else if (error.message?.includes('Failed to fetch')) {
+        console.error('🌐 Network connectivity issue: Cannot reach Supabase servers');
+        console.error('💡 Please check:');
+        console.error('   1. Internet connection');
+        console.error('   2. Supabase service status at status.supabase.com');
+        console.error('   3. Firewall/VPN settings');
+        console.error('   4. VITE_SUPABASE_URL in .env file');
+      }
+      
       // Fallback to basic user info if API call fails
       return {
         id: userId,
@@ -163,15 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         console.log('🔍 Fetching complete user data from database...');
         
-        // Use a timeout to prevent hanging if the database query takes too long
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database query timeout')), 15000)
-        );
-        
-        const userData = await Promise.race([
-          fetchUserData(session.user.id, session.user.email || ''),
-          timeoutPromise
-        ]);
+        const userData = await fetchUserData(session.user.id, session.user.email || '');
         
         // Only update if we got valid data from database
         if (userData && userData.id) {
@@ -197,8 +223,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.warn('⚠️ DATABASE READ FAILED - No valid user data returned, keeping basic info');
         }
       } catch (error: any) {
-        console.error('❌ Error updating user state with database data:', error.message);
-        console.log('⚠️ Using initial user state due to error fetching extended data');
+        if (error.message === 'NETWORK_ERROR') {
+          console.warn('🌐 Network connectivity issue - continuing with basic user info');
+        } else if (error.message === 'TIMEOUT_ERROR') {
+          console.warn('⏱️ Database query timeout - continuing with basic user info');
+        } else {
+          console.error('❌ Error updating user state with database data:', error.message);
+        }
+        console.log('⚠️ Continuing with basic user info from session');
       }
     } else {
       setUser(null);
@@ -210,7 +242,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase) {
       console.warn('⚠️ Supabase not configured. Please check your environment variables.');
-      console.warn('Using mock data for development');
+      console.warn('💡 To fix this:');
+      console.warn('   1. Check your .env file exists and has valid VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+      console.warn('   2. Restart your development server after updating .env');
+      console.warn('   3. Verify your Supabase project is active at supabase.com');
       setIsLoading(false);
       return;
     }
@@ -225,7 +260,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
       }
       
-      await updateUserState(session);
+      try {
+        await updateUserState(session);
+      } catch (error) {
+        console.error('❌ Error during initial user state update:', error);
+        // Continue anyway - user can still use the app with basic session info
+      }
       setIsLoading(false);
     });
 
@@ -253,7 +293,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
       }
       
-      await updateUserState(newSession);
+      try {
+        await updateUserState(newSession);
+      } catch (error) {
+        console.error('❌ Error during auth state change user update:', error);
+        // Continue anyway - user can still use the app
+      }
       setIsLoading(false);
     });
 
@@ -305,7 +350,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         await updateUserState(data.session);
       } catch (error) {
-        console.error('❌ Error updating user state, but login succeeded:', error);
+        console.warn('⚠️ Could not fetch extended user data, but login succeeded:', error);
         // Continue with login even if user state update fails
       }
       
