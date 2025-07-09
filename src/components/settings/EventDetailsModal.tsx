@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Calendar, MapPin, Users, Globe, AlertCircle, Image, Upload } from 'lucide-react';
+import { X, Save, Calendar, MapPin, Users, Globe, AlertCircle, Image, Upload, Check } from 'lucide-react';
+import { useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface EventDetailsModalProps {
   eventId: number;
@@ -23,6 +26,16 @@ export interface EventData {
   logo_url?: string;
   banner_image_url?: string;
 }
+
+// Helper function to convert file to base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
+  });
+};
 
 export function EventDetailsModal({
   eventId,
@@ -48,6 +61,11 @@ export function EventDetailsModal({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const { supabase } = useAuth();
+  const [isUploading, setIsUploading] = useState({
+    logo: false,
+    banner: false
+  });
 
   useEffect(() => {
     if (initialData) {
@@ -129,6 +147,105 @@ export function EventDetailsModal({
       setIsSaving(false);
     }
   };
+
+  const handleImageUpload = async (file: File, type: 'logo' | 'banner') => {
+    if (!supabase) {
+      setErrors(prev => ({
+        ...prev,
+        [type === 'logo' ? 'logo_url' : 'banner_image_url']: 'Storage service not available'
+      }));
+      return;
+    }
+    
+    try {
+      setIsUploading(prev => ({ ...prev, [type]: true }));
+      
+      // Set file size limit (5MB)
+      const MAX_SIZE = 5 * 1024 * 1024;
+      if (file.size > MAX_SIZE) {
+        throw new Error(`File size exceeds 5MB limit`);
+      }
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Only image files are allowed');
+      }
+      
+      // Create a unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${type}_${eventId}_${Date.now()}.${fileExt}`;
+      const filePath = `events/${eventId}/${fileName}`;
+      
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('event-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+        
+      if (uploadError) throw uploadError;
+      
+      // Get the public URL
+      const { data } = supabase.storage
+        .from('event-images')
+        .getPublicUrl(filePath);
+        
+      // Update form data with the new URL
+      if (type === 'logo') {
+        handleInputChange('logo_url', data.publicUrl);
+      } else {
+        handleInputChange('banner_image_url', data.publicUrl);
+      }
+      
+    } catch (error: any) {
+      console.error(`Error uploading ${type} image:`, error);
+      setErrors(prev => ({
+        ...prev,
+        [type === 'logo' ? 'logo_url' : 'banner_image_url']: error.message || `Failed to upload ${type} image`
+      }));
+    } finally {
+      setIsUploading(prev => ({ ...prev, [type]: false }));
+    }
+  };
+  
+  // Setup dropzone for logo
+  const onDropLogo = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      handleImageUpload(acceptedFiles[0], 'logo');
+    }
+  }, [eventId]);
+  
+  const {
+    getRootProps: getLogoRootProps,
+    getInputProps: getLogoInputProps,
+    isDragActive: isLogoDragActive
+  } = useDropzone({
+    onDrop: onDropLogo,
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
+    },
+    maxFiles: 1
+  });
+  
+  // Setup dropzone for banner
+  const onDropBanner = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      handleImageUpload(acceptedFiles[0], 'banner');
+    }
+  }, [eventId]);
+  
+  const {
+    getRootProps: getBannerRootProps,
+    getInputProps: getBannerInputProps,
+    isDragActive: isBannerDragActive
+  } = useDropzone({
+    onDrop: onDropBanner,
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
+    },
+    maxFiles: 1
+  });
 
   const generateSlug = () => {
     const slug = formData.name
@@ -338,62 +455,118 @@ export function EventDetailsModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Logo URL
+                    Event Logo
                     <span className="text-xs text-gray-400 ml-2">(Square image recommended)</span>
                   </label>
-                  <div className="relative">
-                    <Image className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <div 
+                    {...getLogoRootProps()} 
+                    className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all ${
+                      isLogoDragActive 
+                        ? 'border-purple-500 bg-purple-500/10' 
+                        : 'border-white/20 hover:border-white/40 hover:bg-white/5'
+                    }`}
+                  >
+                    <input {...getLogoInputProps()} />
+                    {isUploading.logo ? (
+                      <div className="py-4">
+                        <div className="w-8 h-8 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto"></div>
+                        <p className="text-gray-300 mt-2">Uploading...</p>
+                      </div>
+                    ) : formData.logo_url ? (
+                      <div className="py-2">
+                        <img 
+                          src={formData.logo_url} 
+                          alt="Logo preview" 
+                          className="w-20 h-20 object-cover mx-auto rounded"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=Invalid+URL';
+                          }}
+                        />
+                        <div className="flex items-center justify-center mt-2 space-x-2">
+                          <Check className="w-4 h-4 text-green-400" />
+                          <p className="text-green-400 text-sm">Logo uploaded</p>
+                        </div>
+                        <p className="text-gray-400 text-xs mt-1">Drag & drop or click to replace</p>
+                      </div>
+                    ) : (
+                      <div className="py-4">
+                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-300">Drag & drop logo image here or click to browse</p>
+                        <p className="text-gray-400 text-xs mt-1">PNG, JPG, GIF up to 5MB</p>
+                      </div>
+                    )}
+                  </div>
+                  {errors.logo_url && (
+                    <p className="text-red-400 text-sm mt-1">{errors.logo_url}</p>
+                  )}
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-gray-400 text-xs">Or enter URL directly:</span>
                     <input
                       type="url"
                       value={formData.logo_url || ''}
                       onChange={(e) => handleInputChange('logo_url', e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="flex-1 ml-2 px-3 py-1 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
                       placeholder="https://example.com/logo.png"
                     />
                   </div>
-                  {formData.logo_url && (
-                    <div className="mt-2 flex items-center space-x-2">
-                      <img 
-                        src={formData.logo_url} 
-                        alt="Logo preview" 
-                        className="w-10 h-10 object-cover rounded"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=Invalid+URL';
-                        }}
-                      />
-                      <span className="text-gray-400 text-xs">Logo preview</span>
-                    </div>
-                  )}
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Banner Image URL
+                    Banner Image
                     <span className="text-xs text-gray-400 ml-2">(1200×400px recommended)</span>
                   </label>
-                  <div className="relative">
-                    <Image className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <div 
+                    {...getBannerRootProps()} 
+                    className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all ${
+                      isBannerDragActive 
+                        ? 'border-purple-500 bg-purple-500/10' 
+                        : 'border-white/20 hover:border-white/40 hover:bg-white/5'
+                    }`}
+                  >
+                    <input {...getBannerInputProps()} />
+                    {isUploading.banner ? (
+                      <div className="py-4">
+                        <div className="w-8 h-8 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto"></div>
+                        <p className="text-gray-300 mt-2">Uploading...</p>
+                      </div>
+                    ) : formData.banner_image_url ? (
+                      <div className="py-2">
+                        <img 
+                          src={formData.banner_image_url} 
+                          alt="Banner preview" 
+                          className="w-full h-32 object-cover mx-auto rounded"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1200x400?text=Invalid+URL';
+                          }}
+                        />
+                        <div className="flex items-center justify-center mt-2 space-x-2">
+                          <Check className="w-4 h-4 text-green-400" />
+                          <p className="text-green-400 text-sm">Banner uploaded</p>
+                        </div>
+                        <p className="text-gray-400 text-xs mt-1">Drag & drop or click to replace</p>
+                      </div>
+                    ) : (
+                      <div className="py-4">
+                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-300">Drag & drop banner image here or click to browse</p>
+                        <p className="text-gray-400 text-xs mt-1">PNG, JPG, GIF up to 5MB</p>
+                      </div>
+                    )}
+                  </div>
+                  {errors.banner_image_url && (
+                    <p className="text-red-400 text-sm mt-1">{errors.banner_image_url}</p>
+                  )}
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-gray-400 text-xs">Or enter URL directly:</span>
                     <input
                       type="url"
                       value={formData.banner_image_url || ''}
                       onChange={(e) => handleInputChange('banner_image_url', e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="flex-1 ml-2 px-3 py-1 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
                       placeholder="https://example.com/banner.jpg"
                     />
                   </div>
-                  {formData.banner_image_url && (
-                    <div className="mt-2">
-                      <img 
-                        src={formData.banner_image_url} 
-                        alt="Banner preview" 
-                        className="w-full h-20 object-cover rounded"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1200x400?text=Invalid+URL';
-                        }}
-                      />
-                      <span className="text-gray-400 text-xs">Banner preview</span>
-                    </div>
-                  )}
                 </div>
               </div>
               
@@ -440,7 +613,7 @@ export function EventDetailsModal({
                     <option value="published" className="bg-gray-800">Published</option>
                     <option value="archived" className="bg-gray-800">Archived</option>
                   </select>
-                </div>
+                You can upload images directly or use external URLs from services like Pexels or Unsplash.
               </div>
             </div>
           </div>
