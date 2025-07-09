@@ -173,10 +173,14 @@ export function EventsPage() {
   };
 
   const handleViewEvent = (eventId: number) => {
-    const event = [...events, ...userEvents].find(e => e.id === eventId);
+    // Combine all events to search through
+    const allEvents = [...events, ...userEvents];
+    const event = allEvents.find(e => e.id === eventId);
     console.log('View event:', eventId, 'Event found:', event);
+    
     if (event && event.event_slug) {
-      navigate(`/events/${event.event_slug}`);
+      // Open in new tab if it has a slug
+      window.open(`/events/${event.event_slug}`, '_blank');
     } else {
       console.log('No event slug found, navigating to settings');
       navigate(`/event-settings?event=${eventId}`);
@@ -267,7 +271,7 @@ export function EventsPage() {
               <EventCard 
                 key={event.id} 
                 event={event} 
-                onView={handleViewEvent}
+                onView={(id) => handleViewEvent(id)}
                 onEdit={isAdmin ? (id) => console.log('Edit event', id) : undefined}
                 onDelete={isAdmin ? (id) => console.log('Delete event', id) : undefined}
               />
