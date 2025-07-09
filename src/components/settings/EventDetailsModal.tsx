@@ -67,6 +67,44 @@ export function EventDetailsModal({
     banner: false
   });
 
+  // Setup dropzone for logo
+  const onDropLogo = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      handleImageUpload(acceptedFiles[0], 'logo');
+    }
+  }, [eventId]);
+  
+  const {
+    getRootProps: getLogoRootProps,
+    getInputProps: getLogoInputProps,
+    isDragActive: isLogoDragActive
+  } = useDropzone({
+    onDrop: onDropLogo,
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
+    },
+    maxFiles: 1
+  });
+  
+  // Setup dropzone for banner
+  const onDropBanner = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      handleImageUpload(acceptedFiles[0], 'banner');
+    }
+  }, [eventId]);
+  
+  const {
+    getRootProps: getBannerRootProps,
+    getInputProps: getBannerInputProps,
+    isDragActive: isBannerDragActive
+  } = useDropzone({
+    onDrop: onDropBanner,
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
+    },
+    maxFiles: 1
+  });
+
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -209,44 +247,6 @@ export function EventDetailsModal({
     }
   };
   
-  // Setup dropzone for logo
-  const onDropLogo = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
-      handleImageUpload(acceptedFiles[0], 'logo');
-    }
-  }, [eventId]);
-  
-  const {
-    getRootProps: getLogoRootProps,
-    getInputProps: getLogoInputProps,
-    isDragActive: isLogoDragActive
-  } = useDropzone({
-    onDrop: onDropLogo,
-    accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
-    },
-    maxFiles: 1
-  });
-  
-  // Setup dropzone for banner
-  const onDropBanner = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
-      handleImageUpload(acceptedFiles[0], 'banner');
-    }
-  }, [eventId]);
-  
-  const {
-    getRootProps: getBannerRootProps,
-    getInputProps: getBannerInputProps,
-    isDragActive: isBannerDragActive
-  } = useDropzone({
-    onDrop: onDropBanner,
-    accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
-    },
-    maxFiles: 1
-  });
-
   const generateSlug = () => {
     const slug = formData.name
       .toLowerCase()
