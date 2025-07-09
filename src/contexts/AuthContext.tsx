@@ -93,7 +93,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         if (data) {
           userData = data;
-          console.log('✅ User data from Supabase:', userData);
+          console.log('✅ DATABASE READ CONFIRMED: User data retrieved from database:', {
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            role: userData.role,
+            created_at: userData.created_at
+          });
         }
       }
 
@@ -132,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userMetadata = session.user.user_metadata || {};
       const initialUser: AuthUser = {
         id: session.user.id,
-        name: userMetadata.name || session.user.email?.split('@')[0] || 'User',
+        name: userMetadata.name || session.user.email?.split('@')[0] || 'Loading...',
         email: session.user.email || '',
         role: userMetadata.role || 'artist', 
         roles: userMetadata.roles || [userMetadata.role || 'artist'],

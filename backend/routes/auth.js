@@ -39,6 +39,7 @@ router.post('/register', async (req, res) => {
         data: {
           name,
           role
+          console.log('✅ Successfully fetched user data from database:', userData.name);
         }
       }
     });
@@ -89,9 +90,9 @@ router.post('/login', async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
-
-    if (!supabase) {
-      return res.status(500).json({ 
+          name: userData?.name || 'Unknown User', // Prioritize database name
+          email: data.user.email,
+          role: userData?.role || 'artist' // Prioritize database role
         error: 'Supabase not configured. Please check environment variables.' 
       });
     }
