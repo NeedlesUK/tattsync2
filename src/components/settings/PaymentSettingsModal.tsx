@@ -190,23 +190,6 @@ export function PaymentSettingsModal({
             <p className="text-gray-300 text-sm">{eventName}</p>
           </div>
           <button
-        
-        {/* Nested Modals */}
-        <PaymentPricingModal
-          eventId={eventId}
-          eventName={eventName}
-          isOpen={isPricingModalOpen}
-          onClose={() => setIsPricingModalOpen(false)}
-          onSave={handleSavePricing}
-        />
-        
-        <RegistrationRequirementsModal
-          eventId={eventId}
-          eventName={eventName}
-          isOpen={isRequirementsModalOpen}
-          onClose={() => setIsRequirementsModalOpen(false)}
-          onSave={handleSaveRequirements}
-        />
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
           >
@@ -448,6 +431,23 @@ export function PaymentSettingsModal({
           </button>
         </div>
       </div>
+      
+      {/* Nested Modals */}
+      <PaymentPricingModal
+        eventId={eventId}
+        eventName={eventName}
+        isOpen={isPricingModalOpen}
+        onClose={() => setIsPricingModalOpen(false)}
+        onSave={handleSavePricing}
+      />
+      
+      <RegistrationRequirementsModal
+        eventId={eventId}
+        eventName={eventName}
+        isOpen={isRequirementsModalOpen}
+        onClose={() => setIsRequirementsModalOpen(false)}
+        onSave={handleSaveRequirements}
+      />
     </div>
   );
 }
