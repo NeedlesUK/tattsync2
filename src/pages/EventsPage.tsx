@@ -168,7 +168,11 @@ export function EventsPage() {
       setFilteredUserEvents([]);
       setFilteredAllEvents([]);
     } finally {
-      setIsLoading(false);
+      if (event.event_slug) {
+        navigate(`/events/${event.event_slug}`);
+      } else {
+        navigate(`/event-settings?event=${eventId}`);
+      }
     }
   };
 
@@ -256,7 +260,7 @@ export function EventsPage() {
               <EventCard 
                 key={event.id} 
                 event={event} 
-                onView={(id) => navigate(`/events/${event.event_slug || id}`)}
+                onView={handleViewEvent}
                 onEdit={isAdmin ? (id) => console.log('Edit event', id) : undefined}
                 onDelete={isAdmin ? (id) => console.log('Delete event', id) : undefined}
               />

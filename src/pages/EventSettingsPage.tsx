@@ -1,31 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Info, Gift, Tag, Users, MessageCircle, Calendar, CreditCard, FileText, Bell, Globe, Shield } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext'; 
+import { useNavigate, useLocation } from 'react-router-dom';
 import { EventInformationModal } from '../components/settings/EventInformationModal';
 import { EventDealsModal } from '../components/settings/EventDealsModal';
 import { GlobalDealsModal } from '../components/settings/GlobalDealsModal';
 
 export function EventSettingsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [eventId, setEventId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isInformationModalOpen, setIsInformationModalOpen] = useState(false);
   const [isDealsModalOpen, setIsDealsModalOpen] = useState(false);
   const [isGlobalDealsModalOpen, setIsGlobalDealsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+  const [event, setEvent] = useState<any>({
+    id: 1,
+    name: 'Loading...',
+    status: 'draft',
+    start_date: '',
+    end_date: '',
+    location: '',
+    venue: ''
+  });
 
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
   // Check if user is event manager
   const isEventManager = user?.role === 'event_manager' || user?.role === 'event_admin';
 
-  // Mock event data
-  const event = {
-    id: 1,
-    name: 'Ink Fest 2024',
-    status: 'published',
-    start_date: '2024-03-15',
-    end_date: '2024-03-17',
-    location: 'Los Angeles, CA',
-    venue: 'LA Convention Center'
+  useEffect(() => {
+    // Get event ID from query params
+    const params = new URLSearchParams(location.search);
+    const eventIdParam = params.get('event');
+    
+    if (eventIdParam) {
+      setEventId(parseInt(eventIdParam));
+      fetchEventDetails(parseInt(eventIdParam));
+    } else {
+      setIsLoading(false);
+    }
+  }, [location.search]);
+  
+  const fetchEventDetails = async (id: number) => {
+    try {
+      setIsLoading(true);
+      
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .eq('id', id)
+          .single();
+          
+        if (error) {
+          console.error('Error fetching event:', error);
+          throw error;
+        }
+        
+        if (data) {
+          setEvent(data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching event details:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSaveInformation = async (information: any) => {
@@ -54,6 +97,34 @@ export function EventSettingsPage() {
       console.error('Error saving global deals:', error);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+  
+  // If no event ID was provided or event not found
+  if (!eventId) {
+    return (
+      <div className="min-h-screen pt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-white mb-4">No Event Selected</h1>
+            <p className="text-gray-300 mb-6">Please select an event to manage from the events page.</p>
+            <button
+              onClick={() => navigate('/events')}
+              className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
+            >
+              Go to Events
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const settingsSections = [
     {

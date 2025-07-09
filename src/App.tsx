@@ -44,13 +44,13 @@ function AppContent() {
             <Route path="/events" element={<EventsPage />} />
             <Route path="/events/:eventSlug" element={<EventApplicationPage />} />
             <Route path="/login" element={<RegistrationPage />} />
-           <Route path="/admin/users" element={user?.role === 'admin' || user?.email === 'admin@tattsync.com' ? <AdminUsersPage /> : <DashboardPage />} />
+            <Route path="/admin/users" element={user?.role === 'admin' || user?.email === 'admin@tattsync.com' ? <AdminUsersPage /> : <DashboardPage />} />
             <Route path="/register/:token" element={<RegistrationFormPage />} />
             <Route path="/registration-success" element={<RegistrationSuccessPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/deals" element={<DealsPage />} />
-            <Route path="/ticket-management" element={<TicketManagementPage />} />
+            <Route path="/ticket-management" element={user?.role === 'admin' || user?.role === 'event_manager' ? <TicketManagementPage /> : <DashboardPage />} />
             <Route path="/tickets" element={<ClientTicketsPage />} />
             <Route path="/consent-forms" element={<ConsentFormsPage />} />
             <Route path="/consent/:code" element={<ConsentScanPage />} />
@@ -61,7 +61,7 @@ function AppContent() {
             <Route path="/tattscore/admin" element={<TattScoreAdminPage />} />
             <Route path="/tattscore/judging" element={<TattScoreJudgingPage />} />
             <Route path="/studio/dashboard" element={<StudioDashboardPage />} />
-            <Route path="/event-settings" element={<EventSettingsPage />} />
+            <Route path="/event-settings" element={user?.role === 'admin' || user?.role === 'event_manager' ? <EventSettingsPage /> : <DashboardPage />} />
             <Route path="/attendee-profile" element={<AttendeeProfilePage />} />
             <Route path="*" element={<HomePage />} />
           </Routes>

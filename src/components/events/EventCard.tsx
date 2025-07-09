@@ -1,6 +1,7 @@
 import React from 'react';
 import { Calendar, MapPin, Edit, Eye, Trash2, Settings } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface EventProps {
   id: number;
@@ -31,6 +32,7 @@ interface EventCardProps {
 
 export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -57,6 +59,22 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
   // Check if user is the event manager for this event
   const isEventManager = user?.id === event.event_manager_id || 
                          user?.email === event.event_manager_email;
+                          
+  const handleManage = () => {
+    if (event.event_slug) {
+      navigate(`/event-settings?event=${event.id}`);
+    } else if (onView) {
+      onView(event.id);
+    }
+  };
+  
+  const handleView = () => {
+    if (event.event_slug) {
+      navigate(`/events/${event.event_slug}`);
+    } else if (onView) {
+      onView(event.id);
+    }
+  };
 
   return (
     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:bg-white/10 transition-all group">
@@ -91,8 +109,8 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
         {/* Actions */}
         <div className="flex space-x-2 mt-2">
           {isEventManager ? (
-            <button 
-              onClick={() => onView ? onView(event.id) : null}
+            <button
+              onClick={handleManage}
               className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1"
             >
               <Settings className="w-4 h-4" />
@@ -100,7 +118,7 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
             </button>
           ) : (
             <button 
-              onClick={() => onView ? onView(event.id) : null}
+              onClick={handleView}
               className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-1"
             >
               <Eye className="w-4 h-4" />
