@@ -21,6 +21,7 @@ export function AdminDashboardPage() {
   useEffect(() => {
     // Only allow admin access
     if (user?.role !== 'admin') {
+      console.log('Non-admin user detected, redirecting to dashboard');
       navigate('/dashboard');
       return;
     }
@@ -33,6 +34,7 @@ export function AdminDashboardPage() {
       setIsLoading(true);
       
       if (supabase) {
+        console.log('Fetching admin dashboard data...');
         // Fetch stats
         const [usersResult, eventsResult, applicationsResult, ticketsResult] = await Promise.all([
           supabase.from('users').select('count'),
@@ -41,11 +43,18 @@ export function AdminDashboardPage() {
           supabase.from('tickets').select('count')
         ]);
         
+        console.log('Stats results:', { 
+          users: usersResult, 
+          events: eventsResult, 
+          applications: applicationsResult, 
+          tickets: ticketsResult 
+        });
+        
         setStats({
-          totalUsers: usersResult.count || 0,
-          totalEvents: eventsResult.count || 0,
-          totalApplications: applicationsResult.count || 0,
-          totalTickets: ticketsResult.count || 0
+          totalUsers: usersResult.data?.[0]?.count || 0,
+          totalEvents: eventsResult.data?.[0]?.count || 0,
+          totalApplications: applicationsResult.data?.[0]?.count || 0,
+          totalTickets: ticketsResult.data?.[0]?.count || 0
         });
         
         // Fetch recent users

@@ -56,7 +56,16 @@ export function RegistrationPage() {
     console.log('Attempting login with email:', formData.email);
     
     try {
-      await login(formData.email, formData.password);
+      const success = await login(formData.email, formData.password);
+      console.log('Login result:', success);
+      
+      if (success) {
+        console.log('Login successful, navigating to dashboard');
+        // Force navigation to dashboard
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 500);
+      }
       // Navigation will be handled by useEffect when user state updates
     } catch (error: any) {
       console.error('Authentication error:', error);
