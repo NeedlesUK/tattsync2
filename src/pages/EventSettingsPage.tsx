@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Info, Gift, Tag, Users, MessageCircle, Calendar, CreditCard, FileText, Bell, Globe, Shield, Mail, Edit, Eye } from 'lucide-react';
+import { Settings, Info, Gift, Tag, Users, MessageCircle, Calendar, CreditCard, FileText, Bell, Globe, Shield, Mail, Edit, Eye, Ticket } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { EventInformationModal } from '../components/settings/EventInformationModal';
@@ -281,6 +281,12 @@ export function EventSettingsPage() {
           description: `Set up payment methods, pricing, and installment options${eventModules?.ticketing_enabled ? ' (Enabled)' : ' (Disabled)'}`,
           icon: CreditCard,
           action: () => setIsPaymentModalOpen(true)
+        },
+        {
+          title: 'Ticketing',
+          description: `Configure ticket types, pricing, and sales${eventModules?.ticketing_enabled ? ' (Enabled)' : ' (Disabled)'}`,
+          icon: Ticket,
+          action: () => console.log('Configure ticketing')
         },
         {
           title: 'Consent Forms',

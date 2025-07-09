@@ -36,7 +36,7 @@ export function Header() {
   // TattScore navigation items - filter based on role
   const tattscoreNavigation = [
     { name: 'TattScore Admin', href: '/tattscore/admin', roles: ['event_manager', 'event_admin'] },
-    { name: 'TattScore Judging', href: '/tattscore/judging', roles: ['event_manager', 'event_admin', 'judge'] },
+    { name: 'Leaderboard', href: '/tattscore/judging', roles: ['event_manager', 'event_admin', 'judge'] },
   ];
 
   // Studio navigation items
