@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Plus, Trash2, DollarSign, Percent, Calendar, Tag, Gift, Users, CheckCircle } from 'lucide-react';
+import { X, Save, Plus, Trash2, DollarSign, Percent, Calendar, Tag, Gift, Users, CheckCircle, Ticket } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -12,6 +12,7 @@ interface EventDeal {
   discount_code: string;
   provider: string;
   provider_logo_url: string;
+  ticket_holders: boolean;
   application_types: string[];
   valid_from: string;
   valid_until: string | null;
@@ -44,6 +45,7 @@ export function EventDealsModal({
       discount_code: 'INKFEST20',
       provider: 'InkMasters Supply Co.',
       provider_logo_url: 'https://images.pexels.com/photos/1337380/pexels-photo-1337380.jpeg?auto=compress&cs=tinysrgb&w=200',
+      ticket_holders: false,
       application_types: ['artist'],
       valid_from: new Date().toISOString(),
       valid_until: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
@@ -58,6 +60,7 @@ export function EventDealsModal({
       discount_code: 'TATTCON24',
       provider: 'Riverside Hotel',
       provider_logo_url: 'https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg?auto=compress&cs=tinysrgb&w=200',
+      ticket_holders: true,
       application_types: [],
       valid_from: new Date().toISOString(),
       valid_until: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
@@ -128,6 +131,7 @@ export function EventDealsModal({
       discount_value: null,
       discount_code: '',
       provider: '',
+      ticket_holders: false,
       provider_logo_url: '',
       application_types: [],
       valid_from: new Date().toISOString(),
@@ -629,13 +633,34 @@ export function EventDealsModal({
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Available to
+                      Visibility Settings
+                    </label>
+                    
+                    <div className="space-y-4 mb-4">
+                      <div>
+                        <label className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={editingDeal.ticket_holders}
+                            onChange={(e) => updateDeal(editingDeal.id, { ticket_holders: e.target.checked })}
+                            className="text-purple-600 focus:ring-purple-500 rounded"
+                          />
+                          <span className="text-gray-300">Visible to Ticket Holders</span>
+                        </label>
+                        <p className="text-gray-400 text-xs ml-6 mt-1">
+                          When enabled, this deal will be visible to all ticket holders
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Visible to Specific Attendee Types
                     </label>
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => updateDeal(editingDeal.id, { application_types: [] })}
                         className={`px-3 py-1 rounded-full text-sm ${
-                          editingDeal.application_types.length === 0
+                          editingDeal.application_types.length === 0 && !editingDeal.ticket_holders
                             ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
                             : 'bg-white/5 text-gray-300 border border-white/20 hover:bg-white/10'
                         }`}
@@ -658,9 +683,13 @@ export function EventDealsModal({
                       ))}
                     </div>
                     <p className="text-gray-400 text-xs mt-2">
-                      {editingDeal.application_types.length === 0
-                        ? 'This deal is available to all attendees'
-                        : `This deal is only available to selected attendee types`
+                      {editingDeal.application_types.length === 0 && !editingDeal.ticket_holders
+                        ? 'This deal is visible to everyone'
+                        : editingDeal.ticket_holders && editingDeal.application_types.length === 0
+                        ? 'This deal is visible to all ticket holders'
+                        : editingDeal.ticket_holders && editingDeal.application_types.length > 0
+                        ? `This deal is visible to ticket holders and selected attendee types`
+                        : `This deal is only visible to selected attendee types`
                       }
                     </p>
                   </div>
@@ -690,9 +719,9 @@ export function EventDealsModal({
                         <p className="text-gray-400 text-sm">{editingDeal.provider || 'Provider Name'}</p>
                       </div>
                     </div>
-                    
+
                     <p className="text-gray-300 text-sm mb-3">{editingDeal.description || 'Deal description will appear here'}</p>
-                    
+
                     <div className="flex items-center justify-between text-sm">
                       <span className={`px-2 py-1 rounded-full ${
                         editingDeal.discount_type === 'percentage'
@@ -708,10 +737,31 @@ export function EventDealsModal({
                           : 'Special offer'
                         }
                       </span>
-                      
+
                       {editingDeal.discount_code && (
                         <span className="bg-white/10 px-2 py-1 rounded text-white font-mono">
                           {editingDeal.discount_code}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {editingDeal.ticket_holders && (
+                        <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs flex items-center space-x-1">
+                          <Ticket className="w-3 h-3" />
+                          <span>Ticket Holders</span>
+                        </span>
+                      )}
+                      
+                      {editingDeal.application_types.map(type => (
+                        <span key={type} className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full text-xs">
+                          {applicationTypes.find(t => t.value === type)?.label || type}
+                        </span>
+                      ))}
+                      
+                      {editingDeal.application_types.length === 0 && !editingDeal.ticket_holders && (
+                        <span className="bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full text-xs">
+                          Everyone
                         </span>
                       )}
                     </div>

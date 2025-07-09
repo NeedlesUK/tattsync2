@@ -262,6 +262,7 @@ export function EventInformationModal({
   const applicationTypes = [
     { value: 'artist', label: 'Artists' },
     { value: 'piercer', label: 'Piercers' },
+    { value: 'public', label: 'Public' },
     { value: 'trader', label: 'Traders' },
     { value: 'caterer', label: 'Caterers' },
     { value: 'performer', label: 'Performers' },
@@ -533,59 +534,55 @@ export function EventInformationModal({
                     <div>
                       <label className="flex items-center space-x-2 cursor-pointer">
                         <input
-                          type="checkbox"
-                          checked={editingItem.ticket_holders}
-                          onChange={(e) => updateInformationItem(editingItem.id, { ticket_holders: e.target.checked })}
-                          className="text-purple-600 focus:ring-purple-500 rounded"
-                        />
-                        <span className="text-gray-300">Visible to Ticket Holders</span>
-                      </label>
-                      <p className="text-gray-400 text-xs ml-6 mt-1">
-                        When enabled, this information will be visible to all ticket holders
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Visible to Specific Attendee Types
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() => updateInformationItem(editingItem.id, { application_types: [] })}
-                          className={`px-3 py-1 rounded-full text-sm ${
-                            editingItem.application_types.length === 0 && !editingItem.ticket_holders
-                              ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                              : 'bg-white/5 text-gray-300 border border-white/20 hover:bg-white/10'
-                          }`}
-                        >
-                          Everyone
-                        </button>
-                        
-                        {applicationTypes.map(type => (
-                          <button
-                            key={type.value}
-                            onClick={() => handleApplicationTypeToggle(type.value)}
-                            className={`px-3 py-1 rounded-full text-sm ${
-                              editingItem.application_types.includes(type.value)
-                                ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                                : 'bg-white/5 text-gray-300 border border-white/20 hover:bg-white/10'
-                            }`}
-                          >
-                            {type.label}
-                          </button>
-                        ))}
-                      </div>
-                      <p className="text-gray-400 text-xs mt-2">
-                        {editingItem.application_types.length === 0 && !editingItem.ticket_holders
-                          ? 'This information is visible to everyone'
-                          : editingItem.ticket_holders && editingItem.application_types.length === 0
-                          ? 'This information is visible to all ticket holders'
-                          : editingItem.ticket_holders && editingItem.application_types.length > 0
-                          ? `This information is visible to ticket holders and selected attendee types`
-                          : `This information is only visible to selected attendee types`
-                        }
-                      </p>
-                    </div>
+                         type="checkbox"
+                         checked={editingItem.is_active}
+                         onChange={(e) => updateInformationItem(editingItem.id, { is_active: e.target.checked })}
+                         className="text-purple-600 focus:ring-purple-500 rounded"
+                       />
+                       <span className="text-gray-300">Active</span>
+                     </label>
+                     <p className="text-gray-400 text-xs ml-6 mt-1">
+                       When disabled, this information will not be visible to anyone
+                     </p>
+                   </div>
+                   
+                   <div>
+                     <label className="block text-sm font-medium text-gray-300 mb-2">
+                       Visible to Specific Attendee Types
+                     </label>
+                     <div className="flex flex-wrap gap-2">
+                       <button
+                         onClick={() => updateInformationItem(editingItem.id, { application_types: [] })}
+                         className={`px-3 py-1 rounded-full text-sm ${
+                           editingItem.application_types.length === 0
+                             ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                             : 'bg-white/5 text-gray-300 border border-white/20 hover:bg-white/10'
+                         }`}
+                       >
+                         Everyone
+                       </button>
+                       
+                       {applicationTypes.map(type => (
+                         <button
+                           key={type.value}
+                           onClick={() => handleApplicationTypeToggle(type.value)}
+                           className={`px-3 py-1 rounded-full text-sm ${
+                             editingItem.application_types.includes(type.value)
+                               ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                               : 'bg-white/5 text-gray-300 border border-white/20 hover:bg-white/10'
+                           }`}
+                         >
+                           {type.label}
+                         </button>
+                       ))}
+                     </div>
+                     <p className="text-gray-400 text-xs mt-2">
+                       {editingItem.application_types.length === 0
+                         ? 'This information is visible to everyone'
+                         : `This information is only visible to selected attendee types`
+                       }
+                     </p>
+                   </div>
                   </div>
                 </div>
               </div>
