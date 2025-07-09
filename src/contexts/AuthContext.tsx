@@ -133,12 +133,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateUserState = async (session: Session | null) => {
     if (session?.user) {
       console.log('Updating user state for:', session.user.email || 'unknown email', 'User ID:', session.user.id);
+      
+      try {
+        // Fetch user data from database first
+        const userData = await fetchUserData(session.user.id, session.user.email || '');
+        
+        // Only update if we got data from database
+        if (userData) {
+          const userObj: AuthUser = {
+            id: userData.id,
+            name: userData.name,
+            email: userData.email || session.user.email || '',
+            role: userData.role || 'artist', 
+            roles: userData.roles || [userData.role || 'artist'],
+            avatar: undefined
+          };
+          
+          console.log('DATABASE READ CONFIRMED: Setting user state with database data:', {
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            role: userData.role,
+            created_at: userData.created_at
+          });
+          
+          setUser(userObj);
+          setIsLoading(false);
+          return;
+        }
+      } catch (error: any) {
+        console.error('❌ Error fetching user data from database:', error);
+      }
 
       // Set user immediately with basic information from session
       const userMetadata = session.user.user_metadata || {};
       const initialUser: AuthUser = {
         id: session.user.id,
-        name: userMetadata.name || session.user.email?.split('@')[0] || 'Loading...',
+        name: 'Loading Database Data...',
         email: session.user.email || '',
         role: userMetadata.role || 'artist', 
         roles: userMetadata.roles || [userMetadata.role || 'artist'],
@@ -147,34 +178,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       setUser(initialUser);
       setIsLoading(false);
-      
-      // Set the authorization header for API requests
-      if (session?.access_token) {
-        api.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
-      }
-      
-      try {
-        const userData = await fetchUserData(session.user.id, session.user.email || '');
-        
-        // Only update if we got richer data
-        if (userData) {
-          const userObj: AuthUser = {
-          id: userData.id,
-          name: userData.name,
-          email: userData.email || session.user.email || '',
-          role: userData.role || 'artist', 
-          roles: userData.roles || [userData.role || 'artist'],
-          avatar: undefined
-          };
-          
-          console.log('User state updated with database data');
-          setUser(userObj);
-        }
-      } catch (error: any) {
-        console.error('❌ Error updating user state:', error);
-        // We already set the user with basic info, so just log the error
-        console.log('Using initial user state due to error fetching extended data');
-      }
     } else {
       setUser(null);
       // Clear authorization header when no user
@@ -241,10 +244,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     setIsLoading(true);
-    console.log('Login function called with email:', email);
+    console.log('Starting login process for:', email);
     
     try {
-      console.log('Starting login process for:', email);
+      console.log('Authenticating with Supabase for:', email);
       
       // Perform the login
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -261,20 +264,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('✅ Login successful for:', email);
       console.log('Session:', data.session);
       
-      // Set session immediately
-      // Set session immediately
+      // Set session
       setSession(data.session);
-      
-      // Set user immediately with basic info to prevent hanging
-      const userMetadata = data.user?.user_metadata || {};
-      const tempUser = {
-        id: data.user?.id || '',
-        name: userMetadata.name || data.user?.email?.split('@')[0] || 'User',
-        email: data.user?.email || '',
-        role: userMetadata.role || 'artist',
-        roles: [userMetadata.role || 'artist']
-      };
-      setUser(tempUser);
       
       // Update user state
       await updateUserState(data.session);
