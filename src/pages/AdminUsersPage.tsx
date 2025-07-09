@@ -46,9 +46,10 @@ export function AdminUsersPage() {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      console.log('Fetching users from Supabase...', supabase);
+      console.log('Fetching users from Supabase...');
 
       if (supabase) {
+        console.log('Supabase client available, fetching users...');
         const { data, error } = await supabase
           .from('users')
           .select('*')
@@ -56,16 +57,17 @@ export function AdminUsersPage() {
           .limit(100);
 
         if (error) {
-          console.error('Error fetching users:', error);
+          console.error('Error fetching users:', error.message, 'Status:', error.code);
           setUsers([]);
           setFilteredUsers([]);
           return;
         }
 
-        console.log('Fetched users:', data, 'users found');
+        console.log('Fetched users:', data?.length, 'users found');
         if (data) {
           setUsers(data);
           setFilteredUsers(data);
+          console.log('Users state updated with fetched data');
         } else {
           console.log('No users found or empty data array');
           setUsers([]);
@@ -111,7 +113,11 @@ export function AdminUsersPage() {
   const refreshUsers = () => {
     console.log('Manually refreshing users list...');
     setIsLoading(true);
-    fetchUsers();
+    
+    // Use setTimeout to ensure the loading state is visible
+    setTimeout(() => {
+      fetchUsers();
+    }, 100);
   };
 
   const handleChangePassword = (selectedUser: any) => {
@@ -139,9 +145,10 @@ export function AdminUsersPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin">
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-4"></div>
+          <p className="text-white">Loading users...</p>
         </div>
-        <p className="ml-4 text-white">Loading users...</p>
       </div>
     );
   }
@@ -157,10 +164,20 @@ export function AdminUsersPage() {
           <div className="flex space-x-3">
             <button
               onClick={refreshUsers}
-              className="mt-4 sm:mt-0 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+              className="mt-4 sm:mt-0 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
             >
-              <Users className="w-5 h-5" />
-              <span>Refresh Users</span>
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Loading...</span>
+                </>
+              ) : (
+                <>
+                  <Users className="w-5 h-5" />
+                  <span>Refresh Users</span>
+                </>
+              )}
             </button>
           </div>
         </div>

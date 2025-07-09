@@ -89,17 +89,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserData = async (userId: string, userEmail: string) => {
     try {
       console.log('🔍 Fetching user data for:', userEmail);
-      console.log('🔍 User ID:', userId);
+      console.log('🔍 User ID:', userId, 'Supabase client:', !!supabase);
       let userData: any = null;
       
       // Use Supabase directly to get user data
       if (supabase) {
-        console.log('📊 Querying database for user data with ID:', userId);
+        console.log('📊 Querying database for user data with ID:', userId, 'at', new Date().toISOString());
         
         // Query user data with proper error handling
         const { data, error, status } = await supabase
           .from('users')
-          .select('*')
+          .select('id, name, email, role, created_at, updated_at')
           .eq('id', userId)
           .single();
         
@@ -110,12 +110,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (error.code === 'PGRST116' || error.message?.includes('No rows returned')) {
             console.log('📝 User not found in database, creating new user record...');
             
-            // Create user record in database
+            // Create user record in database with admin role if email is admin@tattsync.com
             const newUserData = {
               id: userId,
               name: userEmail?.split('@')[0] || 'User',
               email: userEmail || '',
-              role: 'artist',
+              role: userEmail === 'admin@tattsync.com' ? 'admin' : 'artist',
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             };
@@ -184,11 +184,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Fallback to basic user info if API call fails
       return {
-        id: userId,
-        name: userEmail?.split('@')[0] || 'User',
-        email: userEmail || '',
-        role: 'artist' as const,
-        roles: ['artist']
+        id: userId || '',
+        name: userEmail?.split('@')[0] || 'User', 
+        email: userEmail || '', 
+        role: userEmail === 'admin@tattsync.com' ? 'admin' : 'artist',
+        roles: userEmail === 'admin@tattsync.com' ? ['admin'] : ['artist']
       };
     }
   };
@@ -202,10 +202,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userMetadata = session.user.user_metadata || {};
       const initialUser: AuthUser = {
         id: session.user.id,
-        name: userMetadata.name || session.user.email?.split('@')[0] || 'User', 
+        name: userMetadata.name || session.user.email?.split('@')[0] || 'User',
         email: session.user.email || '',
-        role: session.user.email === 'admin@tattsync.com' ? 'admin' : (userMetadata.role || 'artist'), 
-        roles: session.user.email === 'admin@tattsync.com' ? ['admin'] : (userMetadata.roles || [userMetadata.role || 'artist']), 
+        role: session.user.email === 'admin@tattsync.com' ? 'admin' : (userMetadata.role || 'artist'),
+        roles: session.user.email === 'admin@tattsync.com' ? ['admin'] : (userMetadata.roles || [userMetadata.role || 'artist']),
         avatar: userMetadata.avatar || ''
       };
       
@@ -222,16 +222,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         console.log('🔍 Fetching complete user data from database...');
         
-        const userData = await fetchUserData(session.user.id, session.user.email || '');
+        // Add a timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('TIMEOUT_ERROR')), 5000)
+        );
+
+        const userData = await Promise.race([
+          fetchUserData(session.user.id, session.user.email || ''),
+          timeoutPromise
+        ]);
         
         // Only update if we got valid data from database
         if (userData && userData.id) {
           const userObj: AuthUser = {
             id: userData.id,
-            name: userData.name || session.user.email?.split('@')[0] || 'User', 
-            email: userData.email || session.user.email || '', 
-            role: session.user.email === 'admin@tattsync.com' ? 'admin' : (userData.role || 'artist'), 
-            roles: session.user.email === 'admin@tattsync.com' ? ['admin'] : (userData.roles || [userData.role || 'artist']), 
+            name: userData.name || session.user.email?.split('@')[0] || 'User',
+            email: userData.email || session.user.email || '',
+            role: session.user.email === 'admin@tattsync.com' ? 'admin' : (userData.role || 'artist'),
+            roles: session.user.email === 'admin@tattsync.com' ? ['admin'] : (userData.roles || [userData.role || 'artist']),
             avatar: initialUser.avatar || userMetadata.avatar || ''
           };
           
