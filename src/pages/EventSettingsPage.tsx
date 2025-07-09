@@ -104,6 +104,8 @@ export function EventSettingsPage() {
           .update({
             name: eventData.name,
             description: eventData.description,
+            logo_url: eventData.logo_url,
+            banner_image_url: eventData.banner_image_url,
             event_slug: eventData.event_slug,
             start_date: eventData.start_date,
             end_date: eventData.end_date,

@@ -460,71 +460,122 @@ export function EventApplicationPage() {
         <div className="mb-8">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center text-purple-400 hover:text-purple-300 mb-4 transition-colors"
+            className="flex items-center text-purple-400 hover:text-purple-300 mb-6 transition-colors"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back to Events
           </button>
           
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-8">
-            <h1 className="text-3xl font-bold text-white mb-4">{event.name}</h1>
-            <p className="text-gray-300 mb-6">{event.description}</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="flex items-center text-gray-300">
-                <Calendar className="w-5 h-5 mr-3" />
-                <div>
-                  <p className="font-medium">{formatDate(event.start_date)}</p>
-                  <p className="text-sm">to {formatDate(event.end_date)}</p>
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden">
+            {/* Banner Image */}
+            <div className="relative">
+              {event.banner_image_url ? (
+                <div className="w-full h-64 relative">
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/90"></div>
+                  <img 
+                    src={event.banner_image_url} 
+                    alt={event.name} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 p-8">
+                    <div className="flex items-center space-x-4">
+                      {event.logo_url && (
+                        <img 
+                          src={event.logo_url} 
+                          alt={`${event.name} logo`} 
+                          className="w-20 h-20 rounded-lg object-cover border-2 border-white/20"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      )}
+                      <div>
+                        <h1 className="text-3xl font-bold text-white">{event.name}</h1>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center text-gray-300">
-                <MapPin className="w-5 h-5 mr-3" />
-                <div>
-                  <p className="font-medium">{event.venue}</p>
-                  <p className="text-sm">{event.location}</p>
+              ) : (
+                <div className="p-8">
+                  <div className="flex items-center space-x-4">
+                    {event.logo_url && (
+                      <img 
+                        src={event.logo_url} 
+                        alt={`${event.name} logo`} 
+                        className="w-16 h-16 rounded-lg object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    )}
+                    <h1 className="text-3xl font-bold text-white">{event.name}</h1>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center text-gray-300">
-                <Users className="w-5 h-5 mr-3" />
-                <div>
-                  <p className="font-medium">Open Registration</p>
-                  <p className="text-sm">Multiple categories</p>
-                </div>
-              </div>
+              )}
             </div>
+            
+            <div className="p-8">
+              <p className="text-gray-300 mb-6">{event.description}</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="flex items-center text-gray-300">
+                  <Calendar className="w-5 h-5 mr-3" />
+                  <div>
+                    <p className="font-medium">{formatDate(event.start_date)}</p>
+                    <p className="text-sm">to {formatDate(event.end_date)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center text-gray-300">
+                  <MapPin className="w-5 h-5 mr-3" />
+                  <div>
+                    <p className="font-medium">{event.venue}</p>
+                    <p className="text-sm">{event.location}</p>
+                  </div>
+                </div>
+                <div className="flex items-center text-gray-300">
+                  <Users className="w-5 h-5 mr-3" />
+                  <div>
+                    <p className="font-medium">Open Registration</p>
+                    <p className="text-sm">Multiple categories</p>
+                  </div>
+                </div>
+              </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-wrap gap-4">
-              {event.applications_enabled && (
-                <button
-                  onClick={() => setActiveTab('apply')}
-                  className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all flex items-center space-x-2"
-                >
-                  <FileText className="w-5 h-5" />
-                  <span>Apply to Participate</span>
-                </button>
-              )}
-              
-              {event.ticketing_enabled && (
-                <button
-                  onClick={() => setActiveTab('tickets')}
-                  className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-medium transition-all flex items-center space-x-2"
-                >
-                  <CreditCard className="w-5 h-5" />
-                  <span>Buy Tickets</span>
-                </button>
-              )}
-              
-              {event.consent_forms_enabled && (
-                <button
-                  onClick={() => setActiveTab('consent')}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all flex items-center space-x-2"
-                >
-                  <Heart className="w-5 h-5" />
-                  <span>Consent Forms</span>
-                </button>
-              )}
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-4">
+                {event.applications_enabled && (
+                  <button
+                    onClick={() => setActiveTab('apply')}
+                    className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all flex items-center space-x-2"
+                  >
+                    <FileText className="w-5 h-5" />
+                    <span>Apply to Participate</span>
+                  </button>
+                )}
+                
+                {event.ticketing_enabled && (
+                  <button
+                    onClick={() => setActiveTab('tickets')}
+                    className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-medium transition-all flex items-center space-x-2"
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    <span>Buy Tickets</span>
+                  </button>
+                )}
+                
+                {event.consent_forms_enabled && (
+                  <button
+                    onClick={() => setActiveTab('consent')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all flex items-center space-x-2"
+                  >
+                    <Heart className="w-5 h-5" />
+                    <span>Consent Forms</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

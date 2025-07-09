@@ -65,7 +65,9 @@ export function EventsPage() {
             location,
             venue,
             status,
-            event_manager_id
+            event_manager_id,
+            logo_url,
+            banner_image_url
           `)
           .order('created_at', { ascending: false });
 
@@ -84,8 +86,9 @@ export function EventsPage() {
             venue: event.venue || '',
             date: event.start_date,
             endDate: event.end_date,
+            logo_url: event.logo_url || null,
+            banner_image_url: event.banner_image_url || null,
             status: event.status,
-            image: 'https://images.pexels.com/photos/955938/pexels-photo-955938.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
             event_manager_id: event.event_manager_id
             
           }));

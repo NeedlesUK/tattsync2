@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Calendar, MapPin, Users, Globe, AlertCircle } from 'lucide-react';
+import { X, Save, Calendar, MapPin, Users, Globe, AlertCircle, Image, Upload } from 'lucide-react';
 
 interface EventDetailsModalProps {
   eventId: number;
@@ -20,6 +20,8 @@ export interface EventData {
   venue: string;
   max_attendees: number;
   status: 'draft' | 'published' | 'archived';
+  logo_url?: string;
+  banner_image_url?: string;
 }
 
 export function EventDetailsModal({
@@ -40,6 +42,8 @@ export function EventDetailsModal({
     venue: '',
     max_attendees: 500,
     status: 'draft'
+    logo_url: '',
+    banner_image_url: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -324,6 +328,80 @@ export function EventDetailsModal({
                     <p className="text-red-400 text-sm mt-1">{errors.venue}</p>
                   )}
                 </div>
+              </div>
+            </div>
+            
+            {/* Images */}
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-4">Event Images</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Logo URL
+                    <span className="text-xs text-gray-400 ml-2">(Square image recommended)</span>
+                  </label>
+                  <div className="relative">
+                    <Image className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="url"
+                      value={formData.logo_url || ''}
+                      onChange={(e) => handleInputChange('logo_url', e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="https://example.com/logo.png"
+                    />
+                  </div>
+                  {formData.logo_url && (
+                    <div className="mt-2 flex items-center space-x-2">
+                      <img 
+                        src={formData.logo_url} 
+                        alt="Logo preview" 
+                        className="w-10 h-10 object-cover rounded"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=Invalid+URL';
+                        }}
+                      />
+                      <span className="text-gray-400 text-xs">Logo preview</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Banner Image URL
+                    <span className="text-xs text-gray-400 ml-2">(1200×400px recommended)</span>
+                  </label>
+                  <div className="relative">
+                    <Image className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="url"
+                      value={formData.banner_image_url || ''}
+                      onChange={(e) => handleInputChange('banner_image_url', e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="https://example.com/banner.jpg"
+                    />
+                  </div>
+                  {formData.banner_image_url && (
+                    <div className="mt-2">
+                      <img 
+                        src={formData.banner_image_url} 
+                        alt="Banner preview" 
+                        className="w-full h-20 object-cover rounded"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/1200x400?text=Invalid+URL';
+                        }}
+                      />
+                      <span className="text-gray-400 text-xs">Banner preview</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-3 mt-2">
+                <p className="text-blue-300 text-sm">
+                  For best results, use a square image for the logo and a wide rectangular image for the banner.
+                  You can use services like Pexels, Unsplash, or your own hosted images.
+                </p>
               </div>
             </div>
 
