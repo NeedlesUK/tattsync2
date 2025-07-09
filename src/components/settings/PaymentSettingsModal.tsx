@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, CreditCard, Banknote, Building, Check, AlertCircle, DollarSign } from 'lucide-react';
+import { X, Save, CreditCard, Banknote, Building, Check, AlertCircle, DollarSign, FileText } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { PaymentPricingModal } from './PaymentPricingModal';
 import { RegistrationRequirementsModal } from './RegistrationRequirementsModal';
@@ -67,20 +67,17 @@ export function PaymentSettingsModal({
         const { data, error } = await supabase
           .from('payment_settings')
           .select('*')
-          .eq('event_id', eventId)
-          .single();
+          .eq('event_id', eventId);
           
         if (error) {
-          if (error.code === 'PGRST116') {
-            // No settings found, use defaults
-            console.log('No payment settings found, using defaults');
-          } else {
-            console.error('Error fetching payment settings:', error);
-            setError('Failed to load payment settings');
-          }
-        } else if (data) {
+          console.error('Error fetching payment settings:', error);
+          setError('Failed to load payment settings');
+        } else if (data && data.length > 0) {
           console.log('Payment settings loaded:', data);
-          setSettings(data);
+          setSettings(data[0]);
+        } else {
+          // No settings found, use defaults
+          console.log('No payment settings found, using defaults');
         }
       }
     } catch (err) {
