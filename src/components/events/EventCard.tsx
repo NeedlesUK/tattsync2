@@ -84,7 +84,7 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
   return (
     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:bg-white/10 transition-all group">
       <div className="relative">
-        {event.banner_image_url ? (
+        {event.banner_image_url && (
           <img
             src={event.banner_image_url}
             alt={event.name}
@@ -93,7 +93,8 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
               (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/955938/pexels-photo-955938.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2';
             }}
           />
-        ) : (
+        )}
+        {!event.banner_image_url && (
           <img
             src="https://images.pexels.com/photos/955938/pexels-photo-955938.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
             alt={event.name}
@@ -108,29 +109,37 @@ export function EventCard({ event, onView, onEdit, onDelete }: EventCardProps) {
       </div>
       
       <div className="p-6">
-        <h3 className="text-xl font-semibold text-white mb-2">{event.name}</h3>
-          <div className="flex items-start space-x-3">
-            {event.logo_url && (
-              <img 
-                src={event.logo_url} 
-                alt={`${event.name} logo`}
-                className="w-12 h-12 rounded-lg object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            )}
-            <div>
-              <h3 className="text-xl font-semibold text-white mb-2">{event.name}</h3>
-              <p className="text-gray-300 text-sm mb-4 line-clamp-2">{event.description}</p>
-            </div>
+        <div className="flex items-start space-x-3 mb-4">
+          {event.logo_url && (
+            <img 
+              src={event.logo_url} 
+              alt={`${event.name} logo`}
+              className="w-12 h-12 rounded-lg object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          )}
+          <div className="flex-1">
+            <h3 className="text-xl font-semibold text-white mb-2">{event.name}</h3>
+            <p className="text-gray-300 text-sm line-clamp-2">{event.description}</p>
+          </div>
+        </div>
+        
+        <div className="space-y-2 mb-4">
           <div className="flex items-center text-gray-300 text-sm">
-            <Calendar className="w-4 h-4 mr-2" />
-            {formatDate(event.date || event.start_date || new Date().toISOString())} - {formatDate(event.endDate || event.end_date || new Date().toISOString())}
+            <Calendar className="w-4 h-4 mr-2 flex-shrink-0" />
+            <span>
+              {formatDate(event.date || event.start_date || new Date().toISOString())}
+              {event.endDate || event.end_date ? 
+                <> - {formatDate(event.endDate || event.end_date)}</> : 
+                null
+              }
+            </span>
           </div>
           <div className="flex items-center text-gray-300 text-sm">
-            <MapPin className="w-4 h-4 mr-2" />
-            {event.venue}, {event.location}
+            <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
+            <span>{event.venue}, {event.location}</span>
           </div>
         </div>
 
