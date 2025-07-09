@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // Use a timeout to prevent hanging if the database query takes too long
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database query timeout')), 5000)
+          setTimeout(() => reject(new Error('Database query timeout')), 15000)
         );
         
         const userData = await Promise.race([
