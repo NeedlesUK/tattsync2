@@ -629,7 +629,7 @@ export function TicketSettingsModal({
                         {ticketTypes
                           .filter((type, typeIndex) => type.is_active && typeIndex !== index)
                           .map((type, typeIndex) => {
-                          // Find the original index in the full array
+                          // Find the original index in the full array for temporary IDs
                           const originalIndex = ticketTypes.findIndex(ticket => ticket === type);
                           return (
                             <option key={typeIndex} value={type.id || `temp_${originalIndex}`} className="bg-gray-800">
