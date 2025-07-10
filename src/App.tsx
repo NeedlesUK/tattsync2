@@ -29,6 +29,8 @@ import { TattScoreJudgingPage } from './pages/TattScoreJudgingPage';
 import { StudioDashboardPage } from './pages/StudioDashboardPage';
 import { EventSettingsPage } from './pages/EventSettingsPage';
 import { AttendeeProfilePage } from './pages/AttendeeProfilePage';
+import { AdminConsentTemplatesPage } from './pages/AdminConsentTemplatesPage';
+import { AdminAftercareTemplatesPage } from './pages/AdminAftercareTemplatesPage';
 
 function AppContent() {
   const { user } = useAuth();
@@ -62,6 +64,8 @@ function AppContent() {
             <Route path="/tattscore/judging" element={<TattScoreJudgingPage />} />
             <Route path="/studio/dashboard" element={<StudioDashboardPage />} />
             <Route path="/event-settings" element={user?.role === 'admin' || user?.role === 'event_manager' ? <EventSettingsPage /> : <DashboardPage />} />
+            <Route path="/admin/consent-templates" element={user?.role === 'admin' ? <AdminConsentTemplatesPage /> : <DashboardPage />} />
+            <Route path="/admin/aftercare-templates" element={user?.role === 'admin' ? <AdminAftercareTemplatesPage /> : <DashboardPage />} />
             <Route path="/attendee-profile" element={<AttendeeProfilePage />} />
             <Route path="*" element={<HomePage />} />
           </Routes>
