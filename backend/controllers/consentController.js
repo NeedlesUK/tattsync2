@@ -242,8 +242,153 @@ const getConsentFormByQrCode = async (req, res) => {
   }
 };
 
+// Get consent form template by ID
+const getConsentFormTemplate = async (req, res) => {
+  try {
+    const { supabase } = database;
+    if (!supabase) {
+      return res.status(500).json({ error: 'Database connection not available' });
+    }
+    
+    const { id } = req.params;
+    
+    const { data, error } = await supabase
+      .from('consent_form_templates')
+      .select(`
+        id,
+        title,
+        description,
+        requires_medical_history,
+        is_active,
+        consent_form_template_sections (
+          id,
+          title,
+          description,
+          display_order,
+          is_required,
+          consent_form_template_fields (
+            id,
+            field_name,
+            field_type,
+            field_label,
+            field_placeholder,
+            field_options,
+            is_required,
+            display_order
+          )
+        )
+      `)
+      .eq('id', id)
+      .single();
+      
+    if (error) {
+      console.error('Error fetching consent form template:', error);
+      return res.status(404).json({ error: 'Consent form template not found' });
+    }
+    
+    // Sort sections by display_order
+    if (data.consent_form_template_sections) {
+      data.consent_form_template_sections.sort((a, b) => a.display_order - b.display_order);
+      
+      // Sort fields within each section by display_order
+      data.consent_form_template_sections.forEach(section => {
+        if (section.consent_form_template_fields) {
+          section.consent_form_template_fields.sort((a, b) => a.display_order - b.display_order);
+        }
+      });
+    }
+    
+    return res.json(data);
+  } catch (error) {
+    console.error('Error in getConsentFormTemplate:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get all consent form templates
+const getAllConsentFormTemplates = async (req, res) => {
+  try {
+    const { supabase } = database;
+    if (!supabase) {
+      return res.status(500).json({ error: 'Database connection not available' });
+    }
+    
+    const { data, error } = await supabase
+      .from('consent_form_templates')
+      .select('id, title, description, requires_medical_history, is_active, created_at, updated_at')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching consent form templates:', error);
+      return res.status(500).json({ error: 'Failed to fetch consent form templates' });
+    }
+    
+    return res.json(data || []);
+  } catch (error) {
+    console.error('Error in getAllConsentFormTemplates:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get all aftercare templates
+const getAllAftercareTemplates = async (req, res) => {
+  try {
+    const { supabase } = database;
+    if (!supabase) {
+      return res.status(500).json({ error: 'Database connection not available' });
+    }
+    
+    const { data, error } = await supabase
+      .from('aftercare_templates')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching aftercare templates:', error);
+      return res.status(500).json({ error: 'Failed to fetch aftercare templates' });
+    }
+    
+    return res.json(data || []);
+  } catch (error) {
+    console.error('Error in getAllAftercareTemplates:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get aftercare template by ID
+const getAftercareTemplate = async (req, res) => {
+  try {
+    const { supabase } = database;
+    if (!supabase) {
+      return res.status(500).json({ error: 'Database connection not available' });
+    }
+    
+    const { id } = req.params;
+    
+    const { data, error } = await supabase
+      .from('aftercare_templates')
+      .select('*')
+      .eq('id', id)
+      .single();
+      
+    if (error) {
+      console.error('Error fetching aftercare template:', error);
+      return res.status(404).json({ error: 'Aftercare template not found' });
+    }
+    
+    return res.json(data);
+  } catch (error) {
+    console.error('Error in getAftercareTemplate:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
   submitConsentForm,
   getConsentForm,
-  getConsentFormByQrCode
+  getConsentFormByQrCode,
+  getConsentFormTemplate,
+  getAllConsentFormTemplates,
+  getAllAftercareTemplates,
+  getAftercareTemplate
 };

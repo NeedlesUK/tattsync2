@@ -130,7 +130,87 @@ const sendConsentConfirmationEmail = async (clientEmail, clientName, artistName,
   }
 };
 
+// Get aftercare template from database
+const getAftercareTemplate = async (procedureType, supabase) => {
+  try {
+    if (!supabase) {
+      throw new Error('Database connection not available');
+    }
+    
+    const { data, error } = await supabase
+      .from('aftercare_templates')
+      .select('*')
+      .eq('procedure_type', procedureType)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+      
+    if (error) {
+      console.error('Error fetching aftercare template:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error getting aftercare template:', error);
+    return null;
+  }
+};
+
+// Send aftercare email using template from database
+const sendAftercareEmailWithTemplate = async (clientEmail, clientName, artistName, artistEmail, procedureType, supabase) => {
+  try {
+    const transporter = await createTransporter();
+    
+    // Get template from database
+    const template = await getAftercareTemplate(procedureType, supabase);
+    
+    // Prepare template data
+    const templateData = {
+      clientName,
+      clientEmail,
+      artistName,
+      artistEmail,
+      currentYear: new Date().getFullYear()
+    };
+    
+    // Process HTML content with Handlebars
+    let htmlContent;
+    if (template && template.html_content) {
+      // Compile the template from the database
+      const compiledTemplate = handlebars.compile(template.html_content);
+      htmlContent = compiledTemplate(templateData);
+    } else {
+      // Fallback to default template
+      htmlContent = compileTemplate('aftercareEmail', templateData);
+    }
+    
+    // Send email
+    const info = await transporter.sendMail({
+      from: `"TattSync" <${process.env.EMAIL_FROM || 'noreply@tattsync.com'}>`,
+      to: clientEmail,
+      subject: template ? template.title : 'Your Aftercare Guide',
+      html: htmlContent
+    });
+    
+    console.log('Aftercare email sent successfully');
+    
+    // For development, log the URL where the message can be previewed
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
+    }
+    
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending aftercare email with template:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   sendAftercareEmail,
-  sendConsentConfirmationEmail
+  sendConsentConfirmationEmail,
+  sendAftercareEmailWithTemplate,
+  getAftercareTemplate
 };
