@@ -14,8 +14,9 @@ export interface MessagingSettings {
   id?: number;
   event_id: number;
   messaging_enabled: boolean;
-  allow_attendee_messaging: boolean;
-  allow_artist_messaging: boolean;
+  allow_client_messaging: boolean;
+  allow_participant_messaging: boolean;
+  allow_group_messaging: boolean;
   moderation_enabled: boolean;
   notification_emails_enabled: boolean;
   auto_response_enabled: boolean;
@@ -33,8 +34,9 @@ export function MessagingSettingsModal({
   const [settings, setSettings] = useState<MessagingSettings>({
     event_id: eventId,
     messaging_enabled: true,
-    allow_attendee_messaging: true,
-    allow_artist_messaging: true,
+    allow_client_messaging: false, // Clients can never message each other
+    allow_participant_messaging: true, // Artists, piercers, etc. can message each other
+    allow_group_messaging: true, // Event managers can message groups
     moderation_enabled: false,
     notification_emails_enabled: true,
     auto_response_enabled: false,
@@ -89,8 +91,9 @@ export function MessagingSettingsModal({
           setSettings({
             event_id: eventId,
             messaging_enabled: data.messaging_enabled !== undefined ? data.messaging_enabled : true,
-            allow_attendee_messaging: data.allow_attendee_messaging !== undefined ? data.allow_attendee_messaging : true,
-            allow_artist_messaging: data.allow_artist_messaging !== undefined ? data.allow_artist_messaging : true,
+            allow_client_messaging: false, // Clients can never message each other
+            allow_participant_messaging: data.allow_participant_messaging !== undefined ? data.allow_participant_messaging : true,
+            allow_group_messaging: data.allow_group_messaging !== undefined ? data.allow_group_messaging : true,
             moderation_enabled: data.moderation_enabled !== undefined ? data.moderation_enabled : false,
             notification_emails_enabled: data.notification_emails_enabled !== undefined ? data.notification_emails_enabled : true,
             auto_response_enabled: data.auto_response_enabled !== undefined ? data.auto_response_enabled : false,
@@ -103,8 +106,9 @@ export function MessagingSettingsModal({
         setSettings({
           event_id: eventId,
           messaging_enabled: true,
-          allow_attendee_messaging: true,
-          allow_artist_messaging: true,
+          allow_client_messaging: false, // Clients can never message each other
+          allow_participant_messaging: true, // Artists, piercers, etc. can message each other
+          allow_group_messaging: true, // Event managers can message groups
           moderation_enabled: false,
           notification_emails_enabled: true,
           auto_response_enabled: false,
@@ -133,8 +137,9 @@ export function MessagingSettingsModal({
           .upsert({
             event_id: eventId,
             messaging_enabled: settings.messaging_enabled,
-            allow_attendee_messaging: settings.allow_attendee_messaging,
-            allow_artist_messaging: settings.allow_artist_messaging,
+            allow_client_messaging: false, // Always false, clients can never message each other
+            allow_participant_messaging: settings.allow_participant_messaging,
+            allow_group_messaging: settings.allow_group_messaging,
             moderation_enabled: settings.moderation_enabled,
             notification_emails_enabled: settings.notification_emails_enabled,
             auto_response_enabled: settings.auto_response_enabled,
@@ -242,30 +247,52 @@ export function MessagingSettingsModal({
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <Users className="w-5 h-5 text-gray-400" />
-                          <span className="text-gray-300">Allow Attendee-to-Attendee Messaging</span>
+                          <Users className="w-5 h-5 text-red-400" />
+                          <span className="text-gray-300">Allow Client-to-Client Messaging</span>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
+                        <label className="relative inline-flex items-center cursor-not-allowed opacity-50">
                           <input 
                             type="checkbox" 
-                            checked={settings.allow_attendee_messaging} 
-                            onChange={(e) => setSettings(prev => ({ ...prev, allow_attendee_messaging: e.target.checked }))}
+                            checked={false}
+                            disabled={true}
                             className="sr-only peer"
                           />
                           <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                         </label>
                       </div>
                       
+                      <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3 mb-4">
+                        <p className="text-red-300 text-sm">
+                          Client-to-client messaging is permanently disabled to prevent potential abuse.
+                        </p>
+                      </div>
+                      
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <Users className="w-5 h-5 text-gray-400" />
-                          <span className="text-gray-300">Allow Artist-to-Artist Messaging</span>
+                          <span className="text-gray-300">Allow Participant-to-Participant Messaging</span>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input 
                             type="checkbox" 
-                            checked={settings.allow_artist_messaging} 
-                            onChange={(e) => setSettings(prev => ({ ...prev, allow_artist_messaging: e.target.checked }))}
+                            checked={settings.allow_participant_messaging} 
+                            onChange={(e) => setSettings(prev => ({ ...prev, allow_participant_messaging: e.target.checked }))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Users className="w-5 h-5 text-gray-400" />
+                          <span className="text-gray-300">Allow Group Messaging</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={settings.allow_group_messaging} 
+                            onChange={(e) => setSettings(prev => ({ ...prev, allow_group_messaging: e.target.checked }))}
                             className="sr-only peer"
                           />
                           <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
@@ -288,6 +315,16 @@ export function MessagingSettingsModal({
                         </label>
                       </div>
                     </div>
+                  </div>
+                  
+                  <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4 mt-4">
+                    <h4 className="text-blue-300 font-medium mb-2">Messaging Permissions Explained</h4>
+                    <ul className="text-blue-200 text-sm space-y-2">
+                      <li>• <strong>Client-to-Client Messaging:</strong> Always disabled to prevent potential abuse.</li>
+                      <li>• <strong>Participant-to-Participant Messaging:</strong> Allows artists, piercers, and other event participants to message each other.</li>
+                      <li>• <strong>Group Messaging:</strong> Allows event managers to send messages to groups (e.g., all artists, all piercers).</li>
+                      <li>• <strong>Message Moderation:</strong> When enabled, messages are reviewed before being delivered.</li>
+                    </ul>
                   </div>
                   
                   <div className="bg-white/5 rounded-lg p-6 border border-white/10">
