@@ -218,7 +218,7 @@ export function TicketDiscountModal({
                       {discount.discount_type === 'percentage' ? (
                         <Percent className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       ) : (
-                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">£</div>
                       )}
                       <input
                         type="number"
