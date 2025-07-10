@@ -43,6 +43,7 @@
                        className="text-purple-600 focus:ring-purple-500 rounded mr-2"
                      />
 -                    <span className="text-gray-400 text-xs">Affects venue capacity</span>
-+                    <span className="text-gray-400 text-xs">Counts toward daily capacity limit</span>
++                    
+}<span className="text-gray-400 text-xs">Counts toward daily capacity limit</span>
                    </div>
                  </div>
