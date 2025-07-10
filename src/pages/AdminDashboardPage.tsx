@@ -66,6 +66,14 @@ export function Header() {
   const navigationItems = getNavigation();
 
   // For Master Admin, direct links instead of dropdowns
+  const adminDirectLinks = [
+    { name: 'TattScore', href: '/tattscore/admin' },
+    { name: 'Studio', href: '/studio/dashboard' },
+    { name: 'Tickets', href: '/ticket-management' },
+  ];
+
+  // TattScore navigation items - filter based on role
+  const tattscoreNavigation = [
     { name: 'TattScore Admin', href: '/tattscore/admin', roles: ['event_manager', 'event_admin'] },
     { name: 'Leaderboard', href: '/tattscore/judging', roles: ['event_manager', 'event_admin', 'judge'] }
   ];
@@ -84,6 +92,7 @@ export function Header() {
       case 'event_manager':
         return { label: 'Event Manager', icon: Calendar, color: 'bg-teal-600' };
       case 'studio_manager':
+        return { label: 'Studio Manager', icon: Building, color: 'bg-blue-600' };
       case 'judge':
         return { label: 'Judge', icon: Award, color: 'bg-orange-600' };
       default:
@@ -294,7 +303,7 @@ export function Header() {
           </div>
         </div>
 
-        {/* Stats Cards - Two rows of two cards */}
+        {isMenuOpen && user && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navigationItems.map((item) => {
@@ -384,3 +393,7 @@ export function Header() {
             </div>
           </div>
         )}
+      </div>
+    </header>
+  );
+}
