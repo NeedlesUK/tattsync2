@@ -1,9 +1,14 @@
-const { supabase } = require('../config/database');
+const database = require('../config/database');
 const emailService = require('../services/emailService');
 
 // Submit a new consent form
 const submitConsentForm = async (req, res) => {
   try {
+    const { supabase } = database;
+    if (!supabase) {
+      return res.status(500).json({ error: 'Database connection not available' });
+    }
+    
     const { 
       form_id, 
       event_id, 
@@ -110,6 +115,11 @@ const submitConsentForm = async (req, res) => {
 // Get consent form by ID
 const getConsentForm = async (req, res) => {
   try {
+    const { supabase } = database;
+    if (!supabase) {
+      return res.status(500).json({ error: 'Database connection not available' });
+    }
+    
     const { id } = req.params;
     
     const { data, error } = await supabase
@@ -169,6 +179,11 @@ const getConsentForm = async (req, res) => {
 // Get consent form by QR code
 const getConsentFormByQrCode = async (req, res) => {
   try {
+    const { supabase } = database;
+    if (!supabase) {
+      return res.status(500).json({ error: 'Database connection not available' });
+    }
+    
     const { code } = req.params;
     
     // Get QR code data

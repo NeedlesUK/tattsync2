@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const dotenv = require('dotenv');
 const path = require('path');
 const consentRoutes = require('./routes/consentRoutes');
+const database = require('./config/database');
 
 // Load environment variables
 dotenv.config();
@@ -24,6 +25,7 @@ app.use('/api/consent', consentRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
+    database: database.supabase ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     version: '1.0.0'
