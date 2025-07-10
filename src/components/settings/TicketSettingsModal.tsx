@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Plus, Trash2, Calendar, DollarSign, Users, Clock, AlertCircle, Check, Link, Calendar as CalendarIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 
 interface TicketSettingsModalProps {
   eventId: number;
@@ -44,6 +45,7 @@ export function TicketSettingsModal({
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [hasLoadedData, setHasLoadedData] = useState(false);
+  const [stayOpenAfterSave, setStayOpenAfterSave] = useState(false);
   const [stayOpenAfterSave, setStayOpenAfterSave] = useState(false);
   const [eventDates, setEventDates] = useState<string[]>([]);
   const [venueCapacity, setVenueCapacity] = useState<number>(1000);
@@ -377,6 +379,9 @@ export function TicketSettingsModal({
       if (!stayOpenAfterSave) {
         // Close the modal after a short delay to show success message
         setTimeout(() => {
+          onClose();
+        }, 1500);
+      }
           onClose();
         }, 1500);
       }
@@ -764,6 +769,17 @@ export function TicketSettingsModal({
             <span className="text-gray-300 text-sm">Stay open after saving</span>
           </label>
           
+        <div className="flex items-center justify-between p-6 border-t border-white/10 bg-white/5">
+          <label className="flex items-center space-x-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={stayOpenAfterSave}
+              onChange={(e) => setStayOpenAfterSave(e.target.checked)}
+              className="text-purple-600 focus:ring-purple-500 rounded"
+            />
+            <span className="text-gray-300 text-sm">Stay open after saving</span>
+          </label>
+          
           <div className="flex space-x-4">
           <button
             onClick={onClose}
@@ -779,6 +795,7 @@ export function TicketSettingsModal({
             <Save className="w-5 h-5" />
             <span>{isSaving ? 'Saving...' : 'Save Ticket Types'}</span>
           </button>
+          </div>
           </div>
         </div>
       </div>
