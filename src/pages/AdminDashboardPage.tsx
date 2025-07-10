@@ -5,8 +5,6 @@ import { useAuth } from '../../contexts/AuthContext';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isGlobalDealsModalOpen, setIsGlobalDealsModalOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
   const [userRoles, setUserRoles] = useState<string[]>([]);
@@ -68,14 +66,6 @@ export function Header() {
   const navigationItems = getNavigation();
 
   // For Master Admin, direct links instead of dropdowns
-  const adminDirectLinks = [
-    { name: 'TattScore', href: '/tattscore/admin' },
-    { name: 'Studio', href: '/studio/dashboard' },
-    { name: 'Tickets', href: '/ticket-management' },
-  ];
-
-  // TattScore navigation items - filter based on role
-  const tattscoreNavigation = [
     { name: 'TattScore Admin', href: '/tattscore/admin', roles: ['event_manager', 'event_admin'] },
     { name: 'Leaderboard', href: '/tattscore/judging', roles: ['event_manager', 'event_admin', 'judge'] }
   ];
@@ -94,7 +84,6 @@ export function Header() {
       case 'event_manager':
         return { label: 'Event Manager', icon: Calendar, color: 'bg-teal-600' };
       case 'studio_manager':
-        return { label: 'Studio Manager', icon: Building, color: 'bg-blue-600' };
       case 'judge':
         return { label: 'Judge', icon: Award, color: 'bg-orange-600' };
       default:
@@ -297,7 +286,7 @@ export function Header() {
             )}
 
             <button
-              onClick={() => setIsCreateModalOpen(true)}
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden text-gray-300 hover:text-white"
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -305,7 +294,7 @@ export function Header() {
           </div>
         </div>
 
-        {isMenuOpen && user && (
+        {/* Stats Cards - Two rows of two cards */}
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navigationItems.map((item) => {
@@ -395,7 +384,3 @@ export function Header() {
             </div>
           </div>
         )}
-      </div>
-    </header>
-  );
-}
