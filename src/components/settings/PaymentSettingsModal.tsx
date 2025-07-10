@@ -381,11 +381,11 @@ export function PaymentSettingsModal({
                     
                     <div>
                         <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">£</div>
+                       <label className="flex items-center space-x-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={settings.allow_installments}
                           onChange={(e) => handleInputChange('allow_installments', e.target.checked)}
-                          placeholder="Your secret key"
                         />
                         <span className="text-gray-300">Allow installment payments (3 or 6 monthly payments)</span>
                       </label>
