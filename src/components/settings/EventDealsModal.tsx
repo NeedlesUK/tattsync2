@@ -282,6 +282,7 @@ export function EventDealsModal({
     { value: 'piercer', label: 'Piercers' },
     { value: 'trader', label: 'Traders' },
     { value: 'caterer', label: 'Caterers' },
+    { value: 'caterer', label: 'Caterers' },
     { value: 'performer', label: 'Performers' },
     { value: 'volunteer', label: 'Volunteers' }
   ];

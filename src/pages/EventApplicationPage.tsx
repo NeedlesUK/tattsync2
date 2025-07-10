@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, MapPin, Users, FileText, CreditCard, Heart, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, FileText, CreditCard, Heart, CheckCircle, Globe } from 'lucide-react';
 import { DynamicApplicationForm } from '../components/forms/DynamicApplicationForm';
 import { AccountSelectionPrompt } from '../components/forms/AccountSelectionPrompt';
 import { ProfileUpdatePrompt } from '../components/forms/ProfileUpdatePrompt';
@@ -45,6 +45,12 @@ interface EventDetails {
   ticketing_enabled: boolean;
   consent_forms_enabled: boolean;
   application_types: string[];
+  banner_image_url?: string;
+  logo_url?: string;
+  website?: string;
+  instagram?: string;
+  facebook?: string;
+  tiktok?: string;
 }
 
 interface ProfileData {
