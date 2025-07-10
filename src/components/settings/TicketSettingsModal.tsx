@@ -163,20 +163,6 @@ export function TicketSettingsModal({
                 dependency_ticket_id: null,
                 max_per_order: 4,
                 min_age: 18
-              },
-              {
-                name: 'Weekend Pass',
-                description: 'Full access to all days of the event',
-                price_gbp: 65.00,
-                capacity: 300,
-                start_date: new Date().toISOString().split('T')[0],
-                end_date: eventData.start_date.split('T')[0],
-                is_active: true,
-                affects_capacity: true,
-                applicable_days: [],
-                dependency_ticket_id: null,
-                max_per_order: 4,
-                min_age: 18
               }
             ];
             
