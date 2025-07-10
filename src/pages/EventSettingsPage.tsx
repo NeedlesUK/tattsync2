@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { TicketSettingsModal } from '../components/settings/TicketSettingsModal';
 import { EventInformationModal } from '../components/settings/EventInformationModal';
 import { EventDealsModal } from '../components/settings/EventDealsModal'; 
+import { ConsentFormSettingsModal } from '../components/settings/ConsentFormSettingsModal';
 import { GlobalDealsModal } from '../components/settings/GlobalDealsModal';
 import { ApplicationSettingsModal } from '../components/settings/ApplicationSettingsModal';
 import { PaymentSettingsModal } from '../components/settings/PaymentSettingsModal';
@@ -22,6 +23,7 @@ export function EventSettingsPage() {
   const [isEventDetailsModalOpen, setIsEventDetailsModalOpen] = useState(false); 
   const [isTicketTypeModalOpen, setIsTicketTypeModalOpen] = useState(false);
   const [isDealsModalOpen, setIsDealsModalOpen] = useState(false);
+  const [isConsentFormModalOpen, setIsConsentFormModalOpen] = useState(false);
   const [isGlobalDealsModalOpen, setIsGlobalDealsModalOpen] = useState(false);
   const [isApplicationSettingsModalOpen, setIsApplicationSettingsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
@@ -191,6 +193,15 @@ export function EventSettingsPage() {
     }
   };
 
+  const handleSaveConsentFormSettings = async (settings: any) => {
+    try {
+      // In real implementation, save to API
+      console.log('Saving consent form settings:', settings);
+    } catch (error) {
+      console.error('Error saving consent form settings:', error);
+    }
+  };
+
   const handleSaveDeals = async (deals: any) => {
     try {
       // In real implementation, save to API
@@ -323,7 +334,7 @@ export function EventSettingsPage() {
           title: 'Consent Forms',
           description: `Configure medical history and consent form functionality`,
           icon: Heart,
-          action: () => console.log('Configure consent forms')
+          action: () => setIsConsentFormModalOpen(true)
         },
         {
           title: 'TattScore',
@@ -546,6 +557,14 @@ export function EventSettingsPage() {
           isOpen={isPaymentModalOpen}
           onClose={() => setIsPaymentModalOpen(false)}
           onSave={handleSavePaymentSettings}
+        />
+        
+        <ConsentFormSettingsModal
+          eventId={eventId || 0}
+          eventName={event.name}
+          isOpen={isConsentFormModalOpen}
+          onClose={() => setIsConsentFormModalOpen(false)}
+          onSave={handleSaveConsentFormSettings}
         />
         
         <EventDetailsModal
