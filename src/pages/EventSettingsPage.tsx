@@ -283,37 +283,37 @@ export function EventSettingsPage() {
       items: [
         {
           title: 'Applications',
-          description: `Configure application types, forms, and approval process${eventModules?.applications_enabled ? ' (Enabled)' : ' (Disabled)'}`,
+          description: `Configure application types, forms, and approval process`,
           icon: FileText,
           action: () => setIsApplicationSettingsModalOpen(true)
         },
         {
           title: 'Payments',
-          description: `Set up payment methods, pricing, and installment options${eventModules?.ticketing_enabled ? ' (Enabled)' : ' (Disabled)'}`,
+          description: `Set up payment methods, pricing, and installment options`,
           icon: CreditCard,
           action: () => setIsPaymentModalOpen(true)
         },
         {
           title: 'Ticketing',
-          description: `Configure ticket types, pricing, and sales${eventModules?.ticketing_enabled ? ' (Enabled)' : ' (Disabled)'}`,
+          description: `Configure ticket types, pricing, and sales`,
           icon: Ticket,
           action: () => navigate('/ticket-management')
         },
         {
           title: 'Consent Forms',
-          description: `Configure medical history and consent form functionality${eventModules?.consent_forms_enabled ? ' (Enabled)' : ' (Disabled)'}`,
+          description: `Configure medical history and consent form functionality`,
           icon: Heart,
           action: () => console.log('Configure consent forms')
         },
         {
           title: 'TattScore',
-          description: `Configure competition judging system${eventModules?.tattscore_enabled ? ' (Enabled)' : ' (Disabled)'}`,
+          description: `Configure competition judging system`,
           icon: Award,
           action: () => console.log('Configure TattScore')
         },
         {
           title: 'Messaging',
-          description: `Configure messaging settings and templates${eventModules?.messaging_enabled ? ' (Enabled)' : ' (Disabled)'}`,
+          description: `Configure messaging settings and templates`,
           icon: MessageCircle,
           action: () => console.log('Configure messaging')
         }
@@ -459,6 +459,11 @@ export function EventSettingsPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {section.items.map((item, index) => (
+                  // Only show modules that are enabled by the Master Admin
+                  (section.id === 'modules' && 
+                   ((item.title === 'Ticketing' && !eventModules?.ticketing_enabled) ||
+                    (item.title === 'Consent Forms' && !eventModules?.consent_forms_enabled) ||
+                    (item.title === 'TattScore' && !eventModules?.tattscore_enabled))) ? null : (
                     <div 
                       key={index} 
                       className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all cursor-pointer"
@@ -472,6 +477,7 @@ export function EventSettingsPage() {
                       </div>
                       <p className="text-gray-300 text-sm">{item.description}</p>
                     </div>
+                  )
                   ))}
                 </div>
               </div>
