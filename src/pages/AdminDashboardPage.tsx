@@ -37,11 +37,11 @@ export function AdminDashboardPage() {
 
       if (supabase) {
         console.log('Fetching admin dashboard data...');
-        // Fetch stats
+        // Fetch stats with proper count queries
         const [usersResult, eventsResult, studiosResult] = await Promise.all([
-          supabase.from('users').select('count'),
-          supabase.from('events').select('count'),
-          supabase.from('studios').select('count')
+          supabase.from('users').select('*', { count: 'exact', head: true }),
+          supabase.from('events').select('*', { count: 'exact', head: true }),
+          supabase.from('studios').select('*', { count: 'exact', head: true })
         ]);
 
         console.log('Stats results:', { 
@@ -51,9 +51,9 @@ export function AdminDashboardPage() {
         });
 
         setStats({
-          totalUsers: usersResult.data?.[0]?.count || 0,
-          totalEvents: eventsResult.data?.[0]?.count || 0,
-          totalStudios: studiosResult.data?.[0]?.count || 0
+          totalUsers: usersResult.count || 0,
+          totalEvents: eventsResult.count || 0,
+          totalStudios: studiosResult.count || 0
         });
 
         // Fetch recent users
