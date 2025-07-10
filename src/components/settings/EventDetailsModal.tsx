@@ -710,7 +710,7 @@ export function EventDetailsModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Maximum Attendees
+                    Maximum Ticket Holders Per Day
                   </label>
                   <div className="relative">
                     <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -722,6 +722,9 @@ export function EventDetailsModal({
                       className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                       placeholder="500"
                     />
+                    <p className="text-gray-400 text-xs mt-1">
+                      This limits the number of tickets that can be sold for each day of the event.
+                    </p>
                   </div>
                 </div>
                 
