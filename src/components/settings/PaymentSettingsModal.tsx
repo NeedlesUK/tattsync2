@@ -359,7 +359,7 @@ export function PaymentSettingsModal({
                         value={settings.stripe_publishable_key}
                         onChange={(e) => handleInputChange('stripe_publishable_key', e.target.value)}
                         className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="pk_test_..."
+                        placeholder="pk_live_..."
                       />
                     </div>
                     
@@ -372,7 +372,7 @@ export function PaymentSettingsModal({
                         value={settings.stripe_secret_key}
                         onChange={(e) => handleInputChange('stripe_secret_key', e.target.value)}
                         className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="sk_test_..."
+                        placeholder="sk_live_..."
                       />
                       <p className="text-gray-400 text-xs mt-1">
                         Your secret key is stored securely and never shared with clients.
