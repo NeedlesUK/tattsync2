@@ -258,24 +258,9 @@ export function Header() {
                   )}
                   <div className="hidden sm:block">
                     <span className="block font-medium">{user.name || 'User'}</span>
-                    {(roleDisplay || user.email === 'admin@tattsync.com' || user.role === 'admin') && (
-                      <div className="flex items-center space-x-1">
-                        {user.email === 'admin@tattsync.com' || user.role === 'admin' ? (
-                          <>
-                            <Crown className="w-3 h-3 text-purple-400" />
-                            <span className="text-xs text-purple-400">Master Admin</span>
-                          </>
-                        ) : (
-                          <>
-                            {roleDisplay && <roleDisplay.icon className="w-3 h-3" />}
-                            <span className="text-xs text-gray-400">{roleDisplay?.label}</span>
-                          </>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </Link>
-                {user && (roleDisplay || user.email === 'admin@tattsync.com' || user.role === 'admin') && (
+                {user && (user.email === 'admin@tattsync.com' || user.role === 'admin') && (
                   <span className={`${roleDisplay?.color || 'bg-purple-600'} text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1`}>
                     {user.role === 'admin' || user.email === 'admin@tattsync.com' ? (
                       <>
