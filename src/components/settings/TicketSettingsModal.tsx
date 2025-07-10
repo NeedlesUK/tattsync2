@@ -59,14 +59,18 @@ export function TicketSettingsModal({
   const fetchEventDetails = async () => {
     try {
       // Generate dates between start and end date
-      console.log('Event dates:', { eventStartDate, eventEndDate });
+      console.log('Event dates from props:', { eventStartDate, eventEndDate });
       
       if (eventStartDate && eventEndDate && 
           eventStartDate !== 'undefined' && eventEndDate !== 'undefined' &&
           !isNaN(new Date(eventStartDate).getTime()) && !isNaN(new Date(eventEndDate).getTime())) {
         
-        const start = new Date(eventStartDate);
-        const end = new Date(eventEndDate);
+        // Parse dates properly - ensure we're working with the date part only
+        const startStr = typeof eventStartDate === 'string' ? eventStartDate.split('T')[0] : eventStartDate;
+        const endStr = typeof eventEndDate === 'string' ? eventEndDate.split('T')[0] : eventEndDate;
+        
+        const start = new Date(startStr);
+        const end = new Date(endStr);
         const dates: string[] = [];
         
         let currentDate = new Date(start);
@@ -79,15 +83,58 @@ export function TicketSettingsModal({
         console.log('Generated dates:', dates);
       } else {
         console.warn('Invalid event dates:', { eventStartDate, eventEndDate });
-        // Fallback to current date range if dates are invalid
-        const today = new Date();
-        const tomorrow = new Date();
-        tomorrow.setDate(today.getDate() + 1);
+
+        // Try to fetch actual event dates from the database if available
+        if (supabase) {
+          console.log('Attempting to fetch event dates from database for event ID:', eventId);
+          const { data, error } = await supabase
+            .from('events')
+            .select('start_date, end_date')
+            .eq('id', eventId)
+            .single();
+
+          if (!error && data) {
+            console.log('Fetched event dates from DB:', data);
+            // Ensure we have valid dates
+            if (data.start_date && data.end_date) {
+              const start = new Date(data.start_date);
+              const end = new Date(data.end_date);
+              
+              if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                const dates: string[] = [];
+                
+                let currentDate = new Date(start);
+                while (currentDate <= end) {
+                  dates.push(currentDate.toISOString().split('T')[0]);
+                  currentDate.setDate(currentDate.getDate() + 1);
+                }
+                
+                setEventDates(dates);
+                console.log('Generated dates from DB:', dates);
+                return;
+              }
+            }
+          } else {
+            console.warn('Failed to fetch event dates from DB:', error);
+          }
+        }
+
+        // If we still don't have dates, use a fallback
+        console.warn('Using fallback dates');
         
-        setEventDates([
-          today.toISOString().split('T')[0],
-          tomorrow.toISOString().split('T')[0]
-        ]);
+        // Create a range of dates for the next few days
+        const fallbackDates = [];
+        const today = new Date();
+        
+        // Add 3 days starting from today
+        for (let i = 0; i < 3; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() + i);
+          fallbackDates.push(date.toISOString().split('T')[0]);
+        }
+        
+        setEventDates(fallbackDates);
+        console.log('Using fallback dates:', fallbackDates);
       }
       
       // Get venue capacity
@@ -104,6 +151,16 @@ export function TicketSettingsModal({
       }
     } catch (error) {
       console.error('Error fetching event details:', error);
+      
+      // If all else fails, set some default dates
+      const fallbackDates = [];
+      const today = new Date();
+      for (let i = 0; i < 3; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+        fallbackDates.push(date.toISOString().split('T')[0]);
+      }
+      setEventDates(fallbackDates);
     }
   };
 
