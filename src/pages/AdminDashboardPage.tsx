@@ -5,6 +5,8 @@ import { useAuth } from '../../contexts/AuthContext';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isGlobalDealsModalOpen, setIsGlobalDealsModalOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
   const [userRoles, setUserRoles] = useState<string[]>([]);
@@ -387,89 +389,13 @@ export function Header() {
                     >
                       {item.name}
                     </Link>
-        {isCreateModalOpen && (
+                  ))}
                 </>
-            isOpen={isCreateModalOpen}
-            onClose={() => setIsCreateModalOpen(false)}
-          />
-        )}
-        
-        {/* Global Deals Modal */}
-        {isGlobalDealsModalOpen && (
-          <GlobalDealsModal
-            isOpen={isGlobalDealsModalOpen}
-            onClose={() => setIsGlobalDealsModalOpen(false)}
-            onSave={(data) => {
-              console.log('Saving global deals:', data);
-              setIsGlobalDealsModalOpen(false);
-            }}
+              )}
+            </div>
           </div>
         )}
       </div>
     </header>
   );
 }
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-12">
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="bg-purple-600 hover:bg-purple-700 text-white p-6 rounded-xl flex flex-col items-center justify-center transition-colors"
-          >
-            <Calendar className="w-8 h-8 mb-2" />
-            <span className="text-sm font-medium">Event Modules</span>
-          </button>
-          
-          <button
-            onClick={() => navigate('/admin/users')}
-            className="bg-slate-700 hover:bg-slate-600 text-white p-6 rounded-xl flex flex-col items-center justify-center transition-colors"
-          >
-            <Users className="w-8 h-8 mb-2" />
-            <span className="text-sm font-medium">User Management</span>
-          </button>
-          
-          <button
-            className="bg-slate-700 hover:bg-slate-600 text-white p-6 rounded-xl flex flex-col items-center justify-center transition-colors"
-          >
-            <FileIcon className="w-8 h-8 mb-2" />
-            <span className="text-sm font-medium">Statistics</span>
-          </button>
-          
-          <button
-            className="bg-slate-700 hover:bg-slate-600 text-white p-6 rounded-xl flex flex-col items-center justify-center transition-colors"
-          >
-            <Settings className="w-8 h-8 mb-2" />
-            <span className="text-sm font-medium">System Status</span>
-          </button>
-          
-          <button
-            onClick={() => setIsGlobalDealsModalOpen(true)}
-            className="bg-teal-600 hover:bg-teal-700 text-white p-6 rounded-xl flex flex-col items-center justify-center transition-colors"
-          >
-            <Gift className="w-8 h-8 mb-2" />
-            <span className="text-sm font-medium">Global Deals</span>
-          </button>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-          <button
-            onClick={() => navigate('/admin/consent-templates')}
-            className="bg-slate-700 hover:bg-slate-600 text-white p-6 rounded-xl flex flex-col items-center justify-center transition-colors"
-          >
-            <Heart className="w-8 h-8 mb-2" />
-            <span className="text-sm font-medium">Consent Form Templates</span>
-          </button>
-          
-          <button
-            onClick={() => navigate('/admin/aftercare-templates')}
-            className="bg-slate-700 hover:bg-slate-600 text-white p-6 rounded-xl flex flex-col items-center justify-center transition-colors"
-          >
-            <FileIcon className="w-8 h-8 mb-2" />
-            <span className="text-sm font-medium">Aftercare Templates</span>
-          </button>
-          
-          <button
-            className="bg-slate-700 hover:bg-slate-600 text-white p-6 rounded-xl flex flex-col items-center justify-center transition-colors"
-          >
-            <Shield className="w-8 h-8 mb-2" />
-            <span className="text-sm font-medium">Master Admin Controls</span>
-          </button>
-        </div>
