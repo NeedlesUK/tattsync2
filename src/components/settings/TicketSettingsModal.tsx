@@ -45,7 +45,6 @@ export function TicketSettingsModal({
   const [isSaving, setIsSaving] = useState(false);
   const [hasLoadedData, setHasLoadedData] = useState(false);
   const [stayOpenAfterSave, setStayOpenAfterSave] = useState(false);
-  const [stayOpenAfterSave, setStayOpenAfterSave] = useState(false);
   const [eventDates, setEventDates] = useState<string[]>([]);
   const [venueCapacity, setVenueCapacity] = useState<number>(1000);
   const [error, setError] = useState<string | null>(null);
