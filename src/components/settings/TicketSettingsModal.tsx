@@ -293,9 +293,9 @@ export function TicketSettingsModal({
         if (type.dependency_ticket_id) {
           const dependencyExists = ticketTypes.some(t => 
             // Check if the dependency ID matches either the actual ID or the temporary ID
-            ((t.id && t.id.toString() === type.dependency_ticket_id) || 
+            ((t.id && String(t.id) === String(type.dependency_ticket_id)) || 
              // Find the original index of the ticket in the array
-             (`temp_${ticketTypes.findIndex(ticket => ticket === t)}` === type.dependency_ticket_id)) && 
+             (`temp_${ticketTypes.findIndex(ticket => ticket === t)}` === String(type.dependency_ticket_id))) && 
             // Make sure the dependency ticket is active
             t.is_active
           );
@@ -629,8 +629,8 @@ export function TicketSettingsModal({
                         {ticketTypes
                           .filter((type, typeIndex) => type.is_active && typeIndex !== index)
                           .map((type, typeIndex) => {
-                          // Find the original index in the full array, not just the filtered array
-                          const originalIndex = ticketTypes.findIndex(t => t === type);
+                          // Find the original index in the full array
+                          const originalIndex = ticketTypes.findIndex(ticket => ticket === type);
                           return (
                             <option key={typeIndex} value={type.id || `temp_${originalIndex}`} className="bg-gray-800">
                               {type.name}
