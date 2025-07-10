@@ -275,6 +275,7 @@ export function TicketSettingsModal({
         ...ticketToDuplicate,
         // Don't set id for duplicated tickets - let database assign it
         id: undefined,
+        id: undefined,
         name: `${ticketToDuplicate.name} (Copy)`,
         // Reset any dependencies to avoid circular references
         dependency_ticket_id: null
@@ -287,6 +288,16 @@ export function TicketSettingsModal({
     // Validate ticket types
     if (ticketTypes.some(type => !type.name)) {
       setError('All ticket types must have a name');
+      return false;
+    }
+    
+    // Validate capacities against event max attendees per day
+    const totalCapacityPerDay = ticketTypes
+      .filter(type => type.affects_capacity)
+      .reduce((sum, type) => sum + (type.capacity || 0), 0);
+      
+    if (venueCapacity && totalCapacityPerDay > venueCapacity) {
+      setError(`Total ticket capacity (${totalCapacityPerDay}) exceeds the maximum daily capacity (${venueCapacity})`);
       return false;
     }
     
@@ -370,8 +381,16 @@ export function TicketSettingsModal({
             
             console.log('Updated ticket type:', data);
           }
+              .select();
+              
+            if (updateError) {
+              console.error('Error updating ticket type:', updateError);
+              throw updateError;
+            }
+            
+            console.log('Updated ticket type:', data);
+          }
         }
-        
         setSuccess('Ticket types saved successfully');
         
         // Call the onSave callback
@@ -646,6 +665,7 @@ export function TicketSettingsModal({
                               : [...currentDays, date];
                             
                             updateTicketType(ticketType.id!, { applicable_days: newDays });
+                            updateTicketType(ticketType.id, { applicable_days: newDays });
                             updateTicketType(ticketType.id, { applicable_days: newDays });
                           }}
                           className={`px-3 py-1 rounded-full text-sm transition-colors ${
