@@ -96,7 +96,12 @@ export function TicketSettingsModal({
       
       // If we have initial data, use it
       if (initialTicketTypes && initialTicketTypes.length > 0) {
-        setTicketTypes(initialTicketTypes);
+       // Ensure applicable_days is an array for each ticket type
+       const processedTicketTypes = initialTicketTypes.map(ticket => ({
+         ...ticket,
+         applicable_days: Array.isArray(ticket.applicable_days) ? ticket.applicable_days : []
+       }));
+        setTicketTypes(processedTicketTypes);
         setHasLoadedData(true);
         return;
       }
@@ -113,7 +118,12 @@ export function TicketSettingsModal({
           console.error('Error fetching ticket types:', error);
           setTicketTypes([]);
         } else if (data) {
-          setTicketTypes(data);
+          // Ensure applicable_days is an array for each ticket type
+          const processedData = data.map((ticket: any) => ({
+            ...ticket,
+            applicable_days: Array.isArray(ticket.applicable_days) ? ticket.applicable_days : []
+          }));
+          setTicketTypes(processedData);
         } else {
           setTicketTypes([]);
         }
@@ -165,7 +175,10 @@ export function TicketSettingsModal({
       end_date: eventEndDate,
       is_active: true,
       affects_capacity: true,
-      applicable_days: []
+      applicable_days: [],
+      dependency_ticket_id: null,
+      max_per_order: null,
+      min_age: null
     };
     
     setTicketTypes([...ticketTypes, newTicketType]);
@@ -448,13 +461,13 @@ export function TicketSettingsModal({
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Applicable Days (optional)</label>
                   <div className="flex flex-wrap gap-2">
-                    {eventDates.map((date) => {
-                      const isSelected = ticketType.applicable_days?.includes(date);
+                    {eventDates.length > 0 ? eventDates.map((date) => {
+                      const isSelected = Array.isArray(ticketType.applicable_days) && ticketType.applicable_days.includes(date);
                       return (
                         <button
                           key={date}
                           onClick={() => {
-                            const currentDays = ticketType.applicable_days || [];
+                            const currentDays = Array.isArray(ticketType.applicable_days) ? [...ticketType.applicable_days] : [];
                             const newDays = isSelected
                               ? currentDays.filter(d => d !== date)
                               : [...currentDays, date];
@@ -469,7 +482,9 @@ export function TicketSettingsModal({
                           {new Date(date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
                         </button>
                       );
-                    })}
+                    }) : (
+                      <p className="text-gray-400 text-sm">No event dates available</p>
+                    )}
                   </div>
                   <p className="text-xs text-gray-400 mt-1">
                     If none selected, ticket is valid for all days
