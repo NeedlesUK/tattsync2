@@ -48,8 +48,6 @@ export function TicketSettingsModal({
   const [venueCapacity, setVenueCapacity] = useState<number>(1000);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -202,7 +200,6 @@ export function TicketSettingsModal({
           setTicketTypes(processedData);
         } else {
           setTicketTypes([]);
-        }
       } else {
         // Fallback to mock data
         setTicketTypes([
@@ -292,8 +289,6 @@ export function TicketSettingsModal({
     }
     
     setIsSaving(true);
-    setError(null);
-    setSuccess(null);
     setError(null);
     setSuccess(null);
     
@@ -400,20 +395,6 @@ export function TicketSettingsModal({
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-          {error && (
-            <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center space-x-3">
-              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-              <p className="text-red-400 text-sm">{error}</p>
-            </div>
-          )}
-          
-          {success && (
-            <div className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-lg flex items-center space-x-3">
-              <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-              <p className="text-green-400 text-sm">{success}</p>
-            </div>
-          )}
-          
           {error && (
             <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center space-x-3">
               <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
