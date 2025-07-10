@@ -103,7 +103,7 @@ export function ConsentFormSettingsModal({
             event_id: eventId,
             consent_forms_enabled: settings.consent_forms_enabled,
             updated_at: new Date().toISOString()
-          });
+          }, { onConflict: 'event_id' });
           
         if (error) {
           console.error('Error updating event modules:', error);
