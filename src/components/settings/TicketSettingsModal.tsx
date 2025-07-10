@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Plus, Trash2, Calendar, MapPin, Users, Clock, AlertCircle, Check, Link, Calendar as CalendarIcon } from 'lucide-react';
+import { X, Save, Plus, Trash2, Calendar, MapPin, Users, Clock, AlertCircle, Check, Link, Calendar as CalendarIcon, Copy } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -181,6 +181,20 @@ export function TicketSettingsModal({
     setTicketTypes(ticketTypes.filter(type => type.id !== id));
   };
 
+  const duplicateTicketType = (id: string) => {
+    const ticketToDuplicate = ticketTypes.find(type => type.id === id);
+    if (ticketToDuplicate) {
+      const duplicatedTicket: TicketType = {
+        ...ticketToDuplicate,
+        id: uuidv4(),
+        name: `${ticketToDuplicate.name} (Copy)`,
+        // Reset any dependencies to avoid circular references
+        dependency_ticket_id: null
+      };
+      setTicketTypes([...ticketTypes, duplicatedTicket]);
+    }
+  };
+
   const handleSave = async () => {
     // Validate ticket types
     if (ticketTypes.some(type => !type.name)) {
@@ -293,6 +307,13 @@ export function TicketSettingsModal({
                       className="text-red-400 hover:text-red-300"
                     >
                       <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => duplicateTicketType(ticketType.id!)}
+                      className="text-blue-400 hover:text-blue-300 ml-2"
+                      title="Duplicate ticket type"
+                    >
+                      <Copy className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
