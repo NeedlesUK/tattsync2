@@ -144,9 +144,11 @@ export function AdminDashboardPage() {
 
   // Navigation sections
   const navSections = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart },
+    { id: 'dashboard', label: 'Dashboard', icon: BarChart, color: 'bg-blue-600' },
     { id: 'event-modules', label: 'Event Modules', icon: Calendar },
     { id: 'user-management', label: 'User Management', icon: Users },
+    { id: 'consent-templates', label: 'Consent Templates', icon: Heart },
+    { id: 'aftercare-templates', label: 'Aftercare Templates', icon: FileText },
     { id: 'statistics', label: 'Statistics', icon: BarChart },
     { id: 'system-status', label: 'System Status', icon: Settings },
     { id: 'global-deals', label: 'Global Deals', icon: Globe }
@@ -185,14 +187,14 @@ export function AdminDashboardPage() {
         {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-3 mb-8">
           {navSections.map((section) => {
-            const Icon = section.icon;
+            const Icon = section.icon || BarChart;
             return (
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
                 className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
                   activeSection === section.id
-                    ? 'bg-purple-600 text-white'
+                    ? `${section.color || 'bg-purple-600'} text-white`
                     : 'bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white'
                 }`}
               >
@@ -229,7 +231,7 @@ export function AdminDashboardPage() {
         </div>
 
         {/* Main Content */}
-        {/* Dashboard Section */}
+        {/* Dashboard Section - Overview */}
         <div className={`grid grid-cols-1 lg:grid-cols-3 gap-8 ${activeSection !== 'dashboard' && 'hidden'}`}>
           <div className="lg:col-span-2">
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
@@ -359,9 +361,38 @@ export function AdminDashboardPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input 
-                              type="checkbox" 
+                              type="checkbox"
                               checked={event.event_modules?.[0]?.ticketing_enabled || false} 
-                              onChange={() => console.log('Toggle ticketing')}
+                              onChange={async () => {
+                                if (supabase) {
+                                  const newValue = !event.event_modules?.[0]?.ticketing_enabled;
+                                  const { error } = await supabase
+                                    .from('event_modules')
+                                    .upsert({
+                                      event_id: event.id,
+                                      ticketing_enabled: newValue,
+                                      updated_at: new Date().toISOString()
+                                    }, { onConflict: 'event_id' });
+                                    
+                                  if (error) {
+                                    console.error('Error updating ticketing module:', error);
+                                  } else {
+                                    // Update local state
+                                    setEvents(events.map(e => {
+                                      if (e.id === event.id) {
+                                        return {
+                                          ...e,
+                                          event_modules: [{
+                                            ...e.event_modules[0],
+                                            ticketing_enabled: newValue
+                                          }]
+                                        };
+                                      }
+                                      return e;
+                                    }));
+                                  }
+                                }
+                              }}
                               className="sr-only peer"
                             />
                             <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
@@ -371,8 +402,37 @@ export function AdminDashboardPage() {
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input 
                               type="checkbox" 
-                              checked={event.event_modules?.[0]?.consent_forms_enabled || false} 
-                              onChange={() => console.log('Toggle consent forms')}
+                              checked={event.event_modules?.[0]?.consent_forms_enabled || false}
+                              onChange={async () => {
+                                if (supabase) {
+                                  const newValue = !event.event_modules?.[0]?.consent_forms_enabled;
+                                  const { error } = await supabase
+                                    .from('event_modules')
+                                    .upsert({
+                                      event_id: event.id,
+                                      consent_forms_enabled: newValue,
+                                      updated_at: new Date().toISOString()
+                                    }, { onConflict: 'event_id' });
+                                    
+                                  if (error) {
+                                    console.error('Error updating consent forms module:', error);
+                                  } else {
+                                    // Update local state
+                                    setEvents(events.map(e => {
+                                      if (e.id === event.id) {
+                                        return {
+                                          ...e,
+                                          event_modules: [{
+                                            ...e.event_modules[0],
+                                            consent_forms_enabled: newValue
+                                          }]
+                                        };
+                                      }
+                                      return e;
+                                    }));
+                                  }
+                                }
+                              }}
                               className="sr-only peer"
                             />
                             <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
@@ -382,8 +442,37 @@ export function AdminDashboardPage() {
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input 
                               type="checkbox" 
-                              checked={event.event_modules?.[0]?.tattscore_enabled || false} 
-                              onChange={() => console.log('Toggle TattScore')}
+                              checked={event.event_modules?.[0]?.tattscore_enabled || false}
+                              onChange={async () => {
+                                if (supabase) {
+                                  const newValue = !event.event_modules?.[0]?.tattscore_enabled;
+                                  const { error } = await supabase
+                                    .from('event_modules')
+                                    .upsert({
+                                      event_id: event.id,
+                                      tattscore_enabled: newValue,
+                                      updated_at: new Date().toISOString()
+                                    }, { onConflict: 'event_id' });
+                                    
+                                  if (error) {
+                                    console.error('Error updating tattscore module:', error);
+                                  } else {
+                                    // Update local state
+                                    setEvents(events.map(e => {
+                                      if (e.id === event.id) {
+                                        return {
+                                          ...e,
+                                          event_modules: [{
+                                            ...e.event_modules[0],
+                                            tattscore_enabled: newValue
+                                          }]
+                                        };
+                                      }
+                                      return e;
+                                    }));
+                                  }
+                                }
+                              }}
                               className="sr-only peer"
                             />
                             <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
@@ -402,6 +491,146 @@ export function AdminDashboardPage() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Consent Templates Section */}
+        <div className={`${activeSection !== 'consent-templates' && 'hidden'}`}>
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-white">Consent Form Templates</h2>
+              <button
+                onClick={() => navigate('/admin/consent-templates')}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                Manage Templates
+              </button>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-white/5">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Template Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Medical History</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Last Updated</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/10">
+                  {templates.map((template) => (
+                    <tr key={template.id} className="hover:bg-white/5">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-3">
+                          <Heart className="w-5 h-5 text-purple-400" />
+                          <span className="text-white font-medium">{template.title}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-300">
+                        {template.description || 'No description'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {template.requires_medical_history ? (
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400">
+                            Required
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-500/20 text-gray-400">
+                            Not Required
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-300">
+                        {formatDate(template.updated_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => navigate(`/admin/consent-templates?edit=${template.id}`)}
+                          className="bg-white/10 hover:bg-white/20 text-gray-300 px-3 py-1 rounded text-sm transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            {templates.length === 0 && (
+              <div className="text-center py-8">
+                <Heart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-300">No consent templates found</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Aftercare Templates Section */}
+        <div className={`${activeSection !== 'aftercare-templates' && 'hidden'}`}>
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-white">Aftercare Templates</h2>
+              <button
+                onClick={() => navigate('/admin/aftercare-templates')}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                Manage Templates
+              </button>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-white/5">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Template Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Procedure Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Last Updated</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/10">
+                  {aftercareTemplates.map((template) => (
+                    <tr key={template.id} className="hover:bg-white/5">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-3">
+                          <FileText className="w-5 h-5 text-purple-400" />
+                          <span className="text-white font-medium">{template.title}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-300">
+                        {template.description || 'No description'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-500/20 text-purple-400 capitalize">
+                          {template.procedure_type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-300">
+                        {formatDate(template.updated_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => navigate(`/admin/aftercare-templates?edit=${template.id}`)}
+                          className="bg-white/10 hover:bg-white/20 text-gray-300 px-3 py-1 rounded text-sm transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            {aftercareTemplates.length === 0 && (
+              <div className="text-center py-8">
+                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-300">No aftercare templates found</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -557,7 +786,6 @@ export function AdminDashboardPage() {
         <div className="fixed right-8 top-32 w-64 space-y-8 hidden lg:block">
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
             <h2 className="text-xl font-semibold text-white mb-4">Admin Actions</h2>
-            
             <div className="space-y-4">
               <button
                 onClick={() => navigate('/admin/users')}
@@ -611,34 +839,7 @@ export function AdminDashboardPage() {
                 </div>
               </button>
             </div>
-          </div>
-          
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Consent Management</h2>
-            
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-white font-medium">Consent Templates</h3>
-                <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full text-xs">
-                  {templates ? templates.length : 0} Templates
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <h3 className="text-white font-medium">Aftercare Templates</h3>
-                <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full text-xs">
-                  {aftercareTemplates ? aftercareTemplates.length : 0} Templates
-                </span>
-              </div>
-              
-              <button
-                onClick={() => navigate('/admin/consent-templates')}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors mt-2"
-              >
-                Manage Templates
-              </button>
-            </div>
-          </div>
+          </div>          
         </div>
       </div>
     </div>
