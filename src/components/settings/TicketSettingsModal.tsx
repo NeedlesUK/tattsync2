@@ -292,9 +292,9 @@ export function TicketSettingsModal({
         // Validate dependency
         if (type.dependency_ticket_id) {
           const dependencyExists = ticketTypes.some(t => 
-            // Check if the dependency ID matches either the actual ID or the temporary ID
+            // Check if the dependency ID matches either the actual ID or the temporary ID (using String for consistent comparison)
             ((t.id && String(t.id) === String(type.dependency_ticket_id)) || 
-             // Find the original index of the ticket in the array
+             // Find the original index of the ticket in the full array for temporary IDs
              (`temp_${ticketTypes.findIndex(ticket => ticket === t)}` === String(type.dependency_ticket_id))) && 
             // Make sure the dependency ticket is active
             t.is_active
