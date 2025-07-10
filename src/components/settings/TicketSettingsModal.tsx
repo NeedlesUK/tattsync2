@@ -500,9 +500,10 @@ export function TicketSettingsModal({
                           onChange={(e) => updateTicketType(index, { price_gbp: parseFloat(e.target.value) || 0 })}
                           min="0"
                           step="0.01"
-                          className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                          placeholder="0.00"
+                          className="w-full pl-10 pr-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="25.00"
                         />
+                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">£</div>
                       </div>
                     </div>
 

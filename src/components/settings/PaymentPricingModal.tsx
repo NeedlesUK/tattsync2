@@ -530,13 +530,13 @@ export function PaymentPricingModal({
                           <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">
                               Months Before Event
-                            </label>
+                            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">£</div>
                             <input
                               type="number"
                               value={tier.months_before_event}
                               onChange={(e) => updateTier(selectedType!, index, { months_before_event: parseInt(e.target.value) || 0 })}
                               min="0"
-                              className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              placeholder="100.00"
                             />
                             <p className="text-gray-400 text-xs mt-1">
                               When this tier becomes available (0 = available until the event)
@@ -579,7 +579,7 @@ export function PaymentPricingModal({
                           {tier.installment_3_enabled && (
                             <div className="flex items-center space-x-3">
                               <div className="relative flex-1">
-                                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">£</div>
                                 <input
                                   type="number"
                                   value={tier.installment_3_total || ''}
@@ -618,7 +618,7 @@ export function PaymentPricingModal({
                           {tier.installment_6_enabled && (
                             <div className="flex items-center space-x-3">
                               <div className="relative flex-1">
-                                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">£</div>
                                 <input
                                   type="number"
                                   value={tier.installment_6_total || ''}
