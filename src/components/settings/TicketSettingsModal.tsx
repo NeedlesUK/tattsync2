@@ -15,7 +15,7 @@ interface TicketSettingsModalProps {
 }
 
 export interface TicketType {
-  id?: string;
+  id?: number;
   name: string;
   description: string;
   price_gbp: number;
@@ -25,7 +25,7 @@ export interface TicketType {
   is_active: boolean;
   affects_capacity: boolean;
   applicable_days: string[];
-  dependency_ticket_id?: string | null;
+  dependency_ticket_id?: number | null;
   max_per_order?: number | null;
   min_age?: number | null;
 }
@@ -240,7 +240,7 @@ export function TicketSettingsModal({
 
   const addTicketType = () => {
     const newTicketType: TicketType = {
-      id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      // Don't set id for new tickets - let database assign it
       name: '',
       description: '',
       price_gbp: 0,
@@ -258,22 +258,23 @@ export function TicketSettingsModal({
     setTicketTypes([...ticketTypes, newTicketType]);
   };
 
-  const updateTicketType = (id: string, updates: Partial<TicketType>) => {
+  const updateTicketType = (id: number | undefined, updates: Partial<TicketType>) => {
     setTicketTypes(ticketTypes.map(type => 
       type.id === id ? { ...type, ...updates } : type
     ));
   };
 
-  const removeTicketType = (id: string) => {
+  const removeTicketType = (id: number | undefined) => {
     setTicketTypes(ticketTypes.filter(type => type.id !== id));
   };
 
-  const duplicateTicketType = (id: string) => {
+  const duplicateTicketType = (id: number | undefined) => {
     const ticketToDuplicate = ticketTypes.find(type => type.id === id);
     if (ticketToDuplicate) {
       const duplicatedTicket: TicketType = {
         ...ticketToDuplicate,
-        id: uuidv4(),
+        // Don't set id for duplicated tickets - let database assign it
+        id: undefined,
         name: `${ticketToDuplicate.name} (Copy)`,
         // Reset any dependencies to avoid circular references
         dependency_ticket_id: null
@@ -300,12 +301,12 @@ export function TicketSettingsModal({
     }
     
     // Validate dependencies - ensure no dependencies on unsaved tickets
-    const tempTicketIds = ticketTypes
-      .filter(ticket => ticket.id && typeof ticket.id === 'string' && ticket.id.startsWith('temp-'))
+    const unsavedTickets = ticketTypes
+      .filter(ticket => !ticket.id)
       .map(ticket => ticket.id);
     
     const invalidDependencies = ticketTypes.filter(ticket => 
-      ticket.dependency_ticket_id && tempTicketIds.includes(ticket.dependency_ticket_id)
+      ticket.dependency_ticket_id && unsavedTickets.includes(ticket.dependency_ticket_id)
     );
     
     if (invalidDependencies.length > 0) {
@@ -326,8 +327,6 @@ export function TicketSettingsModal({
         for (const ticket of ticketTypes) {
           const ticketData = {
             event_id: eventId,
-            // Don't include id for new tickets (let database assign SERIAL id)
-            ...(ticket.id && typeof ticket.id === 'string' && ticket.id.startsWith('temp-') ? {} : { id: ticket.id }),
             name: ticket.name,
             description: ticket.description,
             price_gbp: ticket.price_gbp,
@@ -337,14 +336,13 @@ export function TicketSettingsModal({
             is_active: ticket.is_active,
             affects_capacity: ticket.affects_capacity,
             applicable_days: ticket.applicable_days,
-            // Clear dependency if it refers to a temporary ticket
-            dependency_ticket_id: ticket.dependency_ticket_id && typeof ticket.dependency_ticket_id === 'string' && ticket.dependency_ticket_id.startsWith('temp-') ? null : ticket.dependency_ticket_id,
+            dependency_ticket_id: ticket.dependency_ticket_id,
             max_per_order: ticket.max_per_order,
             min_age: ticket.min_age
           };
         
-          // For new tickets, insert them
-          if (ticket.id && typeof ticket.id === 'string' && ticket.id.startsWith('temp-')) {
+          // For new tickets (no id), insert them
+          if (!ticket.id) {
             const { data, error: insertError } = await supabase
               .from('ticket_types')
               .insert([ticketData])
@@ -358,10 +356,10 @@ export function TicketSettingsModal({
             console.log('Inserted new ticket type:', data);
           } 
           // For existing tickets, update them
-          else if (ticket.id) {
+          else {
             const { data, error: updateError } = await supabase
               .from('ticket_types')
-              .update(ticketData)
+              .update({ ...ticketData, id: ticket.id })
               .eq('id', ticket.id)
               .select();
               
@@ -408,7 +406,7 @@ export function TicketSettingsModal({
     return new Date(dateString).toISOString().split('T')[0];
   };
 
-  const getDependencyOptions = (currentId: string) => {
+  const getDependencyOptions = (currentId: number | undefined) => {
     return ticketTypes.filter(type => type.id !== currentId);
   };
 
@@ -469,7 +467,7 @@ export function TicketSettingsModal({
                     <input
                       type="text"
                       value={ticketType.name}
-                      onChange={(e) => updateTicketType(ticketType.id!, { name: e.target.value })}
+                      onChange={(e) => updateTicketType(ticketType.id, { name: e.target.value })}
                       className="bg-transparent text-white font-medium border-b border-transparent hover:border-white/20 focus:border-purple-500 focus:outline-none px-1"
                       placeholder="Ticket Name"
                     />
@@ -479,19 +477,19 @@ export function TicketSettingsModal({
                       <input
                         type="checkbox"
                         checked={ticketType.is_active}
-                        onChange={(e) => updateTicketType(ticketType.id!, { is_active: e.target.checked })}
+                        onChange={(e) => updateTicketType(ticketType.id, { is_active: e.target.checked })}
                         className="text-purple-600 focus:ring-purple-500 rounded"
                       />
                       <span className="text-gray-300 text-sm">Active</span>
                     </label>
                     <button
-                      onClick={() => removeTicketType(ticketType.id!)}
+                      onClick={() => removeTicketType(ticketType.id)}
                       className="text-red-400 hover:text-red-300"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => duplicateTicketType(ticketType.id!)}
+                      onClick={() => duplicateTicketType(ticketType.id)}
                       className="text-blue-400 hover:text-blue-300 ml-2"
                       title="Duplicate ticket type"
                     >
@@ -505,7 +503,7 @@ export function TicketSettingsModal({
                     <label className="block text-sm text-gray-400 mb-1">Description</label>
                     <textarea
                       value={ticketType.description}
-                      onChange={(e) => updateTicketType(ticketType.id!, { description: e.target.value })}
+                      onChange={(e) => updateTicketType(ticketType.id, { description: e.target.value })}
                       rows={2}
                       className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                       placeholder="Describe what this ticket includes..."
@@ -517,7 +515,7 @@ export function TicketSettingsModal({
                     <input
                       type="number"
                       value={ticketType.price_gbp}
-                      onChange={(e) => updateTicketType(ticketType.id!, { price_gbp: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) => updateTicketType(ticketType.id, { price_gbp: parseFloat(e.target.value) || 0 })}
                       min="0"
                       step="0.01"
                       className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -532,7 +530,7 @@ export function TicketSettingsModal({
                     <input
                       type="number"
                       value={ticketType.capacity || ''}
-                      onChange={(e) => updateTicketType(ticketType.id!, { 
+                      onChange={(e) => updateTicketType(ticketType.id, { 
                         capacity: e.target.value ? parseInt(e.target.value) : null 
                       })}
                       min="1"
@@ -543,7 +541,7 @@ export function TicketSettingsModal({
                       <input
                         type="checkbox"
                         checked={ticketType.affects_capacity}
-                        onChange={(e) => updateTicketType(ticketType.id!, { affects_capacity: e.target.checked })}
+                        onChange={(e) => updateTicketType(ticketType.id, { affects_capacity: e.target.checked })}
                         className="text-purple-600 focus:ring-purple-500 rounded mr-2"
                       />
                       <span className="text-gray-400 text-xs">Counts toward daily capacity limit</span>
@@ -555,7 +553,7 @@ export function TicketSettingsModal({
                     <input
                       type="date"
                       value={formatDate(ticketType.start_date)}
-                      onChange={(e) => updateTicketType(ticketType.id!, { 
+                      onChange={(e) => updateTicketType(ticketType.id, { 
                         start_date: e.target.value
                       })}
                       className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -567,7 +565,7 @@ export function TicketSettingsModal({
                     <input
                       type="date"
                       value={formatDate(ticketType.end_date)}
-                      onChange={(e) => updateTicketType(ticketType.id!, { 
+                      onChange={(e) => updateTicketType(ticketType.id, { 
                         end_date: e.target.value
                       })}
                       className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -580,13 +578,13 @@ export function TicketSettingsModal({
                     <label className="block text-sm text-gray-400 mb-1">Dependency (optional)</label>
                     <select
                       value={ticketType.dependency_ticket_id || ''}
-                      onChange={(e) => updateTicketType(ticketType.id!, { 
-                        dependency_ticket_id: e.target.value || null 
+                      onChange={(e) => updateTicketType(ticketType.id, { 
+                        dependency_ticket_id: e.target.value ? parseInt(e.target.value) : null 
                       })}
                       className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                     >
                       <option value="">No dependency</option>
-                      {getDependencyOptions(ticketType.id!).map(option => (
+                      {getDependencyOptions(ticketType.id).map(option => (
                         <option key={option.id} value={option.id} className="bg-gray-800">
                           {option.name}
                         </option>
@@ -602,7 +600,7 @@ export function TicketSettingsModal({
                     <input
                       type="number"
                       value={ticketType.max_per_order || ''}
-                      onChange={(e) => updateTicketType(ticketType.id!, { 
+                      onChange={(e) => updateTicketType(ticketType.id, { 
                         max_per_order: e.target.value ? parseInt(e.target.value) : null 
                       })}
                       min="1"
@@ -616,7 +614,7 @@ export function TicketSettingsModal({
                     <input
                       type="number"
                       value={ticketType.min_age || ''}
-                      onChange={(e) => updateTicketType(ticketType.id!, { 
+                      onChange={(e) => updateTicketType(ticketType.id, { 
                         min_age: e.target.value ? parseInt(e.target.value) : null 
                       })}
                       min="0"
@@ -648,6 +646,7 @@ export function TicketSettingsModal({
                               : [...currentDays, date];
                             
                             updateTicketType(ticketType.id!, { applicable_days: newDays });
+                            updateTicketType(ticketType.id, { applicable_days: newDays });
                           }}
                           className={`px-3 py-1 rounded-full text-sm transition-colors ${
                             isSelected
