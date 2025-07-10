@@ -324,7 +324,7 @@ export function GlobalDealsModal({
                         </div>
                       </div>
 
-                          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">£</div>
+                      <div>
                         <label className="block text-sm text-gray-400 mb-1">Provider Logo URL (optional)</label>
                         <input
                           type="url"
