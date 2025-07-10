@@ -44,6 +44,7 @@ export function TicketSettingsModal({
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [hasLoadedData, setHasLoadedData] = useState(false);
+  const [stayOpenAfterSave, setStayOpenAfterSave] = useState(false);
   const [eventDates, setEventDates] = useState<string[]>([]);
   const [venueCapacity, setVenueCapacity] = useState<number>(1000);
   const [error, setError] = useState<string | null>(null);
@@ -268,6 +269,13 @@ export function TicketSettingsModal({
       
       // Save to database if using Supabase
       if (supabase) {
+        // First, disable dependency checks to allow two-phase insert
+        try {
+          await supabase.rpc('disable_ticket_dependency_checks');
+        } catch (error) {
+          console.log('Could not disable dependency checks, continuing anyway');
+        }
+        
         // First, delete all existing ticket types
         const { error: deleteError } = await supabase
           .from('ticket_types')
@@ -361,15 +369,25 @@ export function TicketSettingsModal({
         }
         
         setSuccess('Ticket types saved successfully');
+        
+        // Re-enable dependency checks
+        try {
+          await supabase.rpc('enable_ticket_dependency_checks');
+        } catch (error) {
+          console.log('Could not re-enable dependency checks');
+        }
       }
       
       // Call the onSave callback
       await onSave(ticketTypes);
       
-      // Close the modal after a short delay to show success message
-      setTimeout(() => {
-        onClose();
-      }, 1500);
+      // Only close the modal if stayOpenAfterSave is false
+      if (!stayOpenAfterSave) {
+        // Close the modal after a short delay to show success message
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      }
     } catch (err) {
       console.error('Exception saving ticket types:', err);
       setError('An unexpected error occurred');
@@ -743,21 +761,33 @@ export function TicketSettingsModal({
         </div>
 
         {/* Actions */}
-        <div className="flex space-x-4 p-6 border-t border-white/10 bg-white/5">
+        <div className="flex items-center justify-between p-6 border-t border-white/10 bg-white/5">
+          <label className="flex items-center space-x-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={stayOpenAfterSave}
+              onChange={(e) => setStayOpenAfterSave(e.target.checked)}
+              className="text-purple-600 focus:ring-purple-500 rounded"
+            />
+            <span className="text-gray-300 text-sm">Stay open after saving</span>
+          </label>
+          
+          <div className="flex space-x-4">
           <button
             onClick={onClose}
-            className="flex-1 bg-white/10 hover:bg-white/20 text-gray-300 px-6 py-3 rounded-lg font-medium transition-colors"
+            className="bg-white/10 hover:bg-white/20 text-gray-300 px-6 py-3 rounded-lg font-medium transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={isSaving}
-            className="flex-1 bg-gradient-to-r from-purple-600 to-teal-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             <Save className="w-5 h-5" />
             <span>{isSaving ? 'Saving...' : 'Save Ticket Types'}</span>
           </button>
+          </div>
         </div>
       </div>
     </div>
