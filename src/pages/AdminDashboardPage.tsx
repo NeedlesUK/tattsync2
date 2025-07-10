@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, CreditCard, MessageCircle, Settings, Shield, User, Mail, Edit, Key, X, FileText, Heart, Building, BarChart, Globe } from 'lucide-react';
+import { Calendar, Users, CreditCard, MessageCircle, Settings, Shield, User, Mail, Edit, Key, X, FileText, Heart, Building, BarChart, Globe, Plus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { StatsCard } from '../components/dashboard/StatsCard';
@@ -145,13 +145,13 @@ export function AdminDashboardPage() {
   // Navigation sections
   const navSections = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart, color: 'bg-blue-600' },
-    { id: 'event-modules', label: 'Event Modules', icon: Calendar },
-    { id: 'user-management', label: 'User Management', icon: Users },
-    { id: 'consent-templates', label: 'Consent Templates', icon: Heart },
-    { id: 'aftercare-templates', label: 'Aftercare Templates', icon: FileText },
-    { id: 'statistics', label: 'Statistics', icon: BarChart },
-    { id: 'system-status', label: 'System Status', icon: Settings },
-    { id: 'global-deals', label: 'Global Deals', icon: Globe }
+    { id: 'event-modules', label: 'Event Modules', icon: Calendar, color: 'bg-purple-600' },
+    { id: 'user-management', label: 'User Management', icon: Users, color: 'bg-indigo-600' },
+    { id: 'consent-templates', label: 'Consent Templates', icon: Heart, color: 'bg-pink-600' },
+    { id: 'aftercare-templates', label: 'Aftercare Templates', icon: FileText, color: 'bg-teal-600' },
+    { id: 'statistics', label: 'Statistics', icon: BarChart, color: 'bg-blue-600' },
+    { id: 'system-status', label: 'System Status', icon: Settings, color: 'bg-gray-600' },
+    { id: 'global-deals', label: 'Global Deals', icon: Globe, color: 'bg-green-600' }
   ];
 
   if (isLoading) {
@@ -187,7 +187,7 @@ export function AdminDashboardPage() {
         {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-3 mb-8">
           {navSections.map((section) => {
-            const Icon = section.icon || BarChart;
+            const Icon = section.icon;
             return (
               <button
                 key={section.id}
@@ -317,7 +317,7 @@ export function AdminDashboardPage() {
         </div>
 
         {/* Event Modules Section */}
-        <div className={`${activeSection !== 'event-modules' && 'hidden'}`}>
+        <div className={activeSection !== 'event-modules' ? 'hidden' : ''}>
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-white">Event Module Management</h2>
@@ -363,9 +363,9 @@ export function AdminDashboardPage() {
                             <input 
                               type="checkbox"
                               checked={event.event_modules?.[0]?.ticketing_enabled || false} 
-                              onChange={async () => {
+                              onChange={async (e) => {
                                 if (supabase) {
-                                  const newValue = !event.event_modules?.[0]?.ticketing_enabled;
+                                  const newValue = e.target.checked;
                                   const { error } = await supabase
                                     .from('event_modules')
                                     .upsert({
@@ -403,9 +403,9 @@ export function AdminDashboardPage() {
                             <input 
                               type="checkbox" 
                               checked={event.event_modules?.[0]?.consent_forms_enabled || false}
-                              onChange={async () => {
+                              onChange={async (e) => {
                                 if (supabase) {
-                                  const newValue = !event.event_modules?.[0]?.consent_forms_enabled;
+                                  const newValue = e.target.checked;
                                   const { error } = await supabase
                                     .from('event_modules')
                                     .upsert({
@@ -443,9 +443,9 @@ export function AdminDashboardPage() {
                             <input 
                               type="checkbox" 
                               checked={event.event_modules?.[0]?.tattscore_enabled || false}
-                              onChange={async () => {
+                              onChange={async (e) => {
                                 if (supabase) {
-                                  const newValue = !event.event_modules?.[0]?.tattscore_enabled;
+                                  const newValue = e.target.checked;
                                   const { error } = await supabase
                                     .from('event_modules')
                                     .upsert({
@@ -495,7 +495,7 @@ export function AdminDashboardPage() {
         </div>
 
         {/* Consent Templates Section */}
-        <div className={`${activeSection !== 'consent-templates' && 'hidden'}`}>
+        <div className={activeSection !== 'consent-templates' ? 'hidden' : ''}>
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-white">Consent Form Templates</h2>
@@ -547,9 +547,10 @@ export function AdminDashboardPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() => navigate(`/admin/consent-templates?edit=${template.id}`)}
-                          className="bg-white/10 hover:bg-white/20 text-gray-300 px-3 py-1 rounded text-sm transition-colors"
+                          className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors flex items-center space-x-1"
                         >
                           <Edit className="w-4 h-4" />
+                          <span>Edit</span>
                         </button>
                       </td>
                     </tr>
@@ -562,13 +563,20 @@ export function AdminDashboardPage() {
               <div className="text-center py-8">
                 <Heart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-300">No consent templates found</p>
+                <button
+                  onClick={() => navigate('/admin/consent-templates')}
+                  className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 mx-auto"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Template</span>
+                </button>
               </div>
             )}
           </div>
         </div>
 
         {/* Aftercare Templates Section */}
-        <div className={`${activeSection !== 'aftercare-templates' && 'hidden'}`}>
+        <div className={activeSection !== 'aftercare-templates' ? 'hidden' : ''}>
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-white">Aftercare Templates</h2>
@@ -614,9 +622,10 @@ export function AdminDashboardPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() => navigate(`/admin/aftercare-templates?edit=${template.id}`)}
-                          className="bg-white/10 hover:bg-white/20 text-gray-300 px-3 py-1 rounded text-sm transition-colors"
+                          className="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors flex items-center space-x-1"
                         >
                           <Edit className="w-4 h-4" />
+                          <span>Edit</span>
                         </button>
                       </td>
                     </tr>
@@ -629,13 +638,20 @@ export function AdminDashboardPage() {
               <div className="text-center py-8">
                 <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-300">No aftercare templates found</p>
+                <button
+                  onClick={() => navigate('/admin/aftercare-templates')}
+                  className="mt-4 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 mx-auto"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Template</span>
+                </button>
               </div>
             )}
           </div>
         </div>
 
         {/* User Management Section */}
-        <div className={`${activeSection !== 'user-management' && 'hidden'}`}>
+        <div className={activeSection !== 'user-management' ? 'hidden' : ''}>
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-white">User Management</h2>
@@ -710,7 +726,7 @@ export function AdminDashboardPage() {
         </div>
 
         {/* Statistics Section */}
-        <div className={`${activeSection !== 'statistics' && 'hidden'}`}>
+        <div className={activeSection !== 'statistics' ? 'hidden' : ''}>
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
             <h2 className="text-xl font-semibold text-white mb-6">System Statistics</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -740,7 +756,7 @@ export function AdminDashboardPage() {
         </div>
 
         {/* System Status Section */}
-        <div className={`${activeSection !== 'system-status' && 'hidden'}`}>
+        <div className={activeSection !== 'system-status' ? 'hidden' : ''}>
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
             <h2 className="text-xl font-semibold text-white mb-6">System Status</h2>
             <div className="space-y-3">
@@ -765,7 +781,7 @@ export function AdminDashboardPage() {
         </div>
 
         {/* Global Deals Section */}
-        <div className={`${activeSection !== 'global-deals' && 'hidden'}`}>
+        <div className={activeSection !== 'global-deals' ? 'hidden' : ''}>
           <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-white">Global Deals Management</h2>

@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { TicketSettingsModal } from '../components/settings/TicketSettingsModal';
 import { EventInformationModal } from '../components/settings/EventInformationModal';
 import { EventDealsModal } from '../components/settings/EventDealsModal'; 
+import { MessagingSettingsModal } from '../components/settings/MessagingSettingsModal';
 import { ConsentFormSettingsModal } from '../components/settings/ConsentFormSettingsModal';
 import { GlobalDealsModal } from '../components/settings/GlobalDealsModal';
 import { ApplicationSettingsModal } from '../components/settings/ApplicationSettingsModal';
@@ -23,6 +24,7 @@ export function EventSettingsPage() {
   const [isEventDetailsModalOpen, setIsEventDetailsModalOpen] = useState(false); 
   const [isTicketTypeModalOpen, setIsTicketTypeModalOpen] = useState(false);
   const [isDealsModalOpen, setIsDealsModalOpen] = useState(false);
+  const [isMessagingModalOpen, setIsMessagingModalOpen] = useState(false);
   const [isConsentFormModalOpen, setIsConsentFormModalOpen] = useState(false);
   const [isGlobalDealsModalOpen, setIsGlobalDealsModalOpen] = useState(false);
   const [isApplicationSettingsModalOpen, setIsApplicationSettingsModalOpen] = useState(false);
@@ -190,6 +192,50 @@ export function EventSettingsPage() {
       console.log('Saving event information:', information);
     } catch (error) {
       console.error('Error saving event information:', error);
+    }
+  };
+
+  const handleSaveMessagingSettings = async (settings: any) => {
+    try {
+      // In real implementation, save to API
+      console.log('Saving messaging settings:', settings);
+      
+      if (supabase) {
+        const { error } = await supabase
+          .from('event_modules')
+          .upsert({
+            event_id: eventId,
+            messaging_enabled: settings.messaging_enabled,
+            allow_attendee_messaging: settings.allow_attendee_messaging,
+            allow_artist_messaging: settings.allow_artist_messaging,
+            moderation_enabled: settings.moderation_enabled,
+            notification_emails_enabled: settings.notification_emails_enabled,
+            auto_response_enabled: settings.auto_response_enabled,
+            auto_response_text: settings.auto_response_text,
+            updated_at: new Date().toISOString()
+          });
+          
+        if (error) {
+          console.error('Error updating messaging settings:', error);
+          throw error;
+        }
+        
+        // Update local state
+        if (eventModules) {
+          setEventModules({
+            ...eventModules,
+            messaging_enabled: settings.messaging_enabled,
+            allow_attendee_messaging: settings.allow_attendee_messaging,
+            allow_artist_messaging: settings.allow_artist_messaging,
+            moderation_enabled: settings.moderation_enabled,
+            notification_emails_enabled: settings.notification_emails_enabled,
+            auto_response_enabled: settings.auto_response_enabled,
+            auto_response_text: settings.auto_response_text
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error saving messaging settings:', error);
     }
   };
 
@@ -369,7 +415,7 @@ export function EventSettingsPage() {
           title: 'Messaging',
           description: `Configure messaging settings and templates`,
           icon: MessageCircle,
-          action: () => console.log('Configure messaging')
+          action: () => setIsMessagingModalOpen(true)
         }
       ]
     },
@@ -580,6 +626,14 @@ export function EventSettingsPage() {
           isOpen={isPaymentModalOpen}
           onClose={() => setIsPaymentModalOpen(false)}
           onSave={handleSavePaymentSettings}
+        />
+        
+        <MessagingSettingsModal
+          eventId={eventId || 0}
+          eventName={event.name}
+          isOpen={isMessagingModalOpen}
+          onClose={() => setIsMessagingModalOpen(false)}
+          onSave={handleSaveMessagingSettings}
         />
         
         <ConsentFormSettingsModal
