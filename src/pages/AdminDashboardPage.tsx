@@ -15,10 +15,10 @@ export function AdminDashboardPage() {
   });
   const [events, setEvents] = useState<any[]>([]);
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
-  const [selectedUser, setSelectedUser] = useState<any | null>(null);
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [templates, setTemplates] = useState<any[]>([]);
   const [aftercareTemplates, setAftercareTemplates] = useState<any[]>([]);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   // Add state for active section and tabs
   const [activeSection, setActiveSection] = useState<'modules' | 'users' | 'system' | 'statistics' | 'consent'>('modules');
@@ -97,7 +97,7 @@ export function AdminDashboardPage() {
         
         // Fetch consent templates
         fetchTemplates();
-      }
+      fetchTemplates();
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -105,38 +105,36 @@ export function AdminDashboardPage() {
     }
   };
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = () => {
     if (!supabase) return;
     
-    try {
-      // Fetch consent templates
-      const { data: templatesData, error: templatesError } = await supabase
-        .from('consent_form_templates')
-        .select('*')
-        .order('created_at', { ascending: false });
-        
-      if (templatesError) {
-        console.error('Error fetching consent templates:', templatesError);
-      } else {
-        console.log('Fetched consent templates:', templatesData);
-        setTemplates(templatesData || []);
-      }
-      
-      // Fetch aftercare templates
-      const { data: aftercareData, error: aftercareError } = await supabase
-        .from('aftercare_templates')
-        .select('*')
-        .order('created_at', { ascending: false });
-        
-      if (aftercareError) {
-        console.error('Error fetching aftercare templates:', aftercareError);
-      } else {
-        console.log('Fetched aftercare templates:', aftercareData);
-        setAftercareTemplates(aftercareData || []);
-      }
-    } catch (error) {
-      console.error('Error fetching templates:', error);
-    }
+    // Fetch consent templates
+    supabase
+      .from('consent_form_templates')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Error fetching consent templates:', error);
+        } else {
+          console.log('Fetched consent templates:', data);
+          setTemplates(data || []);
+        }
+      });
+    
+    // Fetch aftercare templates
+    supabase
+      .from('aftercare_templates')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Error fetching aftercare templates:', error);
+        } else {
+          console.log('Fetched aftercare templates:', data);
+          setAftercareTemplates(data || []);
+        }
+      });
   };
 
   const handleChangePassword = (user: any) => {
@@ -689,7 +687,7 @@ export function AdminDashboardPage() {
                   </p>
                   {/* Display templates if available */}
                   <div className="space-y-4 mb-4">
-                    {templates && templates.length > 0 ? (
+                    {templates?.length > 0 ? (
                       <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
                         <div className="overflow-x-auto">
                           <table className="w-full">
@@ -742,7 +740,7 @@ export function AdminDashboardPage() {
                   </p>
                   {/* Display aftercare templates if available */}
                   <div className="space-y-4 mb-4">
-                    {aftercareTemplates && aftercareTemplates.length > 0 ? (
+                    {aftercareTemplates?.length > 0 ? (
                       <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
                         <div className="overflow-x-auto">
                           <table className="w-full">
