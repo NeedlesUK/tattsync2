@@ -196,7 +196,30 @@ export function EventSettingsPage() {
   const handleSaveConsentFormSettings = async (settings: any) => {
     try {
       // In real implementation, save to API
-      console.log('Saving consent form settings:', settings);
+      console.log('Saving consent form settings:', settings.consent_forms_enabled);
+      
+      if (supabase) {
+        const { error } = await supabase
+          .from('event_modules')
+          .upsert({
+            event_id: eventId,
+            consent_forms_enabled: settings.consent_forms_enabled,
+            updated_at: new Date().toISOString()
+          });
+          
+        if (error) {
+          console.error('Error updating consent form settings:', error);
+          throw error;
+        }
+        
+        // Update local state
+        if (eventModules) {
+          setEventModules({
+            ...eventModules,
+            consent_forms_enabled: settings.consent_forms_enabled
+          });
+        }
+      }
     } catch (error) {
       console.error('Error saving consent form settings:', error);
     }
