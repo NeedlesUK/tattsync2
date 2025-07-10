@@ -621,11 +621,11 @@ export function TicketSettingsModal({
                         className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                       >
                         <option value="" className="bg-gray-800">No dependency</option>
-                        {ticketTypes.map((type, i) => {
+                        {ticketTypes.filter(type => type.is_active).map((type, i) => {
                           // Don't allow self-dependency or dependency on inactive tickets
-                          if (i !== index && type.is_active) {
+                          if (i !== index) {
                             return (
-                              <option key={i} value={type.id || i.toString()} className="bg-gray-800">
+                              <option key={i} value={type.id || `temp_${i}`} className="bg-gray-800">
                                 {type.name}
                               </option>
                             );
