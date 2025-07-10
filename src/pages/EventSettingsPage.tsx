@@ -206,8 +206,9 @@ export function EventSettingsPage() {
           .upsert({
             event_id: eventId,
             messaging_enabled: settings.messaging_enabled,
-            allow_attendee_messaging: settings.allow_attendee_messaging,
-            allow_artist_messaging: settings.allow_artist_messaging,
+            allow_client_messaging: false, // Always false
+            allow_participant_messaging: settings.allow_participant_messaging,
+            allow_group_messaging: settings.allow_group_messaging,
             moderation_enabled: settings.moderation_enabled,
             notification_emails_enabled: settings.notification_emails_enabled,
             auto_response_enabled: settings.auto_response_enabled,
@@ -225,8 +226,9 @@ export function EventSettingsPage() {
           setEventModules({
             ...eventModules,
             messaging_enabled: settings.messaging_enabled,
-            allow_attendee_messaging: settings.allow_attendee_messaging,
-            allow_artist_messaging: settings.allow_artist_messaging,
+            allow_client_messaging: false,
+            allow_participant_messaging: settings.allow_participant_messaging,
+            allow_group_messaging: settings.allow_group_messaging,
             moderation_enabled: settings.moderation_enabled,
             notification_emails_enabled: settings.notification_emails_enabled,
             auto_response_enabled: settings.auto_response_enabled,
