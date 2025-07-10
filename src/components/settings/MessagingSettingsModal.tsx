@@ -137,7 +137,6 @@ export function MessagingSettingsModal({
           .upsert({
             event_id: eventId,
             messaging_enabled: settings.messaging_enabled,
-            allow_client_messaging: false, // Always false, clients can never message each other
             allow_participant_messaging: settings.allow_participant_messaging,
             allow_group_messaging: settings.allow_group_messaging,
             moderation_enabled: settings.moderation_enabled,
@@ -247,28 +246,6 @@ export function MessagingSettingsModal({
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <Users className="w-5 h-5 text-red-400" />
-                          <span className="text-gray-300">Allow Client-to-Client Messaging</span>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-not-allowed opacity-50">
-                          <input 
-                            type="checkbox" 
-                            checked={false}
-                            disabled={true}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                        </label>
-                      </div>
-                      
-                      <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3 mb-4">
-                        <p className="text-red-300 text-sm">
-                          Client-to-client messaging is permanently disabled to prevent potential abuse.
-                        </p>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
                           <Users className="w-5 h-5 text-gray-400" />
                           <span className="text-gray-300">Allow Participant-to-Participant Messaging</span>
                         </div>
@@ -320,7 +297,6 @@ export function MessagingSettingsModal({
                   <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4 mt-4">
                     <h4 className="text-blue-300 font-medium mb-2">Messaging Permissions Explained</h4>
                     <ul className="text-blue-200 text-sm space-y-2">
-                      <li>• <strong>Client-to-Client Messaging:</strong> Always disabled to prevent potential abuse.</li>
                       <li>• <strong>Participant-to-Participant Messaging:</strong> Allows artists, piercers, and other event participants to message each other.</li>
                       <li>• <strong>Group Messaging:</strong> Allows event managers to send messages to groups (e.g., all artists, all piercers).</li>
                       <li>• <strong>Message Moderation:</strong> When enabled, messages are reviewed before being delivered.</li>
