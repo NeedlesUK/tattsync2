@@ -52,10 +52,10 @@ export const AdminDashboardPage: React.FC = () => {
       
       // Fetch stats with error handling for each table
       const [eventsResult, usersResult, applicationsResult, studiosResult] = await Promise.all([
-        supabase.from('events').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
-        supabase.from('users').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
-        supabase.from('applications').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 })),
-        supabase.from('studios').select('*', { count: 'exact', head: true }).catch(() => ({ count: 0 }))
+        supabase.from('events').select('*', { count: 'exact', head: true }).then(result => result).catch(() => ({ count: 0 })),
+        supabase.from('users').select('*', { count: 'exact', head: true }).then(result => result).catch(() => ({ count: 0 })),
+        supabase.from('applications').select('*', { count: 'exact', head: true }).then(result => result).catch(() => ({ count: 0 })),
+        supabase.from('studios').select('*', { count: 'exact', head: true }).then(result => result).catch(() => ({ count: 0 }))
       ]);
 
       setStats({
