@@ -260,7 +260,7 @@ export function Header() {
                     <span className="block font-medium">{user.name || 'User'}</span>
                   </div>
                 </Link>
-                {user && (user.email === 'admin@tattsync.com' || user.role === 'admin') && (
+                {user && (roleDisplay || user.email === 'admin@tattsync.com' || user.role === 'admin') && (
                   <span className={`${roleDisplay?.color || 'bg-purple-600'} text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1`}>
                     {user.role === 'admin' || user.email === 'admin@tattsync.com' ? (
                       <>
