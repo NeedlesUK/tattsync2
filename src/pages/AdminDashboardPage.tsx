@@ -689,7 +689,7 @@ export function AdminDashboardPage() {
                   </p>
                   {/* Display templates if available */}
                   <div className="space-y-4 mb-4">
-                    {templates.length > 0 ? (
+                    {templates && templates.length > 0 ? (
                       <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
                         <div className="overflow-x-auto">
                           <table className="w-full">
@@ -742,7 +742,7 @@ export function AdminDashboardPage() {
                   </p>
                   {/* Display aftercare templates if available */}
                   <div className="space-y-4 mb-4">
-                    {aftercareTemplates.length > 0 ? (
+                    {aftercareTemplates && aftercareTemplates.length > 0 ? (
                       <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
                         <div className="overflow-x-auto">
                           <table className="w-full">
