@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Settings, Info, Gift, Tag, Users, MessageCircle, Calendar, CreditCard, FileText, Bell, Globe, Shield, Mail, Edit, Eye, Ticket } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { TicketSettingsModal } from '../components/settings/TicketSettingsModal';
 import { EventInformationModal } from '../components/settings/EventInformationModal';
 import { EventDealsModal } from '../components/settings/EventDealsModal'; 
 import { GlobalDealsModal } from '../components/settings/GlobalDealsModal';
@@ -19,6 +20,7 @@ export function EventSettingsPage() {
   const [isInformationModalOpen, setIsInformationModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isEventDetailsModalOpen, setIsEventDetailsModalOpen] = useState(false); 
+  const [isTicketTypeModalOpen, setIsTicketTypeModalOpen] = useState(false);
   const [isDealsModalOpen, setIsDealsModalOpen] = useState(false);
   const [isGlobalDealsModalOpen, setIsGlobalDealsModalOpen] = useState(false);
   const [isApplicationSettingsModalOpen, setIsApplicationSettingsModalOpen] = useState(false);
@@ -202,6 +204,15 @@ export function EventSettingsPage() {
     }
   };
 
+  const handleSaveTicketTypes = async (ticketTypes: any[]) => {
+    try {
+      // In real implementation, save to API
+      console.log('Saving ticket types:', ticketTypes);
+    } catch (error) {
+      console.error('Error saving ticket types:', error);
+    }
+  };
+
   const handleSaveApplicationSettings = async (settings: any) => {
     try {
       // In real implementation, save to API
@@ -297,7 +308,7 @@ export function EventSettingsPage() {
           title: 'Ticketing',
           description: `Configure ticket types, pricing, and sales`,
           icon: Ticket,
-          action: () => navigate('/ticket-management')
+          action: () => setIsTicketTypeModalOpen(true)
         },
         {
           title: 'Consent Forms',
@@ -536,4 +547,13 @@ export function EventSettingsPage() {
       </div>
     </div>
   );
+    {/* Ticket Type Modal */}
+    <TicketSettingsModal
+      eventId={eventId || 0}
+      eventName={event.name}
+      isOpen={isTicketTypeModalOpen}
+      onClose={() => setIsTicketTypeModalOpen(false)}
+      onSave={handleSaveTicketTypes}
+    />
+
 }

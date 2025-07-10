@@ -11,7 +11,6 @@ export function TicketManagementPage() {
   const { user, supabase } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState('overview');
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
   const [isComplimentaryModalOpen, setIsComplimentaryModalOpen] = useState(false);
   const [isScannerModalOpen, setIsScannerModalOpen] = useState(false);
@@ -360,8 +359,8 @@ export function TicketManagementPage() {
               <span>Discounts</span>
             </button>
           </div>
-        </div>
-
+              onClick={() => navigate(`/event-settings?event=${eventId}`)}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
         {/* Tabs */}
         <div className="flex space-x-1 mb-8">
           <button
@@ -390,8 +389,8 @@ export function TicketManagementPage() {
               activeTab === 'purchasers'
                 ? 'bg-purple-600 text-white'
                 : 'text-gray-300 hover:text-white hover:bg-white/10'
-            }`}
-          >
+              <Settings className="w-5 h-5" />
+              <span>Manage in Settings</span>
             Purchasers
           </button>
         </div>
@@ -720,17 +719,6 @@ export function TicketManagementPage() {
               </button>
             </div>
           </div>
-        )}
-
-        {/* Modals */}
-        <TicketScannerModal
-          eventId={eventId || 0}
-          eventName={event?.name || ''}
-          isOpen={isScannerModalOpen}
-          onClose={() => setIsScannerModalOpen(false)}
-          onScanComplete={handleScanComplete}
-        />
-
         <TicketDiscountModal
           eventId={eventId || 0}
           eventName={event?.name || ''}
@@ -750,4 +738,3 @@ export function TicketManagementPage() {
       </div>
     </div>
   );
-}
