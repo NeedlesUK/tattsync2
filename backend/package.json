@@ -8,7 +8,12 @@
     "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["tattoo", "events", "api", "backend"],
+  "keywords": [
+    "tattoo",
+    "events",
+    "api",
+    "backend"
+  ],
   "author": "TattSync Team",
   "license": "MIT",
   "dependencies": {
@@ -16,7 +21,9 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "helmet": "^7.1.0"
+    "handlebars": "^4.7.8",
+    "helmet": "^7.1.0",
+    "nodemailer": "^6.9.9"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const dotenv = require('dotenv');
 const path = require('path');
+const consentRoutes = require('./routes/consentRoutes');
 
 // Load environment variables
 dotenv.config();
@@ -18,6 +19,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
+app.use('/api/consent', consentRoutes);
+
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
