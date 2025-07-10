@@ -1,388 +1,399 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Plus, Trash2, Mail, Edit, AlertCircle, Check } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Menu, X, User, LogOut, Settings, Crown, Calendar, Award, Building, MessageCircle, Ticket, Users, Bell } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
-interface EmailTemplatesModalProps {
-  eventId: number;
-  eventName: string;
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (templates: EmailTemplate[]) => Promise<void>;
-}
-
-export interface EmailTemplate {
-  id?: number;
-  event_id: number;
-  template_type: 'approval' | 'rejection';
-  subject: string;
-  message: string;
-}
-
-export function EmailTemplatesModal({
-  eventId,
-  eventName,
-  isOpen,
-  onClose,
-  onSave
-}: EmailTemplatesModalProps) {
-  const { supabase } = useAuth();
-  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
-  const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-
+export function Header() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const location = useLocation();
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+  
   useEffect(() => {
-    if (isOpen) {
-      fetchTemplates();
+    if (user?.roles) {
+      setUserRoles(user.roles);
+    } else if (user?.role) {
+      setUserRoles([user.role]);
+    } else {
+      setUserRoles([]);
     }
-  }, [isOpen, eventId]);
+  }, [user]);
 
-  const fetchTemplates = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      if (supabase) {
-        const { data, error } = await supabase
-          .from('email_templates')
-          .select('*')
-          .eq('event_id', eventId);
-          
-        if (error) {
-          console.error('Error fetching email templates:', error);
-          throw error;
-        }
-        
-        if (data && data.length > 0) {
-          console.log('Fetched email templates:', data);
-          setTemplates(data);
-          
-          // Set the first type as selected
-          if (data.length > 0 && !selectedType) {
-            setSelectedType(data[0].template_type);
+  // Define navigation based on user role
+  const getNavigation = (): any[] => {
+    // Default navigation for all users
+    const baseNavigation = [
+      { name: 'Dashboard', href: '/dashboard' }
+    ];
+    
+    // For event managers, show specific navigation
+    if (userRoles.includes('event_manager') || userRoles.includes('event_admin')) {
+      return [
+        ...baseNavigation,
+        { 
+          name: 'Messages', 
+          href: '/messages',
+          badge: {
+            count: 0, // Replace with actual unread count
+            color: 'bg-green-500 text-white'
           }
-        } else {
-          // Create default templates
-          const defaultTemplates = [
-            {
-              event_id: eventId,
-              template_type: 'approval',
-              subject: 'Your application has been approved!',
-              message: `Dear {{applicant_name}},
+        },
+        { 
+          name: 'Tickets', 
+          href: '/ticket-management',
+          requiresModule: 'ticketing_enabled'
+        },
+        { 
+         name: 'Applications', 
+          href: '/applications'
+        },
+        { 
+          name: 'Attendees', 
+          href: '/attendees'
+        },
+      ];
+    }
+    
+    // For regular users
+    return [
+      ...baseNavigation,
+      { name: 'Events', href: '/events' },
+      { name: 'Messages', href: '/messages' },
+      { name: 'Deals', href: '/deals' },
+    ];
+  };
 
-We are pleased to inform you that your application to participate in {{event_name}} as a {{application_type}} has been approved!
+  const navigationItems = getNavigation();
 
-Please complete your registration by clicking the link below:
-{{registration_link}}
+  // For Master Admin, direct links instead of dropdowns
+  const adminDirectLinks = [
+    { name: 'TattScore', href: '/tattscore/admin' },
+    { name: 'Studio', href: '/studio/dashboard' },
+    { name: 'Tickets', href: '/ticket-management' },
+  ];
 
-This link will expire in 7 days. After completing your registration, you will be able to access your profile and update your information.
+  // TattScore navigation items - filter based on role
+  const tattscoreNavigation = [
+    { name: 'TattScore Admin', href: '/tattscore/admin', roles: ['event_manager', 'event_admin'] },
+    { name: 'Leaderboard', href: '/tattscore/judging', roles: ['event_manager', 'event_admin', 'judge'] }
+  ];
 
-If you have any questions, please don't hesitate to contact us.
+  // Studio navigation items
+  const studioNavigation = [
+    { name: 'Studio Dashboard', href: '/studio/dashboard', roles: ['studio_manager', 'artist', 'piercer'] },
+  ];
 
-Best regards,
-The {{event_name}} Team`
-            },
-            {
-              event_id: eventId,
-              template_type: 'rejection',
-              subject: 'Regarding your application',
-              message: `Dear {{applicant_name}},
+  const isActive = (path: string) => location.pathname === path;
 
-Thank you for your interest in participating in {{event_name}} as a {{application_type}}.
-
-After careful consideration, we regret to inform you that we are unable to accept your application at this time. Due to the high volume of applications we receive, we unfortunately cannot accommodate everyone.
-
-We appreciate your interest and encourage you to apply for future events.
-
-Best regards,
-The {{event_name}} Team`
-            }
-          ];
-          
-          console.log('Created default email templates:', defaultTemplates);
-          setTemplates(defaultTemplates);
-          
-          // Set the first type as selected
-          setSelectedType('approval');
-        }
-      } else {
-        // Mock data for when Supabase is not available
-        const mockTemplates = [
-          {
-            event_id: eventId,
-            template_type: 'approval',
-            subject: 'Your application has been approved!',
-            message: `Dear {{applicant_name}},
-
-We are pleased to inform you that your application to participate in {{event_name}} as a {{application_type}} has been approved!
-
-Please complete your registration by clicking the link below:
-{{registration_link}}
-
-This link will expire in 7 days. After completing your registration, you will be able to access your profile and update your information.
-
-If you have any questions, please don't hesitate to contact us.
-
-Best regards,
-The {{event_name}} Team`
-          },
-          {
-            event_id: eventId,
-            template_type: 'rejection',
-            subject: 'Regarding your application',
-            message: `Dear {{applicant_name}},
-
-Thank you for your interest in participating in {{event_name}} as a {{application_type}}.
-
-After careful consideration, we regret to inform you that we are unable to accept your application at this time. Due to the high volume of applications we receive, we unfortunately cannot accommodate everyone.
-
-We appreciate your interest and encourage you to apply for future events.
-
-Best regards,
-The {{event_name}} Team`
-          }
-        ];
-        
-        setTemplates(mockTemplates);
-        setSelectedType('approval');
-      }
-    } catch (err) {
-      console.error('Exception fetching email templates:', err);
-      setError('Failed to load email templates');
-    } finally {
-      setIsLoading(false);
+  const getRoleDisplay = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return { label: 'Master Admin', icon: Crown, color: 'bg-purple-600' };
+      case 'event_manager':
+        return { label: 'Event Manager', icon: Calendar, color: 'bg-teal-600' };
+      case 'studio_manager':
+        return { label: 'Studio Manager', icon: Building, color: 'bg-blue-600' };
+      case 'judge':
+        return { label: 'Judge', icon: Award, color: 'bg-orange-600' };
+      default:
+        return null;
     }
   };
 
-  const getSelectedTemplate = () => {
-    return templates.find(t => t.template_type === selectedType) || null;
-  };
-
-  const updateTemplate = (type: string, updates: Partial<EmailTemplate>) => {
-    setTemplates(prev => 
-      prev.map(template => 
-        template.template_type === type ? { ...template, ...updates } : template
-      )
-    );
-  };
-
-  const handleSubmit = async () => {
-    try {
-      setIsSaving(true);
-      setError(null);
-      setSuccess(null);
-      
-      // Validate templates
-      for (const template of templates) {
-        if (!template.subject.trim()) {
-          setError('Email subject is required');
-          setIsSaving(false);
-          return;
-        }
-        
-        if (!template.message.trim()) {
-          setError('Email message is required');
-          setIsSaving(false);
-          return;
-        }
-      }
-      
-      // Save to database if using Supabase
-      if (supabase) {
-        for (const template of templates) {
-          const { error } = await supabase
-            .from('email_templates')
-            .upsert({
-              id: template.id,
-              event_id: eventId,
-              template_type: template.template_type,
-              subject: template.subject,
-              message: template.message,
-              updated_at: new Date().toISOString()
-            });
-            
-          if (error) {
-            console.error('Error saving email template:', error);
-            throw error;
-          }
-        }
-        
-        setSuccess('Email templates saved successfully');
-      }
-      
-      // Call the onSave callback
-      await onSave(templates);
-      
-      // Close the modal after a short delay to show success message
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-    } catch (err) {
-      console.error('Exception saving email templates:', err);
-      setError('An unexpected error occurred');
-    } finally {
-      setIsSaving(false);
+  const roleDisplay = user ? getRoleDisplay(user.role) : null;
+  
+  // Check if a module is enabled for the current user
+  const isModuleEnabled = (moduleName: string) => {
+    // This is a placeholder - in a real implementation, you would check if the module is enabled
+    // for the current user's event
+    if (!user) return false;
+    
+    // For demo purposes, enable all modules for admin users
+    if (user.role === 'admin' || user.email === 'admin@tattsync.com') {
+      return true;
     }
+    
+    // For event managers, check if the module is enabled in their event
+    // This would typically be fetched from the database
+    // For now, we'll just return true for all modules
+    return true;
   };
 
-  if (!isOpen) return null;
+  // Filter navigation items based on user role
+  const filteredTattscoreNavigation = tattscoreNavigation.filter(item => 
+    !item.roles || (user && (userRoles.some(role => item.roles.includes(role)) || user?.email === 'gary@tattscore.com'))
+  );
 
-  const selectedTemplate = getSelectedTemplate();
+  const filteredStudioNavigation = studioNavigation.filter(item => 
+    !item.roles || (user && (userRoles.some(role => item.roles.includes(role)) || user?.email === 'gary@tattscore.com'))
+  );
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 border border-purple-500/20 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <div>
-            <h2 className="text-xl font-bold text-white">Email Templates</h2>
-            <p className="text-gray-300 text-sm">{eventName}</p>
+    <header className="bg-black/20 backdrop-blur-md border-b border-purple-500/20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center space-x-3">
+              <img 
+                src="/IMG_0953.png" 
+                alt="TattSync Logo" 
+                className="w-10 h-10 object-contain"
+              />
+              <span className="text-white font-bold text-xl">TattSync</span>
+            </Link>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
 
-        {/* Content */}
-        <div className="flex h-[calc(90vh-200px)]">
-          {/* Left sidebar - Template types */}
-          <div className="w-1/3 border-r border-white/10 overflow-y-auto">
-            <div className="p-4 border-b border-white/10">
-              <h3 className="text-white font-medium">Template Types</h3>
-            </div>
-            
-            <div className="divide-y divide-white/10">
-              {templates.map((template) => {
-                const isActive = selectedType === template.template_type;
+          {user && (
+            <nav className="hidden md:flex space-x-8">
+              {navigationItems.map((item) => {
+                // Skip items that require a module if the module is not enabled
+                if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
+                  return null;
+                }
                 
                 return (
-                  <div 
-                    key={template.template_type} 
-                    className={`p-4 cursor-pointer transition-colors ${
-                      isActive
-                        ? 'bg-purple-600/20'
-                        : 'hover:bg-white/5'
+                  <Link
+                    key={item.name}
+                    to={item.href} 
+                    className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive(item.href)
+                        ? 'text-purple-400 bg-purple-400/10'
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
                     }`}
-                    onClick={() => setSelectedType(template.template_type)}
                   >
-                    <div className="flex items-center space-x-3">
-                      <Mail className="w-5 h-5 text-purple-400" />
-                      <div>
-                        <h4 className="text-white font-medium capitalize">
-                          {template.template_type === 'approval' ? 'Approval Email' : 'Rejection Email'}
-                        </h4>
-                        <p className="text-gray-400 text-xs truncate">{template.subject}</p>
-                      </div>
-                    </div>
-                  </div>
+                    {item.name}
+                    {item.badge && (
+                      <span className={`ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${
+                        item.badge.count > 0 
+                          ? 'bg-red-500 text-white' 
+                          : item.badge.color
+                      }`}>
+                        {item.badge.count}
+                      </span>
+                    )}
+                  </Link>
                 );
               })}
-            </div>
-          </div>
-          
-          {/* Right side - Template editor */}
-          <div className="flex-1 overflow-y-auto p-6">
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
-              </div>
-            ) : selectedTemplate ? (
-              <div className="space-y-6">
-                {error && (
-                  <div className="p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center space-x-3">
-                    <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-                    <p className="text-red-400 text-sm">{error}</p>
+              
+              {/* For Master Admin, show direct links */}
+              {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive(item.href)
+                      ? 'text-purple-400 bg-purple-400/10'
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              ))}
+              
+              {/* TattScore Navigation - only for non-admin users */}
+              {!userRoles.includes('admin') && filteredTattscoreNavigation.length > 0 && (
+                <div className="relative group">
+                  <button className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors flex items-center space-x-1">
+                    <span>TattScore</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div className="absolute left-0 mt-2 w-48 bg-slate-800 border border-white/10 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    {filteredTattscoreNavigation.map((item) => (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
                   </div>
+                </div>
+              )}
+              
+              {/* Studio Navigation - only for non-admin users */}
+              {!userRoles.includes('admin') && filteredStudioNavigation.length > 0 && (
+                <div className="relative group">
+                  <button className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors flex items-center space-x-1">
+                    <span>Studio</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div className="absolute left-0 mt-2 w-48 bg-slate-800 border border-white/10 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    {filteredStudioNavigation.map((item) => (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </nav>
+          )}
+
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <div className="flex items-center space-x-3">
+                <Link
+                  to="/profile"
+                  className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors"
+                >
+                  {user.avatar ? (
+                    <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
+                  ) : (
+                    <div className="w-8 h-8 bg-purple-500/30 rounded-full flex items-center justify-center overflow-hidden">
+                      {user.name ? (
+                        <span className="text-white font-bold text-sm">{user.name.charAt(0).toUpperCase()}</span>
+                      ) : (
+                        <User className="w-5 h-5 text-purple-400" />
+                      )}
+                    </div>
+                  )}
+                  <div className="hidden sm:block">
+                    <span className="block font-medium">{user.name || 'User'}</span>
+                  </div>
+                </Link>
+                {user && roleDisplay && (
+                  <span className={`${roleDisplay?.color || 'bg-purple-600'} text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1`}>
+                    {user.role === 'admin' || user.email === 'admin@tattsync.com' ? (
+                      <>
+                        <Crown className="w-3 h-3" />
+                        <span className="hidden sm:inline">{roleDisplay?.label || 'Master Admin'}</span>
+                      </>
+                    ) : (
+                      <>
+                        {roleDisplay && <roleDisplay.icon className="w-3 h-3" />}
+                        <span className="hidden sm:inline">{roleDisplay?.label || ''}</span>
+                      </>
+                    )}
+                  </span>
                 )}
-                
-                {success && (
-                  <div className="p-4 bg-green-500/20 border border-green-500/30 rounded-lg flex items-center space-x-3">
-                    <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
-                    <p className="text-green-400 text-sm">{success}</p>
-                  </div>
-                )}
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Email Subject
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedTemplate.subject}
-                    onChange={(e) => updateTemplate(selectedType!, { subject: e.target.value })}
-                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="Enter email subject"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Email Message
-                  </label>
-                  <textarea
-                    value={selectedTemplate.message}
-                    onChange={(e) => updateTemplate(selectedType!, { message: e.target.value })}
-                    rows={15}
-                    className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
-                    placeholder="Enter email message"
-                  />
-                </div>
-                
-                <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
-                  <h4 className="text-blue-300 font-medium mb-2">Available Placeholders</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    <div className="text-blue-200 text-sm">
-                      <code>{{'{{'}}applicant_name{{'}}'}}</code> - Applicant's name
-                    </div>
-                    <div className="text-blue-200 text-sm">
-                      <code>{{'{{'}}event_name{{'}}'}}</code> - Event name
-                    </div>
-                    <div className="text-blue-200 text-sm">
-                      <code>{{'{{'}}application_type{{'}}'}}</code> - Application type
-                    </div>
-                    <div className="text-blue-200 text-sm">
-                      <code>{{'{{'}}registration_link{{'}}'}}</code> - Registration link
-                    </div>
-                  </div>
-                </div>
+                <button
+                  onClick={logout}
+                  className="text-gray-300 hover:text-white transition-colors"
+                  aria-label="Logout"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <Mail className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-300 mb-2">Select a template</h3>
-                  <p className="text-gray-400">
-                    Choose a template type from the sidebar to edit
-                  </p>
-                </div>
+              <div className="hidden sm:block">
+                <Link
+                  to="/login"
+                  className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
+                >
+                  Sign In
+                </Link>
               </div>
             )}
+
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden text-gray-300 hover:text-white"
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex space-x-4 p-6 border-t border-white/10 bg-white/5">
-          <button
-            onClick={onClose}
-            className="flex-1 bg-white/10 hover:bg-white/20 text-gray-300 px-6 py-3 rounded-lg font-medium transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={isSaving || isLoading}
-            className="flex-1 bg-gradient-to-r from-purple-600 to-teal-600 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-          >
-            <Save className="w-5 h-5" />
-            <span>{isSaving ? 'Saving...' : 'Save Templates'}</span>
-          </button>
-        </div>
+        {isMenuOpen && user && (
+          <div className="md:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              {navigationItems.map((item) => {
+                // Skip items that require a module if the module is not enabled
+                if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
+                  return null;
+                }
+                
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href} 
+                    className={`flex items-center px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                      isActive(item.href)
+                        ? 'text-purple-400 bg-purple-400/10'
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                    }`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.name}
+                    {item.badge && (
+                      <span className={`ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${
+                        item.badge.count > 0 
+                          ? 'bg-red-500 text-white' 
+                          : item.badge.color
+                      }`}>
+                        {item.badge.count}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+              
+              {/* For Master Admin, show direct links in mobile menu too */}
+              {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                    isActive(item.href)
+                      ? 'text-purple-400 bg-purple-400/10'
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              ))}
+              
+              {/* TattScore Mobile Navigation - only for non-admin users */}
+              {!userRoles.includes('admin') && filteredTattscoreNavigation.length > 0 && (
+                <>
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    TattScore
+                  </div>
+                  {filteredTattscoreNavigation.map((item) => (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                </>
+              )}
+              
+              {/* Studio Mobile Navigation - only for non-admin users */}
+              {!userRoles.includes('admin') && filteredStudioNavigation.length > 0 && (
+                <>
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Studio
+                  </div>
+                  {filteredStudioNavigation.map((item) => (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </header>
   );
 }
