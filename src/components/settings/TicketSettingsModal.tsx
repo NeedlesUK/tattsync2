@@ -622,7 +622,7 @@ export function TicketSettingsModal({
                       >
                         <option value="" className="bg-gray-800">No dependency</option>
                         {ticketTypes
-                          .filter(type => type.is_active && i !== index)
+                          .filter((type, typeIndex) => type.is_active && typeIndex !== index)
                           .map((type, typeIndex) => {
                           // Don't allow self-dependency or dependency on inactive tickets
                           return (
