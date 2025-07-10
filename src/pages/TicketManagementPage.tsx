@@ -1,117 +1,258 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Ticket, QrCode, Plus, Download, Users, CreditCard, Calendar, Tag, BarChart } from 'lucide-react';
-import { TicketTypeModal } from '../components/tickets/TicketTypeModal';
-import { TicketDiscountModal } from '../components/tickets/TicketDiscountModal';
-import { ComplimentaryTicketModal } from '../components/tickets/ComplimentaryTicketModal';
 import { TicketScannerModal } from '../components/tickets/TicketScannerModal';
+import { ComplimentaryTicketModal } from '../components/tickets/ComplimentaryTicketModal';
+import { TicketDiscountModal } from '../components/tickets/TicketDiscountModal';
 import { TicketStatsCard } from '../components/tickets/TicketStatsCard';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export function TicketManagementPage() {
-  const { user } = useAuth();
+  const { user, supabase } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
-  const [isTicketTypeModalOpen, setIsTicketTypeModalOpen] = useState(false);
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
   const [isComplimentaryModalOpen, setIsComplimentaryModalOpen] = useState(false);
   const [isScannerModalOpen, setIsScannerModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
-
-  // Mock data - in real implementation, fetch from API
-  const [ticketTypes, setTicketTypes] = useState([
-    {
-      id: '1',
-      name: 'Day Pass',
-      description: 'Access for one day of your choice',
-      price_gbp: 25.00,
-      capacity: 500,
-      available: 423,
-      sold: 77
-    },
-    {
-      id: '2',
-      name: 'Weekend Pass',
-      description: 'Full access to all days of the event',
-      price_gbp: 65.00,
-      capacity: 300,
-      available: 187,
-      sold: 113
-    },
-    {
-      id: '3',
-      name: 'VIP Pass',
-      description: 'Premium access with exclusive perks',
-      price_gbp: 120.00,
-      capacity: 50,
-      available: 32,
-      sold: 18
-    }
-  ]);
-
-  const [ticketSales, setTicketSales] = useState([
-    { date: '2024-01-01', count: 5 },
-    { date: '2024-01-02', count: 8 },
-    { date: '2024-01-03', count: 12 },
-    { date: '2024-01-04', count: 7 },
-    { date: '2024-01-05', count: 15 },
-    { date: '2024-01-06', count: 10 },
-    { date: '2024-01-07', count: 20 }
-  ]);
-
-  const [purchasers, setPurchasers] = useState([
-    {
-      id: 1,
-      name: 'Sarah Johnson',
-      email: 'sarah@example.com',
-      ticketType: 'Weekend Pass',
-      quantity: 2,
-      purchaseDate: '2024-01-15T14:30:00Z',
-      total: 130.00,
-      status: 'completed'
-    },
-    {
-      id: 2,
-      name: 'Mike Chen',
-      email: 'mike@example.com',
-      ticketType: 'Day Pass',
-      quantity: 1,
-      purchaseDate: '2024-01-14T12:15:00Z',
-      total: 25.00,
-      status: 'completed'
-    },
-    {
-      id: 3,
-      name: 'Emma Davis',
-      email: 'emma@example.com',
-      ticketType: 'VIP Pass',
-      quantity: 1,
-      purchaseDate: '2024-01-13T10:45:00Z',
-      total: 120.00,
-      status: 'completed'
-    }
-  ]);
+  const [eventId, setEventId] = useState<number | null>(null);
+  const [event, setEvent] = useState<any>(null);
+  const [eventModules, setEventModules] = useState<any>(null);
+  const [ticketTypes, setTicketTypes] = useState<any[]>([]);
+  const [ticketSales, setTicketSales] = useState<any[]>([]);
+  const [purchasers, setPurchasers] = useState<any[]>([]);
+  const [totalSold, setTotalSold] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
 
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-  }, []);
+    // Get event ID from query params
+    const params = new URLSearchParams(location.search);
+    const eventIdParam = params.get('event');
+    
+    if (eventIdParam) {
+      setEventId(parseInt(eventIdParam));
+      fetchEventDetails(parseInt(eventIdParam));
+    } else {
+      // Try to get the first event managed by the user
+      fetchUserEvents();
+    }
+  }, [location.search]);
 
-  const handleSaveTicketTypes = async (updatedTypes: any[]) => {
+  useEffect(() => {
+    if (eventId) {
+      fetchEventModules(eventId);
+      fetchTicketTypes(eventId);
+      fetchTicketSales(eventId);
+      fetchPurchasers(eventId);
+    }
+  }, [eventId]);
+
+  const fetchUserEvents = async () => {
+    if (!supabase || !user) {
+      setIsLoading(false);
+      return;
+    }
+    
     try {
-      // In real implementation, save to API
-      console.log('Saving ticket types:', updatedTypes);
-      setTicketTypes(updatedTypes);
+      const { data, error } = await supabase
+        .from('events')
+        .select('id, name')
+        .eq('event_manager_id', user.id)
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      if (error) {
+        console.error('Error fetching user events:', error);
+        setIsLoading(false);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        setEventId(data[0].id);
+        fetchEventDetails(data[0].id);
+      } else {
+        setIsLoading(false);
+      }
     } catch (error) {
-      console.error('Error saving ticket types:', error);
+      console.error('Error fetching user events:', error);
+      setIsLoading(false);
+    }
+  };
+  
+  const fetchEventDetails = async (id: number) => {
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (error) {
+        console.error('Error fetching event details:', error);
+        setIsLoading(false);
+        return;
+      }
+      
+      if (data) {
+        setEvent(data);
+      }
+    } catch (error) {
+      console.error('Error fetching event details:', error);
+    }
+  };
+  
+  const fetchEventModules = async (id: number) => {
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('event_modules')
+        .select('*')
+        .eq('event_id', id)
+        .single();
+        
+      if (error) {
+        console.error('Error fetching event modules:', error);
+        setIsLoading(false);
+        return;
+      }
+      
+      if (data) {
+        setEventModules(data);
+        
+        // If ticketing is not enabled, redirect to dashboard
+        if (!data.ticketing_enabled) {
+          navigate('/dashboard');
+          return;
+        }
+      }
+      
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching event modules:', error);
+      setIsLoading(false);
+    }
+  };
+
+  const fetchTicketTypes = async (id: number) => {
+    if (!supabase) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('ticket_types')
+        .select('*')
+        .eq('event_id', id)
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        console.error('Error fetching ticket types:', error);
+        return;
+      }
+      
+      if (data) {
+        // Calculate available tickets
+        const typesWithAvailability = data.map(type => {
+          const sold = Math.floor(Math.random() * (type.capacity || 100)); // Mock data
+          return {
+            ...type,
+            sold,
+            available: (type.capacity || 100) - sold
+          };
+        });
+        
+        setTicketTypes(typesWithAvailability);
+        
+        // Calculate totals
+        const sold = typesWithAvailability.reduce((sum, type) => sum + type.sold, 0);
+        const revenue = typesWithAvailability.reduce((sum, type) => sum + (type.sold * type.price_gbp), 0);
+        
+        setTotalSold(sold);
+        setTotalRevenue(revenue);
+      }
+    } catch (error) {
+      console.error('Error fetching ticket types:', error);
+    }
+  };
+
+  const fetchTicketSales = async (id: number) => {
+    // In a real implementation, fetch from API
+    // For now, use mock data
+    const mockSales = [];
+    const today = new Date();
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(today.getDate() - i);
+      
+      mockSales.push({
+        date: date.toISOString().split('T')[0],
+        count: Math.floor(Math.random() * 20) + 1
+      });
+    }
+    
+    setTicketSales(mockSales);
+  };
+
+  const fetchPurchasers = async (id: number) => {
+    if (!supabase) return;
+    
+    try {
+      // In a real implementation, fetch from API
+      // For now, use mock data
+      const mockPurchasers = [
+        {
+          id: 1,
+          name: 'Sarah Johnson',
+          email: 'sarah@example.com',
+          ticketType: 'Weekend Pass',
+          quantity: 2,
+          purchaseDate: '2024-01-15T14:30:00Z',
+          total: 130.00,
+          status: 'completed'
+        },
+        {
+          id: 2,
+          name: 'Mike Chen',
+          email: 'mike@example.com',
+          ticketType: 'Day Pass',
+          quantity: 1,
+          purchaseDate: '2024-01-14T12:15:00Z',
+          total: 25.00,
+          status: 'completed'
+        },
+        {
+          id: 3,
+          name: 'Emma Davis',
+          email: 'emma@example.com',
+          ticketType: 'VIP Pass',
+          quantity: 1,
+          purchaseDate: '2024-01-13T10:45:00Z',
+          total: 120.00,
+          status: 'completed'
+        }
+      ];
+      
+      setPurchasers(mockPurchasers);
+    } catch (error) {
+      console.error('Error fetching purchasers:', error);
     }
   };
 
   const handleSaveDiscounts = async (discounts: any[]) => {
     try {
-      // In real implementation, save to API
+      // In a real implementation, save to API
       console.log('Saving discounts:', discounts);
     } catch (error) {
       console.error('Error saving discounts:', error);
@@ -120,7 +261,7 @@ export function TicketManagementPage() {
 
   const handleIssueComplimentary = async (recipients: any[]) => {
     try {
-      // In real implementation, save to API
+      // In a real implementation, save to API
       console.log('Issuing complimentary tickets to:', recipients);
     } catch (error) {
       console.error('Error issuing complimentary tickets:', error);
@@ -129,7 +270,7 @@ export function TicketManagementPage() {
 
   const handleScanComplete = async (ticketData: any, notes?: string) => {
     try {
-      // In real implementation, save to API
+      // In a real implementation, save to API
       console.log('Ticket scanned:', ticketData, 'Notes:', notes);
     } catch (error) {
       console.error('Error recording ticket scan:', error);
@@ -148,19 +289,34 @@ export function TicketManagementPage() {
     return `£${amount.toFixed(2)}`;
   };
 
-  const getTotalSold = () => {
-    return ticketTypes.reduce((sum, type) => sum + type.sold, 0);
-  };
-
-  const getTotalRevenue = () => {
-    return ticketTypes.reduce((sum, type) => sum + (type.sold * type.price_gbp), 0);
-  };
-
   const getCapacityPercentage = () => {
     const totalCapacity = ticketTypes.reduce((sum, type) => sum + (type.capacity || 0), 0);
-    const totalSold = getTotalSold();
-    return totalCapacity > 0 ? (totalSold / totalCapacity) * 100 : 0;
+    return totalCapacity > 0 ? Math.round((totalSold / totalCapacity) * 100) : 0;
   };
+
+  // If no event is selected or ticketing is not enabled
+  if (!isLoading && (!event || !eventModules?.ticketing_enabled)) {
+    return (
+      <div className="min-h-screen pt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-white mb-4">Ticketing Not Available</h1>
+            <p className="text-gray-300 mb-6">
+              {!event 
+                ? "Please select an event to manage tickets." 
+                : "Ticketing is not enabled for this event. Please contact the administrator to enable ticketing."}
+            </p>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -169,14 +325,6 @@ export function TicketManagementPage() {
       </div>
     );
   }
-
-  // Mock event data
-  const event = {
-    id: 1,
-    name: 'Ink Fest 2024',
-    startDate: '2024-03-15',
-    endDate: '2024-03-17'
-  };
 
   return (
     <div className="min-h-screen pt-16">
@@ -210,13 +358,6 @@ export function TicketManagementPage() {
             >
               <Tag className="w-5 h-5" />
               <span>Discounts</span>
-            </button>
-            <button
-              onClick={() => setIsTicketTypeModalOpen(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Ticket Types</span>
             </button>
           </div>
         </div>
@@ -262,25 +403,25 @@ export function TicketManagementPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <TicketStatsCard
                 title="Total Tickets Sold"
-                value={getTotalSold()}
+                value={totalSold.toString()}
                 icon={Ticket}
                 color="purple"
               />
               <TicketStatsCard
                 title="Total Revenue"
-                value={formatCurrency(getTotalRevenue())}
+                value={formatCurrency(totalRevenue)}
                 icon={CreditCard}
                 color="green"
               />
               <TicketStatsCard
                 title="Capacity Filled"
-                value={`${Math.round(getCapacityPercentage())}%`}
+                value={`${getCapacityPercentage()}%`}
                 icon={Users}
                 color="blue"
               />
               <TicketStatsCard
                 title="Days Until Event"
-                value={Math.ceil((new Date(event.startDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}
+                value={Math.ceil((new Date(event.start_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)).toString()}
                 icon={Calendar}
                 color="orange"
               />
@@ -291,10 +432,10 @@ export function TicketManagementPage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white">Ticket Types</h2>
                 <button
-                  onClick={() => setIsTicketTypeModalOpen(true)}
+                  onClick={() => navigate(`/event-settings?event=${eventId}`)}
                   className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors"
                 >
-                  Manage
+                  Manage in Settings
                 </button>
               </div>
               
@@ -340,6 +481,14 @@ export function TicketManagementPage() {
                         </td>
                       </tr>
                     ))}
+                    
+                    {ticketTypes.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-8 text-center text-gray-400">
+                          No ticket types defined yet. Configure ticket types in Event Settings.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -426,40 +575,48 @@ export function TicketManagementPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/10">
-                    {[...Array(10)].map((_, index) => {
-                      const ticketType = ticketTypes[index % ticketTypes.length];
-                      const quantity = Math.floor(Math.random() * 3) + 1;
-                      const hasDiscount = index % 3 === 0;
-                      const discountAmount = hasDiscount ? ticketType.price_gbp * quantity * 0.1 : 0;
-                      const total = (ticketType.price_gbp * quantity) - discountAmount;
-                      
-                      return (
-                        <tr key={index} className="hover:bg-white/5">
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-300">
-                            {formatDate(new Date(2024, 0, 15 - index).toISOString())}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-white">
-                            {ticketType.name}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-white">
-                            {quantity}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-white">
-                            {formatCurrency(ticketType.price_gbp)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {hasDiscount ? (
-                              <span className="text-green-400">{formatCurrency(discountAmount)}</span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-white">
-                            {formatCurrency(total)}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {ticketTypes.length > 0 ? (
+                      [...Array(10)].map((_, index) => {
+                        const ticketType = ticketTypes[index % ticketTypes.length];
+                        const quantity = Math.floor(Math.random() * 3) + 1;
+                        const hasDiscount = index % 3 === 0;
+                        const discountAmount = hasDiscount ? ticketType.price_gbp * quantity * 0.1 : 0;
+                        const total = (ticketType.price_gbp * quantity) - discountAmount;
+                        
+                        return (
+                          <tr key={index} className="hover:bg-white/5">
+                            <td className="px-6 py-4 whitespace-nowrap text-gray-300">
+                              {formatDate(new Date(2024, 0, 15 - index).toISOString())}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-white">
+                              {ticketType.name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-white">
+                              {quantity}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-white">
+                              {formatCurrency(ticketType.price_gbp)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {hasDiscount ? (
+                                <span className="text-green-400">{formatCurrency(discountAmount)}</span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-white">
+                              {formatCurrency(total)}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
+                          No sales data available. Configure ticket types in Event Settings first.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -515,33 +672,41 @@ export function TicketManagementPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/10">
-                    {purchasers.map((purchaser) => (
-                      <tr key={purchaser.id} className="hover:bg-white/5">
-                        <td className="px-6 py-4 whitespace-nowrap text-white">
-                          {purchaser.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-gray-300">
-                          {purchaser.email}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-white">
-                          {purchaser.ticketType}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-white">
-                          {purchaser.quantity}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-gray-300">
-                          {formatDate(purchaser.purchaseDate)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-white">
-                          {formatCurrency(purchaser.total)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400">
-                            {purchaser.status}
-                          </span>
+                    {purchasers.length > 0 ? (
+                      purchasers.map((purchaser) => (
+                        <tr key={purchaser.id} className="hover:bg-white/5">
+                          <td className="px-6 py-4 whitespace-nowrap text-white">
+                            {purchaser.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-300">
+                            {purchaser.email}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-white">
+                            {purchaser.ticketType}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-white">
+                            {purchaser.quantity}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-300">
+                            {formatDate(purchaser.purchaseDate)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-white">
+                            {formatCurrency(purchaser.total)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400">
+                              {purchaser.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
+                          No purchasers found. Issue tickets or wait for customers to buy tickets.
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -558,40 +723,29 @@ export function TicketManagementPage() {
         )}
 
         {/* Modals */}
-        <TicketTypeModal
-          eventId={event.id}
-          eventName={event.name}
-          eventStartDate={event.startDate}
-          eventEndDate={event.endDate}
-          isOpen={isTicketTypeModalOpen}
-          onClose={() => setIsTicketTypeModalOpen(false)}
-          onSave={handleSaveTicketTypes}
-          initialTicketTypes={ticketTypes}
+        <TicketScannerModal
+          eventId={eventId || 0}
+          eventName={event?.name || ''}
+          isOpen={isScannerModalOpen}
+          onClose={() => setIsScannerModalOpen(false)}
+          onScanComplete={handleScanComplete}
         />
 
         <TicketDiscountModal
-          eventId={event.id}
-          eventName={event.name}
+          eventId={eventId || 0}
+          eventName={event?.name || ''}
           isOpen={isDiscountModalOpen}
           onClose={() => setIsDiscountModalOpen(false)}
           onSave={handleSaveDiscounts}
         />
 
         <ComplimentaryTicketModal
-          eventId={event.id}
-          eventName={event.name}
+          eventId={eventId || 0}
+          eventName={event?.name || ''}
           ticketTypes={ticketTypes.map(t => ({ id: t.id, name: t.name }))}
           isOpen={isComplimentaryModalOpen}
           onClose={() => setIsComplimentaryModalOpen(false)}
           onSave={handleIssueComplimentary}
-        />
-
-        <TicketScannerModal
-          eventId={event.id}
-          eventName={event.name}
-          isOpen={isScannerModalOpen}
-          onClose={() => setIsScannerModalOpen(false)}
-          onScanComplete={handleScanComplete}
         />
       </div>
     </div>
