@@ -361,7 +361,6 @@ export function TicketSettingsModal({
     } catch (error) {
       console.error('Error saving ticket types:', error);
       setError('Failed to save ticket types');
-      setError('Failed to save ticket types');
     } finally {
       setIsSaving(false);
     }
