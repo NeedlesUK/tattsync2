@@ -45,11 +45,6 @@ if (supabaseUrl &&
         persistSession: true, 
         detectSessionInUrl: false
       },
-      global: {
-        headers: {
-          'apikey': supabaseAnonKey
-        }
-      },
       db: {
         schema: 'public'
       },
