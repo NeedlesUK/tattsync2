@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 import { StatsCard } from '../components/dashboard/StatsCard';
 import { CreateEventModal } from '../components/events/CreateEventModal';
 import { Users, Calendar, FileText, Building2, Plus } from 'lucide-react';
@@ -31,6 +31,7 @@ interface Stats {
 }
 
 export const AdminDashboardPage: React.FC = () => {
+  const { supabase } = useAuth();
   const [stats, setStats] = useState<Stats>({
     totalEvents: 0,
     totalUsers: 0,
