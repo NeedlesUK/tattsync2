@@ -44,7 +44,7 @@ export function TicketSettingsModal({
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [hasLoadedData, setHasLoadedData] = useState(false);
-  const [eventDates, setEventDates] = useState<string[]>([]);
+  const [eventDates, setEventDates] = useState<string[]>([]); 
   const [venueCapacity, setVenueCapacity] = useState<number>(1000);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -59,7 +59,12 @@ export function TicketSettingsModal({
   const fetchEventDetails = async () => {
     try {
       // Generate dates between start and end date
-      if (eventStartDate && eventEndDate && eventStartDate !== 'undefined' && eventEndDate !== 'undefined') {
+      console.log('Event dates:', { eventStartDate, eventEndDate });
+      
+      if (eventStartDate && eventEndDate && 
+          eventStartDate !== 'undefined' && eventEndDate !== 'undefined' &&
+          !isNaN(new Date(eventStartDate).getTime()) && !isNaN(new Date(eventEndDate).getTime())) {
+        
         const start = new Date(eventStartDate);
         const end = new Date(eventEndDate);
         const dates: string[] = [];
@@ -71,6 +76,18 @@ export function TicketSettingsModal({
         }
         
         setEventDates(dates);
+        console.log('Generated dates:', dates);
+      } else {
+        console.warn('Invalid event dates:', { eventStartDate, eventEndDate });
+        // Fallback to current date range if dates are invalid
+        const today = new Date();
+        const tomorrow = new Date();
+        tomorrow.setDate(today.getDate() + 1);
+        
+        setEventDates([
+          today.toISOString().split('T')[0],
+          tomorrow.toISOString().split('T')[0]
+        ]);
       }
       
       // Get venue capacity
@@ -461,7 +478,7 @@ export function TicketSettingsModal({
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Applicable Days (optional)</label>
                   <div className="flex flex-wrap gap-2">
-                    {eventDates.length > 0 ? eventDates.map((date) => {
+                    {eventDates && eventDates.length > 0 ? eventDates.map((date) => {
                       // Ensure we're working with a proper array and do a strict comparison
                       const applicableDays = Array.isArray(ticketType.applicable_days) ? ticketType.applicable_days : [];
                       const isSelected = applicableDays.some(d => d === date);
