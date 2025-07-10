@@ -15,7 +15,7 @@ export interface ApplicationType {
   label: string;
   description: string;
   enabled: boolean;
-  max_applications: number;
+  max_registrations: number;
   form_fields: FormField[];
 }
 
@@ -61,7 +61,7 @@ export function ApplicationSettingsModal({
       label: 'Tattoo Artist',
       description: 'Tattoo artists who will be working at the event',
       enabled: true,
-      max_applications: 100,
+      max_registrations: 100,
       form_fields: [
         {
           id: 'artist_1',
@@ -110,7 +110,7 @@ export function ApplicationSettingsModal({
       label: 'Piercer',
       description: 'Piercers who will be working at the event',
       enabled: true,
-      max_applications: 50,
+      max_registrations: 50,
       form_fields: [
         {
           id: 'piercer_1',
@@ -159,7 +159,7 @@ export function ApplicationSettingsModal({
       label: 'Trader',
       description: 'Vendors selling merchandise at the event',
       enabled: true,
-      max_applications: 30,
+      max_registrations: 30,
       form_fields: [
         {
           id: 'trader_1',
@@ -200,7 +200,7 @@ export function ApplicationSettingsModal({
       label: 'Volunteer',
       description: 'Volunteers helping at the event',
       enabled: true,
-      max_applications: 20,
+      max_registrations: 20,
       form_fields: [
         {
           id: 'volunteer_1',
@@ -397,8 +397,8 @@ export function ApplicationSettingsModal({
       }
       
       for (const appType of settings.application_types) {
-        if (appType.enabled && appType.max_applications <= 0) {
-          setError(`Maximum applications for ${appType.label} must be greater than zero`);
+        if (appType.enabled && appType.max_registrations < 0) {
+          setError(`Maximum registrations for ${appType.label} cannot be negative`);
           setIsSaving(false);
           return;
         }
@@ -548,19 +548,17 @@ export function ApplicationSettingsModal({
                 {selectedApplicationType.enabled ? (
                   <>
                     <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Maximum Applications
-                      </label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Automatically switch off applications when registered {selectedApplicationType.label} for this event reaches</label>
                       <input
                         type="number"
-                        value={selectedApplicationType.max_applications}
-                        onChange={(e) => updateApplicationType(selectedType!, { max_applications: parseInt(e.target.value) || 0 })}
+                        value={selectedApplicationType.max_registrations}
+                        onChange={(e) => updateApplicationType(selectedType!, { max_registrations: parseInt(e.target.value) || 0 })}
                         min="0"
                         className="w-full px-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
                         placeholder="100"
                       />
                       <p className="text-gray-400 text-xs mt-1">
-                        Maximum number of applications allowed for this type (0 = unlimited)
+                        Maximum number of registrations allowed for this type (0 = unlimited)
                       </p>
                     </div>
                     
