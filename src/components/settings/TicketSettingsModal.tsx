@@ -48,6 +48,8 @@ export function TicketSettingsModal({
   const [venueCapacity, setVenueCapacity] = useState<number>(1000);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -292,10 +294,69 @@ export function TicketSettingsModal({
     setIsSaving(true);
     setError(null);
     setSuccess(null);
+    setError(null);
+    setSuccess(null);
     
     try {
-      await onSave(ticketTypes);
-      setSuccess('Ticket types saved successfully');
+      console.log('Saving ticket types to database:', ticketTypes);
+      
+      if (supabase) {
+        // First, delete existing ticket types for this event
+        const { error: deleteError } = await supabase
+          .from('ticket_types')
+          .delete()
+          .eq('event_id', eventId);
+          
+        if (deleteError) {
+          console.error('Error deleting existing ticket types:', deleteError);
+          throw deleteError;
+        }
+        
+        // Then insert the new ticket types
+        const ticketsToInsert = ticketTypes.map(ticket => ({
+          event_id: eventId,
+          name: ticket.name,
+          description: ticket.description,
+          price_gbp: ticket.price_gbp,
+          capacity: ticket.capacity,
+          start_date: ticket.start_date,
+          end_date: ticket.end_date,
+          is_active: ticket.is_active,
+          affects_capacity: ticket.affects_capacity,
+          applicable_days: ticket.applicable_days,
+          dependency_ticket_id: ticket.dependency_ticket_id,
+          max_per_order: ticket.max_per_order,
+          min_age: ticket.min_age
+        }));
+        
+        const { data, error: insertError } = await supabase
+          .from('ticket_types')
+          .insert(ticketsToInsert)
+          .select();
+          
+        if (insertError) {
+          console.error('Error inserting ticket types:', insertError);
+          throw insertError;
+        }
+        
+        console.log('Ticket types saved successfully:', data);
+        setSuccess('Ticket types saved successfully');
+        
+        // Call the onSave callback
+        await onSave(ticketTypes);
+        
+        // Close the modal after a short delay to show success message
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        // If Supabase is not available, just call the onSave callback
+        await onSave(ticketTypes);
+        setSuccess('Ticket types saved successfully');
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      }
       
       // Close modal after a short delay to show success message
       setTimeout(() => {
@@ -303,6 +364,7 @@ export function TicketSettingsModal({
       }, 1500);
     } catch (error) {
       console.error('Error saving ticket types:', error);
+      setError('Failed to save ticket types');
       setError('Failed to save ticket types');
     } finally {
       setIsSaving(false);
@@ -338,6 +400,20 @@ export function TicketSettingsModal({
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center space-x-3">
+              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+          
+          {success && (
+            <div className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-lg flex items-center space-x-3">
+              <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
+              <p className="text-green-400 text-sm">{success}</p>
+            </div>
+          )}
+          
           {error && (
             <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center space-x-3">
               <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />

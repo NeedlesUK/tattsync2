@@ -212,9 +212,11 @@ export function EventSettingsPage() {
   const handleSaveTicketTypes = async (ticketTypes: any[]) => {
     try {
       // In real implementation, save to API
-      console.log('Saving ticket types:', ticketTypes);
+      console.log('Ticket types saved via callback:', ticketTypes);
+      return true;
     } catch (error) {
       console.error('Error saving ticket types:', error);
+      throw error;
     }
   };
 
@@ -507,6 +509,8 @@ export function EventSettingsPage() {
         <TicketSettingsModal
           eventId={eventId || 0}
           eventName={event.name}
+          eventStartDate={event.start_date}
+          eventEndDate={event.end_date}
           isOpen={isTicketTypeModalOpen}
           onClose={() => setIsTicketTypeModalOpen(false)}
           onSave={handleSaveTicketTypes}
