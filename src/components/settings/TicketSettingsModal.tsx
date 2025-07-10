@@ -480,6 +480,22 @@ export function TicketSettingsModal({
                       </div>
                     </div>
 
+                    <div className="flex justify-end mb-4">
+                      <button
+                        onClick={() => {
+                          // Create a duplicate of this ticket type
+                          const duplicate = { ...ticketType, name: `${ticketType.name} (Copy)` };
+                          // Remove the ID if it exists to ensure it's treated as a new ticket
+                          if (duplicate.id) delete duplicate.id;
+                          setTicketTypes([...ticketTypes, duplicate]);
+                        }}
+                        className="text-purple-400 hover:text-purple-300 text-sm transition-colors flex items-center space-x-1"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Duplicate Ticket</span>
+                      </button>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <div>
                         <label className="block text-sm text-gray-400 mb-1">Ticket Name</label>
@@ -494,6 +510,7 @@ export function TicketSettingsModal({
 
                       <div>
                         <label className="block text-sm text-gray-400 mb-1">Price (£)</label>
+                        <div className="relative">
                         <input
                           type="number"
                           value={ticketType.price_gbp}
@@ -532,6 +549,7 @@ export function TicketSettingsModal({
                             className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                             placeholder="Unlimited"
                           />
+                        </div>
                         </div>
                         <p className="text-xs text-gray-400 mt-1">Leave empty for unlimited</p>
                       </div>
