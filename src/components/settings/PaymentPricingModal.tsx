@@ -530,14 +530,17 @@ export function PaymentPricingModal({
                           <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">
                               Months Before Event
-                            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">£</div>
-                            <input
-                              type="number"
-                              value={tier.months_before_event}
-                              onChange={(e) => updateTier(selectedType!, index, { months_before_event: parseInt(e.target.value) || 0 })}
-                              min="0"
-                              placeholder="100.00"
-                            />
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                value={tier.months_before_event}
+                                onChange={(e) => updateTier(selectedType!, index, { months_before_event: parseInt(e.target.value) || 0 })}
+                                min="0"
+                                className="w-full pl-4 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                placeholder="3"
+                              />
+                            </div>
                             <p className="text-gray-400 text-xs mt-1">
                               When this tier becomes available (0 = available until the event)
                             </p>
