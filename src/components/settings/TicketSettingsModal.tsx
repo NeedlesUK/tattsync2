@@ -286,7 +286,17 @@ export function TicketSettingsModal({
     // Validate ticket types
     if (ticketTypes.some(type => !type.name)) {
       setError('All ticket types must have a name');
-      return;
+      return false;
+    }
+    
+    // Validate capacities against event max attendees per day
+    const totalCapacityPerDay = ticketTypes
+      .filter(type => type.affects_capacity)
+      .reduce((sum, type) => sum + (type.capacity || 0), 0);
+      
+    if (venueCapacity && totalCapacityPerDay > venueCapacity) {
+      setError(`Total ticket capacity (${totalCapacityPerDay}) exceeds the maximum daily capacity (${venueCapacity})`);
+      return false;
     }
     
     // Validate dependencies - ensure no dependencies on unsaved tickets
@@ -300,7 +310,7 @@ export function TicketSettingsModal({
     
     if (invalidDependencies.length > 0) {
       setError('Cannot set dependencies on unsaved tickets. Please save tickets first, then edit to add dependencies.');
-      return;
+      return false;
     }
     
     setIsSaving(true);
@@ -311,48 +321,59 @@ export function TicketSettingsModal({
       console.log('Saving ticket types to database:', ticketTypes);
       
       if (supabase) {
-        // First, delete existing ticket types for this event
-        const { error: deleteError } = await supabase
-          .from('ticket_types')
-          .delete()
-          .eq('event_id', eventId);
-          
-        if (deleteError) {
-          console.error('Error deleting existing ticket types:', deleteError);
-          throw deleteError;
+        // Upsert ticket types instead of deleting and recreating
+        // This preserves existing tickets and their relationships
+        for (const ticket of ticketTypes) {
+          const ticketData = {
+            event_id: eventId,
+            // Don't include id for new tickets (let database assign SERIAL id)
+            ...(ticket.id && typeof ticket.id === 'string' && ticket.id.startsWith('temp-') ? {} : { id: ticket.id }),
+            name: ticket.name,
+            description: ticket.description,
+            price_gbp: ticket.price_gbp,
+            capacity: ticket.capacity,
+            start_date: ticket.start_date,
+            end_date: ticket.end_date,
+            is_active: ticket.is_active,
+            affects_capacity: ticket.affects_capacity,
+            applicable_days: ticket.applicable_days,
+            // Clear dependency if it refers to a temporary ticket
+            dependency_ticket_id: ticket.dependency_ticket_id && typeof ticket.dependency_ticket_id === 'string' && ticket.dependency_ticket_id.startsWith('temp-') ? null : ticket.dependency_ticket_id,
+            max_per_order: ticket.max_per_order,
+            min_age: ticket.min_age
+          };
+        
+          // For new tickets, insert them
+          if (ticket.id && typeof ticket.id === 'string' && ticket.id.startsWith('temp-')) {
+            const { data, error: insertError } = await supabase
+              .from('ticket_types')
+              .insert([ticketData])
+              .select();
+              
+            if (insertError) {
+              console.error('Error inserting ticket type:', insertError);
+              throw insertError;
+            }
+            
+            console.log('Inserted new ticket type:', data);
+          } 
+          // For existing tickets, update them
+          else if (ticket.id) {
+            const { data, error: updateError } = await supabase
+              .from('ticket_types')
+              .update(ticketData)
+              .eq('id', ticket.id)
+              .select();
+              
+            if (updateError) {
+              console.error('Error updating ticket type:', updateError);
+              throw updateError;
+            }
+            
+            console.log('Updated ticket type:', data);
+          }
         }
         
-        // Then insert the new ticket types
-        const ticketsToInsert = ticketTypes.map(ticket => ({
-          event_id: eventId,
-          // Don't include id for new tickets (let database assign SERIAL id)
-          ...(ticket.id && typeof ticket.id === 'string' && ticket.id.startsWith('temp-') ? {} : { id: ticket.id }),
-          name: ticket.name,
-          description: ticket.description,
-          price_gbp: ticket.price_gbp,
-          capacity: ticket.capacity,
-          start_date: ticket.start_date,
-          end_date: ticket.end_date,
-          is_active: ticket.is_active,
-          affects_capacity: ticket.affects_capacity,
-          applicable_days: ticket.applicable_days,
-          // Clear dependency if it refers to a temporary ticket
-          dependency_ticket_id: ticket.dependency_ticket_id && typeof ticket.dependency_ticket_id === 'string' && ticket.dependency_ticket_id.startsWith('temp-') ? null : ticket.dependency_ticket_id,
-          max_per_order: ticket.max_per_order,
-          min_age: ticket.min_age
-        }));
-        
-        const { data, error: insertError } = await supabase
-          .from('ticket_types')
-          .insert(ticketsToInsert)
-          .select();
-          
-        if (insertError) {
-          console.error('Error inserting ticket types:', insertError);
-          throw insertError;
-        }
-        
-        console.log('Ticket types saved successfully:', data);
         setSuccess('Ticket types saved successfully');
         
         // Call the onSave callback
@@ -525,7 +546,7 @@ export function TicketSettingsModal({
                         onChange={(e) => updateTicketType(ticketType.id!, { affects_capacity: e.target.checked })}
                         className="text-purple-600 focus:ring-purple-500 rounded mr-2"
                       />
-                      <span className="text-gray-400 text-xs">Affects venue capacity</span>
+                      <span className="text-gray-400 text-xs">Counts toward daily capacity limit</span>
                     </div>
                   </div>
 
