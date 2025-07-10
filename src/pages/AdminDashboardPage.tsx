@@ -39,9 +39,9 @@ export function AdminDashboardPage() {
         console.log('Fetching admin dashboard data...');
         // Fetch stats with proper count queries
         const [usersResult, eventsResult, studiosResult] = await Promise.all([
-          supabase.from('users').select('*', { count: 'exact', head: true }),
-          supabase.from('events').select('*', { count: 'exact', head: true }),
-          supabase.from('studios').select('*', { count: 'exact', head: true })
+          supabase.from('users').select('*', { count: 'exact', head: true }).then(result => result).catch(() => ({ count: 0 })),
+          supabase.from('applications').select('*', { count: 'exact', head: true }).then(result => result).catch(() => ({ count: 0 })),
+          supabase.from('studios').select('*', { count: 'exact', head: true }).then(result => result).catch(() => ({ count: 0 }))
         ]);
 
         console.log('Stats results:', { 
@@ -50,13 +50,20 @@ export function AdminDashboardPage() {
           studios: studiosResult
         });
 
-        setStats({
-          totalUsers: usersResult.count || 0,
-          totalEvents: eventsResult.count || 0,
-          totalStudios: studiosResult.count || 0
+          totalEvents: eventsResult?.count || 0,
+          totalUsers: usersResult?.count || 0,
+          totalApplications: applicationsResult?.count || 0,
+          totalStudios: studiosResult?.count || 0
         });
 
-        // Fetch recent users
+        console.error('Error fetching stats:', error);
+        // Set default stats if there's an error
+        setStats({
+          totalEvents: 0,
+          totalUsers: 0,
+          totalApplications: 0,
+          totalStudios: 0
+        });
         const { data: users, error } = await supabase
           .from('users')
           .select('*')
