@@ -38,41 +38,41 @@ export function AdminDashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      
+
       if (supabase) {
         console.log('Fetching admin dashboard data...');
-        // Fetch stats and templates
+        // Fetch stats
         const [usersResult, eventsResult, studiosResult] = await Promise.all([
           supabase.from('users').select('count'),
           supabase.from('events').select('count'),
           supabase.from('studios').select('count')
         ]);
-        
+
         console.log('Stats results:', { 
           users: usersResult, 
           events: eventsResult, 
           studios: studiosResult
         });
-        
+
         setStats({
           totalUsers: usersResult.data?.[0]?.count || 0,
           totalEvents: eventsResult.data?.[0]?.count || 0,
           totalStudios: studiosResult.data?.[0]?.count || 0
         });
-        
+
         // Fetch recent users
         const { data: users, error } = await supabase
           .from('users')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(5);
-          
+
         if (error) {
           console.error('Error fetching users:', error);
         } else {
           setRecentUsers(users || []);
         }
-        
+
         // Fetch events for module management
         const { data: eventsData, error: eventsError } = await supabase
           .from('events')
@@ -94,11 +94,48 @@ export function AdminDashboardPage() {
         } else {
           setEvents(eventsData || []);
         }
+        
+        // Fetch consent templates
+        fetchTemplates();
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchTemplates = async () => {
+    if (!supabase) return;
+    
+    try {
+      // Fetch consent templates
+      const { data: templatesData, error: templatesError } = await supabase
+        .from('consent_form_templates')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (templatesError) {
+        console.error('Error fetching consent templates:', templatesError);
+      } else {
+        console.log('Fetched consent templates:', templatesData);
+        setTemplates(templatesData || []);
+      }
+      
+      // Fetch aftercare templates
+      const { data: aftercareData, error: aftercareError } = await supabase
+        .from('aftercare_templates')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (aftercareError) {
+        console.error('Error fetching aftercare templates:', aftercareError);
+      } else {
+        console.log('Fetched aftercare templates:', aftercareData);
+        setAftercareTemplates(aftercareData || []);
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error);
     }
   };
 
@@ -684,7 +721,7 @@ export function AdminDashboardPage() {
                     ) : (
                       <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
                         <p className="text-blue-300 text-sm">
-                          No templates found. Click the button below to create your first template.
+                          No consent templates found. Click the button below to create your first template.
                         </p>
                       </div>
                     )}
@@ -737,7 +774,7 @@ export function AdminDashboardPage() {
                     ) : (
                       <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
                         <p className="text-blue-300 text-sm">
-                          No aftercare templates found. Click the button below to create your first template.
+                          No aftercare templates found. Click the button below to create your first aftercare template.
                         </p>
                       </div>
                     )}
