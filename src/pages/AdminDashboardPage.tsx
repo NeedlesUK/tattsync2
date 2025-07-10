@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Settings, Database, Key, Server, Globe, FileText, AlertCircle, CheckCircle, User, Mail, Calendar, CreditCard, X, Shield, ToggleLeft as Toggle, Eye, EyeOff, Building, FileText as FileText2, Users, BarChart, Heart, Tabs } from 'lucide-react';
+import { Plus, Search, Filter, Settings, Database, Key, Server, Globe, FileText, AlertCircle, CheckCircle, User, Mail, Calendar, CreditCard, X, Shield, ToggleLeft as Toggle, Eye, EyeOff, Building, FileText as FileText2, Users, BarChart, Heart, Table as Tabs } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { ChangeUserPassword } from '../components/admin/ChangeUserPassword';
 import { useNavigate } from 'react-router-dom';
