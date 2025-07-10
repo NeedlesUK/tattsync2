@@ -44,14 +44,9 @@ export function Header() {
           requiresModule: 'ticketing_enabled'
         },
         { 
-          name: 'Attendees', 
+          name: 'Applications', 
           href: '/applications'
         },
-        { 
-          name: 'Leaderboard', 
-          href: '/tattscore/judging',
-          requiresModule: 'tattscore_enabled'
-        }
       ];
     }
     
@@ -76,7 +71,7 @@ export function Header() {
   // TattScore navigation items - filter based on role
   const tattscoreNavigation = [
     { name: 'TattScore Admin', href: '/tattscore/admin', roles: ['event_manager', 'event_admin'] },
-    { name: 'Leaderboard', href: '/tattscore/judging', roles: ['event_manager', 'event_admin', 'judge'] },
+    { name: 'Leaderboard', href: '/tattscore/judging', roles: ['event_manager', 'event_admin', 'judge'] }
   ];
 
   // Studio navigation items
