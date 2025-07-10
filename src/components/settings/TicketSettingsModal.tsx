@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Plus, Trash2, Calendar, DollarSign, Users, Clock, AlertCircle, Check, Link, Calendar as CalendarIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface TicketSettingsModalProps {
   eventId: number;
@@ -34,6 +35,7 @@ export function TicketSettingsModal({
   onSave
 }: TicketSettingsModalProps) {
   const { supabase } = useAuth();
+  const navigate = useNavigate();
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([
     {
       name: 'Day Pass',
@@ -71,6 +73,7 @@ export function TicketSettingsModal({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [hasLoadedData, setHasLoadedData] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -150,6 +153,7 @@ export function TicketSettingsModal({
           
           console.log('Fetched ticket types:', formattedData);
           setTicketTypes(formattedData);
+          setHasLoadedData(true);
         } else {
           // No ticket types found, use defaults
           console.log('No ticket types found, using defaults');
@@ -161,7 +165,7 @@ export function TicketSettingsModal({
             .eq('id', eventId)
             .single();
             
-          if (eventData) {
+          if (eventData && !hasLoadedData) {
             const defaultTypes = [
               {
                 name: 'Day Pass',
@@ -194,6 +198,10 @@ export function TicketSettingsModal({
             ];
             
             setTicketTypes(defaultTypes);
+            setHasLoadedData(true);
+          } else {
+            // If we've already loaded data before, use an empty array instead of defaults
+            setTicketTypes([]);
           }
         }
       }
@@ -307,6 +315,36 @@ export function TicketSettingsModal({
           }
         }
       }
+            // Map temporary dependency IDs to actual IDs after insertion
+            const ticketsToInsert = ticketTypes.map(type => {
+              // Remove any temporary ID format for insertion
+              const ticketForInsert = {...type};
+              
+              // If dependency_ticket_id starts with 'temp_', set to null temporarily
+              // We'll update it after insertion
+              if (ticketForInsert.dependency_ticket_id && 
+                  String(ticketForInsert.dependency_ticket_id).startsWith('temp_')) {
+                ticketForInsert.dependency_ticket_id = null;
+              }
+              
+              return {
+                event_id: eventId,
+                name: ticketForInsert.name,
+                description: ticketForInsert.description,
+                price_gbp: ticketForInsert.price_gbp,
+                capacity: ticketForInsert.capacity,
+                start_date: ticketForInsert.start_date,
+                end_date: ticketForInsert.end_date,
+                is_active: ticketForInsert.is_active,
+                affects_capacity: ticketForInsert.affects_capacity,
+                applicable_days: ticketForInsert.applicable_days,
+                dependency_ticket_id: ticketForInsert.dependency_ticket_id,
+                max_per_order: ticketForInsert.max_per_order,
+                min_age: ticketForInsert.min_age
+              };
+            });
+            
+            // Insert all tickets
       
       // Save to database if using Supabase
       if (supabase) {
@@ -324,28 +362,60 @@ export function TicketSettingsModal({
         // Then insert the new ticket types
         if (ticketTypes.length > 0) {
           const { error: insertError } = await supabase
-            .from('ticket_types')
-            .insert(
-              ticketTypes.map(type => ({
-                event_id: eventId,
-                name: type.name,
-                description: type.description,
-                price_gbp: type.price_gbp,
-                capacity: type.capacity,
-                start_date: type.start_date,
-                end_date: type.end_date,
-                is_active: type.is_active,
-                affects_capacity: type.affects_capacity,
-                applicable_days: type.applicable_days,
-                dependency_ticket_id: type.dependency_ticket_id,
-                max_per_order: type.max_per_order,
-                min_age: type.min_age
-              }))
+              .insert(ticketsToInsert)
+              .select();
             );
             
           if (insertError) {
             console.error('Error inserting ticket types:', insertError);
             throw insertError;
+            
+            // Now update any tickets that had temporary dependency IDs
+            if (insertedTickets) {
+              // Create a mapping from original index to new DB ID
+              const indexToIdMap = new Map();
+              ticketTypes.forEach((ticket, index) => {
+                const insertedTicket = insertedTickets[index];
+                if (insertedTicket && insertedTicket.id) {
+                  indexToIdMap.set(`temp_${index}`, insertedTicket.id);
+                }
+              });
+              
+              // Find tickets that need dependency updates
+              const ticketsToUpdate = [];
+              for (let i = 0; i < ticketTypes.length; i++) {
+                const ticket = ticketTypes[i];
+                const insertedTicket = insertedTickets[i];
+                
+                if (ticket.dependency_ticket_id && 
+                    String(ticket.dependency_ticket_id).startsWith('temp_') &&
+                    insertedTicket) {
+                  
+                  const realDependencyId = indexToIdMap.get(ticket.dependency_ticket_id);
+                  if (realDependencyId) {
+                    ticketsToUpdate.push({
+                      id: insertedTicket.id,
+                      dependency_ticket_id: realDependencyId
+                    });
+                  }
+                }
+              }
+              
+              // Update tickets with real dependency IDs
+              if (ticketsToUpdate.length > 0) {
+                for (const ticket of ticketsToUpdate) {
+                  const { error: updateError } = await supabase
+                    .from('ticket_types')
+                    .update({ dependency_ticket_id: ticket.dependency_ticket_id })
+                    .eq('id', ticket.id);
+                    
+                  if (updateError) {
+                    console.error('Error updating ticket dependency:', updateError);
+                    // Continue with other updates even if one fails
+                  }
+                }
+              }
+            }
           }
         }
         
@@ -643,14 +713,16 @@ export function TicketSettingsModal({
                         This ticket can only be purchased with the selected ticket (e.g., child tickets with adult tickets)
                       </p>
                       {ticketType.dependency_ticket_id && (
-                        <div className="mt-2 p-2 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+                        <div className="mt-2 p-2 bg-blue-500/20 border border-blue-500/30 rounded-lg flex items-center">
+                          <Link className="w-4 h-4 text-blue-300 mr-2" />
                           <p className="text-blue-300 text-xs">
-                            This ticket requires the purchase of: {
-                              ticketTypes.find(t => 
-                                (t.id && String(t.id) === String(ticketType.dependency_ticket_id)) || 
-                                (`temp_${ticketTypes.findIndex(ticket => ticket === t)}` === String(ticketType.dependency_ticket_id))
-                              )?.name || 'Unknown ticket'
-                            }
+                            This ticket requires the purchase of: <strong>{
+                              ticketTypes.find(t => {
+                                const ticketId = t.id ? String(t.id) : `temp_${ticketTypes.findIndex(ticket => ticket === t)}`;
+                                const dependencyId = String(ticketType.dependency_ticket_id);
+                                return ticketId === dependencyId;
+                              })?.name || 'Unknown ticket'
+                            }</strong>
                           </p>
                         </div>
                       )}
