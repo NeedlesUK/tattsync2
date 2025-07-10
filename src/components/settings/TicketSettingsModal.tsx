@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, Plus, Trash2, Calendar, DollarSign, Users, Clock, AlertCircle, Check, Link, Calendar as CalendarIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
-import { v4 as uuidv4 } from 'uuid';
 
 interface TicketSettingsModalProps {
   eventId: number;
