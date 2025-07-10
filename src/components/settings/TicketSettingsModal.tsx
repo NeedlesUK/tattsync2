@@ -630,6 +630,7 @@ export function TicketSettingsModal({
                           .filter((type, typeIndex) => type.is_active && typeIndex !== index)
                           .map((type, typeIndex) => {
                           // Find the original index in the full array for temporary IDs
+                          // This helps us maintain consistent references even for unsaved tickets
                           const originalIndex = ticketTypes.findIndex(ticket => ticket === type);
                           return (
                             <option key={typeIndex} value={type.id || `temp_${originalIndex}`} className="bg-gray-800">
@@ -641,6 +642,18 @@ export function TicketSettingsModal({
                       <p className="text-xs text-gray-400 mt-1">
                         This ticket can only be purchased with the selected ticket (e.g., child tickets with adult tickets)
                       </p>
+                      {ticketType.dependency_ticket_id && (
+                        <div className="mt-2 p-2 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+                          <p className="text-blue-300 text-xs">
+                            This ticket requires the purchase of: {
+                              ticketTypes.find(t => 
+                                (t.id && String(t.id) === String(ticketType.dependency_ticket_id)) || 
+                                (`temp_${ticketTypes.findIndex(ticket => ticket === t)}` === String(ticketType.dependency_ticket_id))
+                              )?.name || 'Unknown ticket'
+                            }
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="mb-4">
