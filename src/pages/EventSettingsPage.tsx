@@ -497,6 +497,14 @@ export function EventSettingsPage() {
         </div>
 
         {/* Modals */}
+        <TicketSettingsModal
+          eventId={eventId || 0}
+          eventName={event.name}
+          isOpen={isTicketTypeModalOpen}
+          onClose={() => setIsTicketTypeModalOpen(false)}
+          onSave={handleSaveTicketTypes}
+        />
+
         <EventInformationModal
           eventId={event.id}
           eventName={event.name}
@@ -547,13 +555,4 @@ export function EventSettingsPage() {
       </div>
     </div>
   );
-    {/* Ticket Type Modal */}
-    <TicketSettingsModal
-      eventId={eventId || 0}
-      eventName={event.name}
-      isOpen={isTicketTypeModalOpen}
-      onClose={() => setIsTicketTypeModalOpen(false)}
-      onSave={handleSaveTicketTypes}
-    />
-
 }
