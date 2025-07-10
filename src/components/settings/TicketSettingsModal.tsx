@@ -269,13 +269,6 @@ export function TicketSettingsModal({
       
       // Save to database if using Supabase
       if (supabase) {
-        // First, disable dependency checks to allow two-phase insert
-        try {
-          await supabase.rpc('disable_ticket_dependency_checks');
-        } catch (error) {
-          console.log('Could not disable dependency checks, continuing anyway');
-        }
-        
         // First, delete all existing ticket types
         const { error: deleteError } = await supabase
           .from('ticket_types')
@@ -289,6 +282,14 @@ export function TicketSettingsModal({
         
         // Then insert the new ticket types
         if (ticketTypes.length > 0) {
+          // Create a mapping of old IDs to array indices for dependency resolution
+          const idToIndexMap = new Map<string, number>();
+          ticketTypes.forEach((type, index) => {
+            if (type.id) {
+              idToIndexMap.set(String(type.id), index);
+            }
+          });
+          
           // First pass: Insert all tickets with dependencies set to null
           const ticketsToInsert = ticketTypes.map(type => ({
             event_id: eventId,
@@ -316,66 +317,57 @@ export function TicketSettingsModal({
             throw insertError;
           }
           
-          // Second pass: Update dependencies if needed
-          const dependencyUpdates = [];
+          // Create a mapping from original indices to new database IDs
+          const indexToNewIdMap = new Map<number, number>();
+          insertedTickets.forEach((ticket, index) => {
+            indexToNewIdMap.set(index, ticket.id);
+          });
           
+          // Second pass: Update dependencies if needed
           for (let i = 0; i < ticketTypes.length; i++) {
             const originalTicket = ticketTypes[i];
-            const insertedTicket = insertedTickets[i];
             
             if (originalTicket.dependency_ticket_id) {
-              // Find the real ID of the dependency ticket
               let realDependencyId = null;
               
-              // Check if it's a temp ID (starts with 'temp_')
+              // Check if it's a temp ID or find the dependency by original ID
               if (typeof originalTicket.dependency_ticket_id === 'string' && 
                   originalTicket.dependency_ticket_id.startsWith('temp_')) {
-                // Extract the index from the temp ID
-                const tempIndex = ticketTypes.findIndex(
-                  t => t.id === originalTicket.dependency_ticket_id
-                );
+                // For temp IDs, find the index in the original array
+                const tempIndex = ticketTypes.findIndex(t => t.id === originalTicket.dependency_ticket_id);
                 
-                if (tempIndex !== -1 && insertedTickets[tempIndex]) {
-                  realDependencyId = insertedTickets[tempIndex].id;
+                if (tempIndex !== -1) {
+                  realDependencyId = indexToNewIdMap.get(tempIndex);
                 }
               } else {
-                // It's a real ID, use it directly
-                realDependencyId = originalTicket.dependency_ticket_id;
+                // For existing IDs, find the index in the original array
+                const dependencyIndex = idToIndexMap.get(String(originalTicket.dependency_ticket_id));
+                
+                if (dependencyIndex !== undefined) {
+                  realDependencyId = indexToNewIdMap.get(dependencyIndex);
+                }
               }
               
               if (realDependencyId) {
-                dependencyUpdates.push({
-                  id: insertedTicket.id,
-                  dependency_ticket_id: realDependencyId
-                });
-              }
-            }
-          }
-          
-          // Update dependencies if any exist
-          if (dependencyUpdates.length > 0) {
-            for (const update of dependencyUpdates) {
-              const { error: updateError } = await supabase
-                .from('ticket_types')
-                .update({ dependency_ticket_id: update.dependency_ticket_id })
-                .eq('id', update.id);
+                const currentTicketId = indexToNewIdMap.get(i);
                 
-              if (updateError) {
-                console.error('Error updating ticket dependency:', updateError);
-                // Continue with other updates even if one fails
+                if (currentTicketId) {
+                  const { error: updateError } = await supabase
+                    .from('ticket_types')
+                    .update({ dependency_ticket_id: realDependencyId })
+                    .eq('id', currentTicketId);
+                    
+                  if (updateError) {
+                    console.error('Error updating ticket dependency:', updateError);
+                    throw updateError;
+                  }
+                }
               }
             }
           }
         }
         
         setSuccess('Ticket types saved successfully');
-        
-        // Re-enable dependency checks
-        try {
-          await supabase.rpc('enable_ticket_dependency_checks');
-        } catch (error) {
-          console.log('Could not re-enable dependency checks');
-        }
       }
       
       // Call the onSave callback
