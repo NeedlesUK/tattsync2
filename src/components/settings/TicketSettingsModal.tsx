@@ -59,7 +59,7 @@ export function TicketSettingsModal({
   const fetchEventDetails = async () => {
     try {
       // Generate dates between start and end date
-      if (eventStartDate && eventEndDate) {
+      if (eventStartDate && eventEndDate && eventStartDate !== 'undefined' && eventEndDate !== 'undefined') {
         const start = new Date(eventStartDate);
         const end = new Date(eventEndDate);
         const dates: string[] = [];
@@ -97,10 +97,10 @@ export function TicketSettingsModal({
       // If we have initial data, use it
       if (initialTicketTypes && initialTicketTypes.length > 0) {
        // Ensure applicable_days is an array for each ticket type
-       const processedTicketTypes = initialTicketTypes.map(ticket => ({
-         ...ticket,
-         applicable_days: Array.isArray(ticket.applicable_days) ? ticket.applicable_days : []
-       }));
+        const processedTicketTypes = initialTicketTypes.map(ticket => ({
+          ...ticket,
+          applicable_days: Array.isArray(ticket.applicable_days) ? [...ticket.applicable_days] : []
+        }));
         setTicketTypes(processedTicketTypes);
         setHasLoadedData(true);
         return;
@@ -462,15 +462,22 @@ export function TicketSettingsModal({
                   <label className="block text-sm text-gray-400 mb-1">Applicable Days (optional)</label>
                   <div className="flex flex-wrap gap-2">
                     {eventDates.length > 0 ? eventDates.map((date) => {
-                      const isSelected = Array.isArray(ticketType.applicable_days) && ticketType.applicable_days.includes(date);
+                      // Ensure we're working with a proper array and do a strict comparison
+                      const applicableDays = Array.isArray(ticketType.applicable_days) ? ticketType.applicable_days : [];
+                      const isSelected = applicableDays.some(d => d === date);
                       return (
                         <button
                           key={date}
                           onClick={() => {
-                            const currentDays = Array.isArray(ticketType.applicable_days) ? [...ticketType.applicable_days] : [];
+                            // Create a defensive copy of the array
+                            const currentDays = Array.isArray(ticketType.applicable_days) 
+                              ? [...ticketType.applicable_days] 
+                              : [];
+                            
                             const newDays = isSelected
                               ? currentDays.filter(d => d !== date)
                               : [...currentDays, date];
+                            
                             updateTicketType(ticketType.id!, { applicable_days: newDays });
                           }}
                           className={`px-3 py-1 rounded-full text-sm transition-colors ${
