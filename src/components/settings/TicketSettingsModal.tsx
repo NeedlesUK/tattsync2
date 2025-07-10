@@ -240,7 +240,7 @@ export function TicketSettingsModal({
 
   const addTicketType = () => {
     const newTicketType: TicketType = {
-      id: uuidv4(),
+      id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: '',
       description: '',
       price_gbp: 0,
@@ -289,6 +289,20 @@ export function TicketSettingsModal({
       return;
     }
     
+    // Validate dependencies - ensure no dependencies on unsaved tickets
+    const tempTicketIds = ticketTypes
+      .filter(ticket => ticket.id?.startsWith('temp-'))
+      .map(ticket => ticket.id);
+    
+    const invalidDependencies = ticketTypes.filter(ticket => 
+      ticket.dependency_ticket_id && tempTicketIds.includes(ticket.dependency_ticket_id)
+    );
+    
+    if (invalidDependencies.length > 0) {
+      setError('Cannot set dependencies on unsaved tickets. Please save tickets first, then edit to add dependencies.');
+      return;
+    }
+    
     setIsSaving(true);
     setError(null);
     setSuccess(null);
@@ -311,6 +325,8 @@ export function TicketSettingsModal({
         // Then insert the new ticket types
         const ticketsToInsert = ticketTypes.map(ticket => ({
           event_id: eventId,
+          // Don't include id for new tickets (let database assign SERIAL id)
+          ...(ticket.id?.startsWith('temp-') ? {} : { id: ticket.id }),
           name: ticket.name,
           description: ticket.description,
           price_gbp: ticket.price_gbp,
@@ -320,7 +336,8 @@ export function TicketSettingsModal({
           is_active: ticket.is_active,
           affects_capacity: ticket.affects_capacity,
           applicable_days: ticket.applicable_days,
-          dependency_ticket_id: ticket.dependency_ticket_id,
+          // Clear dependency if it refers to a temporary ticket
+          dependency_ticket_id: ticket.dependency_ticket_id?.startsWith('temp-') ? null : ticket.dependency_ticket_id,
           max_per_order: ticket.max_per_order,
           min_age: ticket.min_age
         }));
