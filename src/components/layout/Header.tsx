@@ -47,6 +47,10 @@ export function Header() {
          name: 'Applications', 
           href: '/applications'
         },
+        { 
+          name: 'Attendees', 
+          href: '/attendees'
+        },
       ];
     }
     
