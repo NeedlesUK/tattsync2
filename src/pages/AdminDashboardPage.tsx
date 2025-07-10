@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, CreditCard, MessageCircle, Settings, Shield, User, Mail, Edit, Key, X, FileText, Heart } from 'lucide-react';
+import { Calendar, Users, CreditCard, MessageCircle, Settings, Shield, User, Mail, Edit, Key, X, FileText, Heart, Building, BarChart, Globe } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { StatsCard } from '../components/dashboard/StatsCard';
@@ -17,6 +17,9 @@ export function AdminDashboardPage() {
   const [events, setEvents] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
   const [aftercareTemplates, setAftercareTemplates] = useState<any[]>([]);
+
+  // Navigation state
+  const [activeSection, setActiveSection] = useState('dashboard');
 
   useEffect(() => {
     // Only allow admin access
@@ -139,6 +142,16 @@ export function AdminDashboardPage() {
     });
   };
 
+  // Navigation sections
+  const navSections = [
+    { id: 'dashboard', label: 'Dashboard', icon: BarChart },
+    { id: 'event-modules', label: 'Event Modules', icon: Calendar },
+    { id: 'user-management', label: 'User Management', icon: Users },
+    { id: 'statistics', label: 'Statistics', icon: BarChart },
+    { id: 'system-status', label: 'System Status', icon: Settings },
+    { id: 'global-deals', label: 'Global Deals', icon: Globe }
+  ];
+
   if (isLoading) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
@@ -162,15 +175,36 @@ export function AdminDashboardPage() {
   return (
     <div className="min-h-screen pt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
           <p className="text-gray-300">
             Welcome to the TattSync Master Admin Dashboard
           </p>
         </div>
 
+        {/* Navigation Tabs */}
+        <div className="flex flex-wrap gap-3 mb-8">
+          {navSections.map((section) => {
+            const Icon = section.icon;
+            return (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
+                  activeSection === section.id
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span>{section.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 ${activeSection !== 'dashboard' && 'hidden'}`}>
           <StatsCard 
             title="Total Users"
             value={stats.totalUsers.toString()}
@@ -189,13 +223,14 @@ export function AdminDashboardPage() {
             title="Total Studios"
             value={stats.totalStudios.toString()}
             change=""
-            icon={CreditCard}
+            icon={Building}
             color="orange"
           />
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Dashboard Section */}
+        <div className={`grid grid-cols-1 lg:grid-cols-3 gap-8 ${activeSection !== 'dashboard' && 'hidden'}`}>
           <div className="lg:col-span-2">
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
               <h2 className="text-xl font-semibold text-white mb-4">Recent Users</h2>
@@ -276,10 +311,23 @@ export function AdminDashboardPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
 
+        {/* Event Modules Section */}
+        <div className={`${activeSection !== 'event-modules' && 'hidden'}`}>
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-white">Event Module Management</h2>
+              <button
+                onClick={() => navigate('/events')}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                Create New Event
+              </button>
+            </div>
+            
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
-              <h2 className="text-xl font-semibold text-white mb-4">Event Module Management</h2>
-              
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-white/5">
@@ -355,114 +403,240 @@ export function AdminDashboardPage() {
               )}
             </div>
           </div>
+        </div>
 
-          <div className="space-y-8">
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">Admin Actions</h2>
-              
-              <div className="space-y-4">
-                <button
-                  onClick={() => navigate('/admin/users')}
-                  className="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
-                >
-                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <Users className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-medium mb-1">User Management</h3>
-                    <p className="text-gray-400 text-sm">Manage user accounts and permissions</p>
-                  </div>
-                </button>
-                
-                <button
-                  onClick={() => navigate('/admin/consent-templates')}
-                  className="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
-                >
-                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <Heart className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-medium mb-1">Consent Templates</h3>
-                    <p className="text-gray-400 text-sm">Manage consent form templates</p>
-                  </div>
-                </button>
-                
-                <button
-                  onClick={() => navigate('/admin/aftercare-templates')}
-                  className="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
-                >
-                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-medium mb-1">Aftercare Templates</h3>
-                    <p className="text-gray-400 text-sm">Manage aftercare email templates</p>
-                  </div>
-                </button>
-                
-                <button
-                  onClick={() => navigate('/events')}
-                  className="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
-                >
-                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-white font-medium mb-1">Event Management</h3>
-                    <p className="text-gray-400 text-sm">Create and manage events</p>
-                  </div>
-                </button>
+        {/* User Management Section */}
+        <div className={`${activeSection !== 'user-management' && 'hidden'}`}>
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-white">User Management</h2>
+              <button
+                onClick={() => navigate('/admin/users')}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                View All Users
+              </button>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-white/5">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Created</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/10">
+                  {recentUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-white/5">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center">
+                            <User className="w-5 h-5 text-purple-400" />
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">{user.name}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-2">
+                          <Mail className="w-4 h-4 text-gray-400" />
+                          <span className="text-gray-300">{user.email}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-500/20 text-purple-400 capitalize">
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-300">
+                        {formatDate(user.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => navigate(`/admin/users?edit=${user.id}`)}
+                            className="bg-white/10 hover:bg-white/20 text-gray-300 px-3 py-1 rounded text-sm transition-colors"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => navigate(`/admin/users?password=${user.id}`)}
+                            className="bg-white/10 hover:bg-white/20 text-gray-300 px-3 py-1 rounded text-sm transition-colors"
+                          >
+                            <Key className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Statistics Section */}
+        <div className={`${activeSection !== 'statistics' && 'hidden'}`}>
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+            <h2 className="text-xl font-semibold text-white mb-6">System Statistics</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <StatsCard 
+                title="Total Users"
+                value={stats.totalUsers.toString()}
+                change=""
+                icon={Users}
+                color="purple"
+              />
+              <StatsCard 
+                title="Total Events"
+                value={stats.totalEvents.toString()}
+                change=""
+                icon={Calendar}
+                color="teal"
+              />
+              <StatsCard 
+                title="Total Studios"
+                value={stats.totalStudios.toString()}
+                change=""
+                icon={Building}
+                color="orange"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* System Status Section */}
+        <div className={`${activeSection !== 'system-status' && 'hidden'}`}>
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+            <h2 className="text-xl font-semibold text-white mb-6">System Status</h2>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Database</span>
+                <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs">Connected</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Storage</span>
+                <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs">Connected</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Email Service</span>
+                <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs">Connected</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Version</span>
+                <span className="text-gray-300">1.0.0</span>
               </div>
             </div>
+          </div>
+        </div>
 
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">Consent Management</h2>
-              
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-white font-medium">Consent Templates</h3>
-                  <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full text-xs">
-                    {templates ? templates.length : 0} Templates
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <h3 className="text-white font-medium">Aftercare Templates</h3>
-                  <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full text-xs">
-                    {aftercareTemplates ? aftercareTemplates.length : 0} Templates
-                  </span>
-                </div>
-                
-                <button
-                  onClick={() => navigate('/admin/consent-templates')}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors mt-2"
-                >
-                  Manage Templates
-                </button>
-              </div>
+        {/* Global Deals Section */}
+        <div className={`${activeSection !== 'global-deals' && 'hidden'}`}>
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-white">Global Deals Management</h2>
+              <button
+                onClick={() => navigate('/event-settings')}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                Manage Global Deals
+              </button>
             </div>
+            <p className="text-gray-300 mb-4">
+              Create and manage deals that can be applied across all events in the system.
+            </p>
+          </div>
+        </div>
 
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">System Status</h2>
+        {/* Sidebar - Admin Actions */}
+        <div className="fixed right-8 top-32 w-64 space-y-8 hidden lg:block">
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Admin Actions</h2>
+            
+            <div className="space-y-4">
+              <button
+                onClick={() => navigate('/admin/users')}
+                className="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
+              >
+                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                  <Users className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-white font-medium mb-1">User Management</h3>
+                  <p className="text-gray-400 text-sm">Manage user accounts and permissions</p>
+                </div>
+              </button>
               
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-300">Database</span>
-                  <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs">Connected</span>
+              <button
+                onClick={() => navigate('/admin/consent-templates')}
+                className="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
+              >
+                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                  <Heart className="w-5 h-5 text-purple-400" />
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-300">Storage</span>
-                  <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs">Connected</span>
+                <div>
+                  <h3 className="text-white font-medium mb-1">Consent Templates</h3>
+                  <p className="text-gray-400 text-sm">Manage consent form templates</p>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-300">Email Service</span>
-                  <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs">Connected</span>
+              </button>
+              
+              <button
+                onClick={() => navigate('/admin/aftercare-templates')}
+                className="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
+              >
+                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-purple-400" />
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-300">Version</span>
-                  <span className="text-gray-300">1.0.0</span>
+                <div>
+                  <h3 className="text-white font-medium mb-1">Aftercare Templates</h3>
+                  <p className="text-gray-400 text-sm">Manage aftercare email templates</p>
                 </div>
+              </button>
+              
+              <button
+                onClick={() => navigate('/events')}
+                className="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
+              >
+                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-white font-medium mb-1">Event Management</h3>
+                  <p className="text-gray-400 text-sm">Create and manage events</p>
+                </div>
+              </button>
+            </div>
+          </div>
+          
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Consent Management</h2>
+            
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-white font-medium">Consent Templates</h3>
+                <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full text-xs">
+                  {templates ? templates.length : 0} Templates
+                </span>
               </div>
+              
+              <div className="flex justify-between items-center">
+                <h3 className="text-white font-medium">Aftercare Templates</h3>
+                <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full text-xs">
+                  {aftercareTemplates ? aftercareTemplates.length : 0} Templates
+                </span>
+              </div>
+              
+              <button
+                onClick={() => navigate('/admin/consent-templates')}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors mt-2"
+              >
+                Manage Templates
+              </button>
             </div>
           </div>
         </div>
