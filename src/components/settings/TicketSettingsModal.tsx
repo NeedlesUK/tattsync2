@@ -46,8 +46,6 @@ export function TicketSettingsModal({
   const [hasLoadedData, setHasLoadedData] = useState(false);
   const [eventDates, setEventDates] = useState<string[]>([]); 
   const [venueCapacity, setVenueCapacity] = useState<number>(1000);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -200,6 +198,7 @@ export function TicketSettingsModal({
           setTicketTypes(processedData);
         } else {
           setTicketTypes([]);
+        }
       } else {
         // Fallback to mock data
         setTicketTypes([
@@ -359,7 +358,6 @@ export function TicketSettingsModal({
       }, 1500);
     } catch (error) {
       console.error('Error saving ticket types:', error);
-      setError('Failed to save ticket types');
       setError('Failed to save ticket types');
     } finally {
       setIsSaving(false);
