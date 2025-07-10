@@ -17,6 +17,8 @@ export function AdminDashboardPage() {
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [aftercareTemplates, setAftercareTemplates] = useState<any[]>([]);
 
   // Add state for active section and tabs
   const [activeSection, setActiveSection] = useState<'modules' | 'users' | 'system' | 'statistics' | 'consent'>('modules');
@@ -39,7 +41,7 @@ export function AdminDashboardPage() {
       
       if (supabase) {
         console.log('Fetching admin dashboard data...');
-        // Fetch stats - removed applications and tickets, added studios
+        // Fetch stats and templates
         const [usersResult, eventsResult, studiosResult] = await Promise.all([
           supabase.from('users').select('count'),
           supabase.from('events').select('count'),
@@ -222,6 +224,32 @@ export function AdminDashboardPage() {
             currentModules = e.event_modules.length > 0 ? e.event_modules : [updateData];
           } else {
             currentModules = e.event_modules ? [e.event_modules] : [updateData];
+          }
+          
+          // Fetch consent templates
+          const { data: templatesData, error: templatesError } = await supabase
+            .from('consent_form_templates')
+            .select('*')
+            .order('created_at', { ascending: false });
+            
+          if (templatesError) {
+            console.error('Error fetching consent templates:', templatesError);
+          } else {
+            console.log('Fetched consent templates:', templatesData);
+            setTemplates(templatesData || []);
+          }
+          
+          // Fetch aftercare templates
+          const { data: aftercareData, error: aftercareError } = await supabase
+            .from('aftercare_templates')
+            .select('*')
+            .order('created_at', { ascending: false });
+            
+          if (aftercareError) {
+            console.error('Error fetching aftercare templates:', aftercareError);
+          } else {
+            console.log('Fetched aftercare templates:', aftercareData);
+            setAftercareTemplates(aftercareData || []);
           }
           
           return {
@@ -622,6 +650,45 @@ export function AdminDashboardPage() {
                   <p className="text-gray-300 mb-4">
                     Manage master templates for consent forms. These templates define the structure and fields of consent forms used across all events.
                   </p>
+                  {/* Display templates if available */}
+                  <div className="space-y-4 mb-4">
+                    {templates.length > 0 ? (
+                      <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead className="bg-white/5">
+                              <tr>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Title</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Description</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/10">
+                              {templates.map((template) => (
+                                <tr key={template.id} className="hover:bg-white/5">
+                                  <td className="px-4 py-2 whitespace-nowrap text-white">{template.title}</td>
+                                  <td className="px-4 py-2 text-gray-300">{template.description || 'No description'}</td>
+                                  <td className="px-4 py-2 whitespace-nowrap">
+                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                      template.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                                    }`}>
+                                      {template.is_active ? 'Active' : 'Inactive'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
+                        <p className="text-blue-300 text-sm">
+                          No templates found. Click the button below to create your first template.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={() => navigate('/admin/consent-templates')}
                     className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
@@ -636,6 +703,45 @@ export function AdminDashboardPage() {
                   <p className="text-gray-300 mb-4">
                     Manage aftercare instruction templates. These templates are used to generate emails sent to clients after procedures.
                   </p>
+                  {/* Display aftercare templates if available */}
+                  <div className="space-y-4 mb-4">
+                    {aftercareTemplates.length > 0 ? (
+                      <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead className="bg-white/5">
+                              <tr>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Title</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Type</th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/10">
+                              {aftercareTemplates.map((template) => (
+                                <tr key={template.id} className="hover:bg-white/5">
+                                  <td className="px-4 py-2 whitespace-nowrap text-white">{template.title}</td>
+                                  <td className="px-4 py-2 text-gray-300 capitalize">{template.procedure_type}</td>
+                                  <td className="px-4 py-2 whitespace-nowrap">
+                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                      template.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                                    }`}>
+                                      {template.is_active ? 'Active' : 'Inactive'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
+                        <p className="text-blue-300 text-sm">
+                          No aftercare templates found. Click the button below to create your first template.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={() => navigate('/admin/aftercare-templates')}
                     className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
