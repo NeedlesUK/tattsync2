@@ -292,7 +292,7 @@ export function TicketSettingsModal({
         // Validate dependency
         if (type.dependency_ticket_id) {
           const dependencyExists = ticketTypes.some(t => 
-            t.id === type.dependency_ticket_id && t.is_active
+            (t.id === type.dependency_ticket_id || `temp_${ticketTypes.indexOf(t)}` === type.dependency_ticket_id) && t.is_active
           );
           
           if (!dependencyExists) {
@@ -624,7 +624,6 @@ export function TicketSettingsModal({
                         {ticketTypes
                           .filter((type, typeIndex) => type.is_active && typeIndex !== index)
                           .map((type, typeIndex) => {
-                          // Don't allow self-dependency or dependency on inactive tickets
                           return (
                             <option key={typeIndex} value={type.id || `temp_${typeIndex}`} className="bg-gray-800">
                               {type.name}
