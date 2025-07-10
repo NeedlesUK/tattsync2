@@ -277,6 +277,37 @@ export function DynamicApplicationForm({
           }
         ];
       
+      case 'caterer':
+        return [
+          {
+            id: 'business_name',
+            label: 'Business Name',
+            type: 'text',
+            required: true,
+            placeholder: 'Your catering business name'
+          },
+          {
+            id: 'menu_description',
+            label: 'Menu Description',
+            type: 'textarea',
+            required: true,
+            placeholder: 'Describe your menu offerings in detail'
+          },
+          {
+            id: 'service_types',
+            label: 'What would you like to serve?',
+            type: 'checkbox',
+            required: true,
+            options: ['Food (menu in description)', 'Hot drinks', 'Soft drinks', 'Sweets', 'Alcohol']
+          },
+          {
+            id: 'portfolio_link',
+            label: 'Online Presence',
+            type: 'portfolio',
+            required: true
+          }
+        ];
+      
       case 'volunteer':
         return [
           {
@@ -872,6 +903,7 @@ export function DynamicApplicationForm({
       case 'artist': return 'Studio & Portfolio Information';
       case 'piercer': return 'Studio & Portfolio Information';
       case 'trader': return 'Business & Online Presence';
+      case 'caterer': return 'Business & Menu Information';
       case 'caterer': return 'Business & Menu Information';
       case 'performer': return 'Performance Information';
       case 'volunteer': return 'Skills & Experience';
