@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Plus, Trash2, Calendar, DollarSign, Users, Clock, AlertCircle } from 'lucide-react';
+import { X, Save, Plus, Trash2, Calendar, DollarSign, Users, Clock, AlertCircle, Check, Link, Calendar as CalendarIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface TicketSettingsModalProps {
@@ -19,6 +19,11 @@ export interface TicketType {
   start_date: string;
   end_date: string;
   is_active: boolean;
+  affects_capacity: boolean;
+  applicable_days: string[];
+  dependency_ticket_id?: string | null;
+  max_per_order?: number | null;
+  min_age?: number | null;
 }
 
 export function TicketSettingsModal({
@@ -37,7 +42,12 @@ export function TicketSettingsModal({
       capacity: 500,
       start_date: new Date().toISOString().split('T')[0],
       end_date: new Date(new Date().setMonth(new Date().getMonth() + 3)).toISOString().split('T')[0],
-      is_active: true
+      is_active: true,
+      affects_capacity: true,
+      applicable_days: [],
+      dependency_ticket_id: null,
+      max_per_order: 4,
+      min_age: 18
     },
     {
       name: 'Weekend Pass',
@@ -46,10 +56,17 @@ export function TicketSettingsModal({
       capacity: 300,
       start_date: new Date().toISOString().split('T')[0],
       end_date: new Date(new Date().setMonth(new Date().getMonth() + 3)).toISOString().split('T')[0],
-      is_active: true
+      is_active: true,
+      affects_capacity: true,
+      applicable_days: [],
+      dependency_ticket_id: null,
+      max_per_order: 4,
+      min_age: 18
     }
   ]);
 
+  const [eventDates, setEventDates] = useState<string[]>([]);
+  const [venueCapacity, setVenueCapacity] = useState<number>(1000);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,9 +74,49 @@ export function TicketSettingsModal({
 
   useEffect(() => {
     if (isOpen) {
+      fetchEventDetails();
       fetchTicketTypes();
     }
   }, [isOpen, eventId]);
+
+  const fetchEventDetails = async () => {
+    try {
+      if (supabase) {
+        // Fetch event details to get dates and max_attendees
+        const { data: eventData, error: eventError } = await supabase
+          .from('events')
+          .select('start_date, end_date, max_attendees')
+          .eq('id', eventId)
+          .single();
+          
+        if (eventError) {
+          console.error('Error fetching event details:', eventError);
+          return;
+        }
+        
+        if (eventData) {
+          // Generate array of dates between start_date and end_date
+          const dates: string[] = [];
+          const startDate = new Date(eventData.start_date);
+          const endDate = new Date(eventData.end_date);
+          
+          // Set venue capacity from max_attendees
+          setVenueCapacity(eventData.max_attendees || 1000);
+          
+          // Generate all dates between start and end
+          const currentDate = new Date(startDate);
+          while (currentDate <= endDate) {
+            dates.push(currentDate.toISOString().split('T')[0]);
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+          
+          setEventDates(dates);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching event details:', error);
+    }
+  };
 
   const fetchTicketTypes = async () => {
     try {
@@ -79,11 +136,16 @@ export function TicketSettingsModal({
         }
         
         if (data && data.length > 0) {
-          // Format dates for input fields
+          // Format dates for input fields and ensure all fields exist
           const formattedData = data.map(type => ({
             ...type,
             start_date: type.start_date ? type.start_date.split('T')[0] : '',
-            end_date: type.end_date ? type.end_date.split('T')[0] : ''
+            end_date: type.end_date ? type.end_date.split('T')[0] : '',
+            affects_capacity: type.affects_capacity !== undefined ? type.affects_capacity : true,
+            applicable_days: type.applicable_days || [],
+            dependency_ticket_id: type.dependency_ticket_id || null,
+            max_per_order: type.max_per_order || null,
+            min_age: type.min_age || null
           }));
           
           console.log('Fetched ticket types:', formattedData);
@@ -108,7 +170,12 @@ export function TicketSettingsModal({
                 capacity: 500,
                 start_date: new Date().toISOString().split('T')[0],
                 end_date: eventData.start_date.split('T')[0],
-                is_active: true
+                is_active: true,
+                affects_capacity: true,
+                applicable_days: [],
+                dependency_ticket_id: null,
+                max_per_order: 4,
+                min_age: 18
               },
               {
                 name: 'Weekend Pass',
@@ -117,7 +184,12 @@ export function TicketSettingsModal({
                 capacity: 300,
                 start_date: new Date().toISOString().split('T')[0],
                 end_date: eventData.start_date.split('T')[0],
-                is_active: true
+                is_active: true,
+                affects_capacity: true,
+                applicable_days: [],
+                dependency_ticket_id: null,
+                max_per_order: 4,
+                min_age: 18
               }
             ];
             
@@ -141,7 +213,12 @@ export function TicketSettingsModal({
       capacity: null,
       start_date: new Date().toISOString().split('T')[0],
       end_date: new Date(new Date().setMonth(new Date().getMonth() + 3)).toISOString().split('T')[0],
-      is_active: true
+      is_active: true,
+      affects_capacity: true,
+      applicable_days: [],
+      dependency_ticket_id: null,
+      max_per_order: 4,
+      min_age: 18
     };
     
     setTicketTypes([...ticketTypes, newTicketType]);
@@ -155,6 +232,23 @@ export function TicketSettingsModal({
 
   const removeTicketType = (index: number) => {
     setTicketTypes(ticketTypes.filter((_, i) => i !== index));
+  };
+
+  const toggleApplicableDay = (index: number, day: string) => {
+    const ticketType = ticketTypes[index];
+    const days = [...(ticketType.applicable_days || [])];
+    
+    if (days.includes(day)) {
+      // Remove day
+      updateTicketType(index, { 
+        applicable_days: days.filter(d => d !== day) 
+      });
+    } else {
+      // Add day
+      updateTicketType(index, { 
+        applicable_days: [...days, day] 
+      });
+    }
   };
 
   const handleSubmit = async () => {
@@ -194,6 +288,19 @@ export function TicketSettingsModal({
           setIsSaving(false);
           return;
         }
+        
+        // Validate dependency
+        if (type.dependency_ticket_id) {
+          const dependencyExists = ticketTypes.some(t => 
+            t.id === type.dependency_ticket_id && t.is_active
+          );
+          
+          if (!dependencyExists) {
+            setError(`Dependency ticket for "${type.name}" does not exist or is inactive`);
+            setIsSaving(false);
+            return;
+          }
+        }
       }
       
       // Save to database if using Supabase
@@ -222,7 +329,12 @@ export function TicketSettingsModal({
                 capacity: type.capacity,
                 start_date: type.start_date,
                 end_date: type.end_date,
-                is_active: type.is_active
+                is_active: type.is_active,
+                affects_capacity: type.affects_capacity,
+                applicable_days: type.applicable_days,
+                dependency_ticket_id: type.dependency_ticket_id,
+                max_per_order: type.max_per_order,
+                min_age: type.min_age
               }))
             );
             
@@ -250,11 +362,19 @@ export function TicketSettingsModal({
     }
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short'
+    });
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 border border-purple-500/20 rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="bg-slate-800 border border-purple-500/20 rounded-xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <div>
@@ -286,16 +406,49 @@ export function TicketSettingsModal({
               
               {success && (
                 <div className="p-4 bg-green-500/20 border border-green-500/30 rounded-lg flex items-center space-x-3">
-                  <AlertCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <Check className="w-5 h-5 text-green-400 flex-shrink-0" />
                   <p className="text-green-400 text-sm">{success}</p>
                 </div>
               )}
               
               <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4 mb-6">
-                <h3 className="text-blue-300 font-medium mb-2">Ticket Configuration</h3>
-                <p className="text-blue-200 text-sm">
-                  Create different ticket types for your event. Set prices, capacities, and availability dates.
-                  Tickets will be available for purchase on your event page.
+                <h3 className="text-blue-300 font-medium mb-2">Venue Capacity</h3>
+                <div className="flex items-center space-x-3">
+                  <div className="relative flex-1">
+                    <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="number"
+                      value={venueCapacity}
+                      onChange={(e) => setVenueCapacity(parseInt(e.target.value) || 0)}
+                      min="1"
+                      className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      placeholder="1000"
+                    />
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (supabase) {
+                        try {
+                          const { error } = await supabase
+                            .from('events')
+                            .update({ max_attendees: venueCapacity })
+                            .eq('id', eventId);
+                            
+                          if (error) throw error;
+                          setSuccess('Venue capacity updated successfully');
+                        } catch (err) {
+                          console.error('Error updating venue capacity:', err);
+                          setError('Failed to update venue capacity');
+                        }
+                      }
+                    }}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    Update Capacity
+                  </button>
+                </div>
+                <p className="text-blue-200 text-sm mt-2">
+                  This is the maximum number of attendees your venue can hold. Ticket sales will be limited to this capacity.
                 </p>
               </div>
 
@@ -366,7 +519,7 @@ export function TicketSettingsModal({
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                       <div>
-                        <label className="block text-sm text-gray-400 mb-1">Capacity (optional)</label>
+                        <label className="block text-sm text-gray-400 mb-1">Ticket Capacity</label>
                         <div className="flex items-center space-x-2">
                           <input
                             type="number"
@@ -406,6 +559,114 @@ export function TicketSettingsModal({
                         />
                       </div>
                     </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Max Per Order</label>
+                        <input
+                          type="number"
+                          value={ticketType.max_per_order || ''}
+                          onChange={(e) => updateTicketType(index, { 
+                            max_per_order: e.target.value ? parseInt(e.target.value) : null 
+                          })}
+                          min="1"
+                          className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="No limit"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">Maximum tickets per order</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Minimum Age</label>
+                        <input
+                          type="number"
+                          value={ticketType.min_age || ''}
+                          onChange={(e) => updateTicketType(index, { 
+                            min_age: e.target.value ? parseInt(e.target.value) : null 
+                          })}
+                          min="0"
+                          className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          placeholder="No minimum"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">Minimum age requirement</p>
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block text-sm text-gray-400 mb-1">Ticket Dependency</label>
+                      <select
+                        value={ticketType.dependency_ticket_id || ''}
+                        onChange={(e) => updateTicketType(index, { 
+                          dependency_ticket_id: e.target.value || null 
+                        })}
+                        className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option value="" className="bg-gray-800">No dependency</option>
+                        {ticketTypes.map((type, i) => {
+                          // Don't allow self-dependency or dependency on inactive tickets
+                          if (i !== index && type.is_active) {
+                            return (
+                              <option key={i} value={type.id || i.toString()} className="bg-gray-800">
+                                {type.name}
+                              </option>
+                            );
+                          }
+                          return null;
+                        })}
+                      </select>
+                      <p className="text-xs text-gray-400 mt-1">
+                        This ticket can only be purchased with the selected ticket (e.g., child tickets with adult tickets)
+                      </p>
+                    </div>
+
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm text-gray-400">Affects Venue Capacity</label>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={ticketType.affects_capacity} 
+                            onChange={(e) => updateTicketType(index, { affects_capacity: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                        </label>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        When enabled, this ticket will count towards the venue's maximum capacity
+                      </p>
+                    </div>
+
+                    {/* Applicable Days */}
+                    <div className="mb-4">
+                      <label className="block text-sm text-gray-400 mb-2">Applicable Days</label>
+                      <div className="flex flex-wrap gap-2">
+                        {eventDates.length > 0 ? (
+                          eventDates.map((date) => (
+                            <button
+                              key={date}
+                              type="button"
+                              onClick={() => toggleApplicableDay(index, date)}
+                              className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+                                ticketType.applicable_days?.includes(date)
+                                  ? 'bg-purple-600 text-white'
+                                  : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                              }`}
+                            >
+                              {formatDate(date)}
+                            </button>
+                          ))
+                        ) : (
+                          <p className="text-gray-400 text-sm">No event dates available</p>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-2">
+                        {ticketType.applicable_days?.length === 0 
+                          ? "This ticket applies to all event days" 
+                          : `This ticket only applies to the selected days (${ticketType.applicable_days?.length} selected)`
+                        }
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -418,6 +679,18 @@ export function TicketSettingsModal({
                 <Plus className="w-5 h-5" />
                 <span>Add Ticket Type</span>
               </button>
+
+              {/* Ticket Type Examples */}
+              <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4 mt-6">
+                <h4 className="text-yellow-300 font-medium mb-2">Ticket Type Examples</h4>
+                <ul className="text-yellow-200 text-sm space-y-1">
+                  <li>• <strong>Day Pass:</strong> Applies to a single day, affects capacity for that day only</li>
+                  <li>• <strong>Weekend Pass:</strong> Applies to all days, affects capacity for all days</li>
+                  <li>• <strong>Child Ticket:</strong> Requires an adult ticket, lower price</li>
+                  <li>• <strong>Carer Ticket:</strong> Free ticket that requires a full-price ticket</li>
+                  <li>• <strong>VIP Upgrade:</strong> Doesn't affect capacity, adds benefits to existing ticket</li>
+                </ul>
+              </div>
             </div>
           )}
         </div>
