@@ -44,7 +44,7 @@ export function Header() {
           requiresModule: 'ticketing_enabled'
         },
         { 
-          name: 'Applications', 
+         name: 'Applications', 
           href: '/applications'
         },
       ];
