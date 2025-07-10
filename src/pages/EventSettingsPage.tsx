@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { EventInformationModal } from '../components/settings/EventInformationModal';
 import { EventDealsModal } from '../components/settings/EventDealsModal'; 
 import { GlobalDealsModal } from '../components/settings/GlobalDealsModal';
+import { ApplicationSettingsModal } from '../components/settings/ApplicationSettingsModal';
 import { PaymentSettingsModal } from '../components/settings/PaymentSettingsModal';
 import { EventDetailsModal } from '../components/settings/EventDetailsModal';
 import { Heart, Award } from 'lucide-react';
@@ -20,6 +21,7 @@ export function EventSettingsPage() {
   const [isEventDetailsModalOpen, setIsEventDetailsModalOpen] = useState(false); 
   const [isDealsModalOpen, setIsDealsModalOpen] = useState(false);
   const [isGlobalDealsModalOpen, setIsGlobalDealsModalOpen] = useState(false);
+  const [isApplicationSettingsModalOpen, setIsApplicationSettingsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [eventModules, setEventModules] = useState<any>(null);
   const [event, setEvent] = useState<any>({
@@ -200,6 +202,15 @@ export function EventSettingsPage() {
     }
   };
 
+  const handleSaveApplicationSettings = async (settings: any) => {
+    try {
+      // In real implementation, save to API
+      console.log('Saving application settings:', settings);
+    } catch (error) {
+      console.error('Error saving application settings:', error);
+    }
+  };
+
   const handleSavePaymentSettings = async (settings: any) => {
     try {
       // In real implementation, save to API
@@ -274,7 +285,7 @@ export function EventSettingsPage() {
           title: 'Applications',
           description: `Configure application types, forms, and approval process${eventModules?.applications_enabled ? ' (Enabled)' : ' (Disabled)'}`,
           icon: FileText,
-          action: () => console.log('Configure applications')
+          action: () => setIsApplicationSettingsModalOpen(true)
         },
         {
           title: 'Payments',
@@ -507,6 +518,14 @@ export function EventSettingsPage() {
           onClose={() => setIsEventDetailsModalOpen(false)}
           onSave={handleSaveEventDetails}
           initialData={event}
+        />
+        
+        <ApplicationSettingsModal
+          eventId={eventId || 0}
+          eventName={event.name}
+          isOpen={isApplicationSettingsModalOpen}
+          onClose={() => setIsApplicationSettingsModalOpen(false)}
+          onSave={handleSaveApplicationSettings}
         />
       </div>
     </div>
