@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Settings, Database, Key, Server, Globe, FileText, AlertCircle, CheckCircle, User, Mail, Calendar, CreditCard, X, Shield, ToggleLeft as Toggle, Eye, EyeOff, Building, FileText as FileText2, Users, BarChart } from 'lucide-react';
+import { Plus, Search, Filter, Settings, Database, Key, Server, Globe, FileText, AlertCircle, CheckCircle, User, Mail, Calendar, CreditCard, X, Shield, ToggleLeft as Toggle, Eye, EyeOff, Building, FileText as FileText2, Users, BarChart, Heart } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { ChangeUserPassword } from '../components/admin/ChangeUserPassword';
 import { useNavigate } from 'react-router-dom';
@@ -20,6 +20,9 @@ export function AdminDashboardPage() {
 
   // Add state for active section
   const [activeSection, setActiveSection] = useState<'modules' | 'users' | 'system' | 'statistics'>('modules');
+
+  // Add state for consent templates section
+  const [activeConsentSection, setActiveConsentSection] = useState<'templates' | 'aftercare'>('templates');
 
   useEffect(() => {
     // Only allow admin access
@@ -576,6 +579,78 @@ export function AdminDashboardPage() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Additional Management Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+              <h3 className="text-xl font-semibold text-white mb-6">Recent Activity</h3>
+              
+              {/* Consent Forms Management Section */}
+              <div className="mb-6">
+                <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Heart className="w-5 h-5 text-purple-400 mr-2" />
+                  Consent & Aftercare Management
+                </h4>
+                
+                <div className="flex space-x-4 mb-4">
+                  <button
+                    onClick={() => setActiveConsentSection('templates')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      activeConsentSection === 'templates'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                    }`}
+                  >
+                    Consent Templates
+                  </button>
+                  <button
+                    onClick={() => setActiveConsentSection('aftercare')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      activeConsentSection === 'aftercare'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                    }`}
+                  >
+                    Aftercare Templates
+                  </button>
+                </div>
+                
+                {activeConsentSection === 'templates' && (
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <p className="text-gray-300 mb-4">
+                      Manage master templates for consent forms. These templates define the structure and fields of consent forms used across all events.
+                    </p>
+                    <button
+                      onClick={() => navigate('/admin/consent-templates')}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Manage Consent Templates
+                    </button>
+                  </div>
+                )}
+                
+                {activeConsentSection === 'aftercare' && (
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <p className="text-gray-300 mb-4">
+                      Manage aftercare instruction templates. These templates are used to generate emails sent to clients after procedures.
+                    </p>
+                    <button
+                      onClick={() => navigate('/admin/aftercare-templates')}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Manage Aftercare Templates
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              <div className="text-center py-8">
+                <p className="text-gray-400">No recent activity</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
