@@ -26,15 +26,7 @@ export function EventSettingsPage() {
   const [isApplicationSettingsModalOpen, setIsApplicationSettingsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [eventModules, setEventModules] = useState<any>(null);
-  const [event, setEvent] = useState<any>({
-    id: 1,
-    name: 'Loading...',
-    status: 'draft',
-    start_date: '',
-    end_date: '',
-    location: '',
-    venue: ''
-  });
+  const [event, setEvent] = useState<any>(null);
 
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
@@ -84,6 +76,7 @@ export function EventSettingsPage() {
   
   const fetchEventDetails = async (id: number) => {
     try {
+      console.log('Fetching event details for ID:', id);
       setIsLoading(true);
       
       if (supabase) {
@@ -99,7 +92,7 @@ export function EventSettingsPage() {
           throw error;
         }
         
-        if (data) {
+        if (data && Object.keys(data).length > 0) {
           console.log('Event data retrieved:', data);
           setEvent(data);
         } else {
@@ -108,7 +101,7 @@ export function EventSettingsPage() {
       } else {
         console.error('Supabase client not available');
         // Use mock data if supabase is not available
-        setEvent({
+        const mockEvent = {
           id: id,
           name: 'Event ' + id,
           status: 'draft',
@@ -116,10 +109,22 @@ export function EventSettingsPage() {
           end_date: '2024-07-17',
           location: 'Sample Location',
           venue: 'Sample Venue'
-        });
+        };
+        console.log('Using mock event data:', mockEvent);
+        setEvent(mockEvent);
       }
     } catch (error) {
       console.error('Error fetching event details:', error);
+      // Set a default event object on error
+      setEvent({
+        id: id,
+        name: 'Event ' + id,
+        status: 'draft',
+        start_date: '2024-07-15',
+        end_date: '2024-07-17',
+        location: 'Sample Location',
+        venue: 'Sample Venue'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -234,13 +239,15 @@ export function EventSettingsPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin">
+        </div>
+        <span className="sr-only">Loading...</span>
       </div>
     );
   }
   
   // If no event ID was provided or event not found
-  if (!eventId) {
+  if (!eventId || !event) {
     return (
       <div className="min-h-screen pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -395,17 +402,17 @@ export function EventSettingsPage() {
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Event Settings</h1>
             <p className="text-gray-300">
-              {isEventManager ? `Manage settings for ${event.name}` : 'System-wide settings and controls'} 
+              {isEventManager ? `Manage settings for ${event?.name || 'Event'}` : 'System-wide settings and controls'} 
             </p>
             <div className="mt-2">
               <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                event.status === 'published' 
+                event?.status === 'published' 
                   ? 'bg-green-500/20 text-green-400' 
-                  : event.status === 'draft'
+                  : event?.status === 'draft'
                   ? 'bg-yellow-500/20 text-yellow-400'
                   : 'bg-gray-500/20 text-gray-400'
               }`}>
-                {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                {event?.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : 'Unknown'}
               </span>
             </div>
           </div>
@@ -413,7 +420,7 @@ export function EventSettingsPage() {
             <button
               onClick={() => {
                 console.log('Preview event:', event);
-                if (event.event_slug) {
+                if (event?.event_slug) {
                   const baseUrl = window.location.origin;
                   const url = `${baseUrl}/events/${event.event_slug}`;
                   console.log('Opening URL:', url);
@@ -542,7 +549,7 @@ export function EventSettingsPage() {
           isOpen={isEventDetailsModalOpen}
           onClose={() => setIsEventDetailsModalOpen(false)}
           onSave={handleSaveEventDetails}
-          initialData={event}
+          initialData={event || undefined}
         />
         
         <ApplicationSettingsModal
