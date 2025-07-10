@@ -480,7 +480,7 @@ export function EventDealsModal({
                         {editingDeal.discount_type === 'percentage' ? (
                           <Percent className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                         ) : (
-                          <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">£</div>
                         )}
                         <input
                           type="number"
@@ -710,7 +710,7 @@ export function EventDealsModal({
                         {editingDeal.discount_type === 'percentage'
                           ? `${editingDeal.discount_value || 0}% off`
                           : editingDeal.discount_type === 'fixed'
-                          ? `£${editingDeal.discount_value || 0} off`
+                          ? `£${(editingDeal.discount_value || 0).toFixed(2)} off`
                           : 'Special offer'
                         }
                       </span>
