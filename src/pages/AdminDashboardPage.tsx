@@ -88,6 +88,7 @@ export function AdminDashboardPage() {
         if (eventsError) {
           console.error('Error fetching events:', eventsError);
         } else {
+         console.log('Fetched events with modules:', eventsData);
           setEvents(eventsData || []);
         }
         
@@ -362,21 +363,30 @@ export function AdminDashboardPage() {
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input 
                               type="checkbox"
-                              checked={event.event_modules?.[0]?.ticketing_enabled || false} 
+                              checked={event.event_modules && event.event_modules[0] ? event.event_modules[0].ticketing_enabled : false} 
                               onChange={async (e) => {
                                 if (supabase) {
                                   const newValue = e.target.checked;
+                                  console.log(`Updating ticketing_enabled to ${newValue} for event ${event.id}`);
                                   const { error } = await supabase
                                     .from('event_modules')
                                     .upsert({
                                       event_id: event.id,
                                       ticketing_enabled: newValue,
+                                      // Preserve other module settings
+                                      consent_forms_enabled: event.event_modules?.[0]?.consent_forms_enabled,
+                                      tattscore_enabled: event.event_modules?.[0]?.tattscore_enabled,
+                                      messaging_enabled: event.event_modules?.[0]?.messaging_enabled,
+                                      applications_enabled: event.event_modules?.[0]?.applications_enabled,
+                                      deals_enabled: event.event_modules?.[0]?.deals_enabled,
+                                      booking_enabled: event.event_modules?.[0]?.booking_enabled,
                                       updated_at: new Date().toISOString()
                                     }, { onConflict: 'event_id' });
                                     
                                   if (error) {
                                     console.error('Error updating ticketing module:', error);
                                   } else {
+                                    console.log('Successfully updated ticketing module');
                                     // Update local state
                                     setEvents(events.map(e => {
                                       if (e.id === event.id) {
@@ -402,21 +412,30 @@ export function AdminDashboardPage() {
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input 
                               type="checkbox" 
-                              checked={event.event_modules?.[0]?.consent_forms_enabled || false}
+                              checked={event.event_modules && event.event_modules[0] ? event.event_modules[0].consent_forms_enabled : false}
                               onChange={async (e) => {
                                 if (supabase) {
                                   const newValue = e.target.checked;
+                                  console.log(`Updating consent_forms_enabled to ${newValue} for event ${event.id}`);
                                   const { error } = await supabase
                                     .from('event_modules')
                                     .upsert({
                                       event_id: event.id,
                                       consent_forms_enabled: newValue,
+                                      // Preserve other module settings
+                                      ticketing_enabled: event.event_modules?.[0]?.ticketing_enabled,
+                                      tattscore_enabled: event.event_modules?.[0]?.tattscore_enabled,
+                                      messaging_enabled: event.event_modules?.[0]?.messaging_enabled,
+                                      applications_enabled: event.event_modules?.[0]?.applications_enabled,
+                                      deals_enabled: event.event_modules?.[0]?.deals_enabled,
+                                      booking_enabled: event.event_modules?.[0]?.booking_enabled,
                                       updated_at: new Date().toISOString()
                                     }, { onConflict: 'event_id' });
                                     
                                   if (error) {
                                     console.error('Error updating consent forms module:', error);
                                   } else {
+                                    console.log('Successfully updated consent forms module');
                                     // Update local state
                                     setEvents(events.map(e => {
                                       if (e.id === event.id) {
@@ -442,21 +461,30 @@ export function AdminDashboardPage() {
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input 
                               type="checkbox" 
-                              checked={event.event_modules?.[0]?.tattscore_enabled || false}
+                              checked={event.event_modules && event.event_modules[0] ? event.event_modules[0].tattscore_enabled : false}
                               onChange={async (e) => {
                                 if (supabase) {
                                   const newValue = e.target.checked;
+                                  console.log(`Updating tattscore_enabled to ${newValue} for event ${event.id}`);
                                   const { error } = await supabase
                                     .from('event_modules')
                                     .upsert({
                                       event_id: event.id,
                                       tattscore_enabled: newValue,
+                                      // Preserve other module settings
+                                      ticketing_enabled: event.event_modules?.[0]?.ticketing_enabled,
+                                      consent_forms_enabled: event.event_modules?.[0]?.consent_forms_enabled,
+                                      messaging_enabled: event.event_modules?.[0]?.messaging_enabled,
+                                      applications_enabled: event.event_modules?.[0]?.applications_enabled,
+                                      deals_enabled: event.event_modules?.[0]?.deals_enabled,
+                                      booking_enabled: event.event_modules?.[0]?.booking_enabled,
                                       updated_at: new Date().toISOString()
                                     }, { onConflict: 'event_id' });
                                     
                                   if (error) {
                                     console.error('Error updating tattscore module:', error);
                                   } else {
+                                    console.log('Successfully updated tattscore module');
                                     // Update local state
                                     setEvents(events.map(e => {
                                       if (e.id === event.id) {
