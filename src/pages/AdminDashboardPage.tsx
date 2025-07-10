@@ -1,82 +1,472 @@
-Here's the fixed version with all missing closing brackets added:
+import React, { useState, useEffect } from 'react';
+import { Calendar, Users, CreditCard, MessageCircle, Settings, Shield, User, Mail, Edit, Key, X, FileText, Heart } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { StatsCard } from '../components/dashboard/StatsCard';
 
-```javascript
-const fetchDashboardData = async () => {
-  try {
-    setIsLoading(true);
+export function AdminDashboardPage() {
+  const { user, supabase } = useAuth();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalEvents: 0,
+    totalStudios: 0
+  });
+  const [recentUsers, setRecentUsers] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [aftercareTemplates, setAftercareTemplates] = useState<any[]>([]);
 
-    if (supabase) {
-      console.log('Fetching admin dashboard data...');
-      // Fetch stats
-      const [usersResult, eventsResult, studiosResult] = await Promise.all([
-        supabase.from('users').select('count'),
-        supabase.from('events').select('count'),
-        supabase.from('studios').select('count')
-      ]);
-
-      console.log('Stats results:', { 
-        users: usersResult, 
-        events: eventsResult, 
-        studios: studiosResult
-      });
-
-      setStats({
-        totalUsers: usersResult.data?.[0]?.count || 0,
-        totalEvents: eventsResult.data?.[0]?.count || 0,
-        totalStudios: studiosResult.data?.[0]?.count || 0
-      });
-
-      // Fetch recent users
-      const { data: users, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (error) {
-        console.error('Error fetching users:', error);
-      } else {
-        setRecentUsers(users || []);
-      }
-
-      // Fetch events for module management
-      const { data: eventsData, error: eventsError } = await supabase
-        .from('events')
-        .select(`
-          id,
-          name,
-          status,
-          event_modules (
-            id,
-            ticketing_enabled,
-            consent_forms_enabled,
-            tattscore_enabled
-          )
-        `)
-        .order('created_at', { ascending: false });
-        
-      if (eventsError) {
-        console.error('Error fetching events:', eventsError);
-      } else {
-        setEvents(eventsData || []);
-      }
-      
-      // Fetch consent templates
-      fetchTemplates();
+  useEffect(() => {
+    // Only allow admin access
+    if (user?.role !== 'admin' && user?.email !== 'admin@tattsync.com') {
+      navigate('/dashboard');
+      return;
     }
-  } catch (error) {
-    console.error('Error fetching dashboard data:', error);
-  } finally {
-    setIsLoading(false);
+    
+    fetchDashboardData();
+  }, [user, navigate]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+
+      if (supabase) {
+        console.log('Fetching admin dashboard data...');
+        // Fetch stats
+        const [usersResult, eventsResult, studiosResult] = await Promise.all([
+          supabase.from('users').select('count'),
+          supabase.from('events').select('count'),
+          supabase.from('studios').select('count')
+        ]);
+
+        console.log('Stats results:', { 
+          users: usersResult, 
+          events: eventsResult, 
+          studios: studiosResult
+        });
+
+        setStats({
+          totalUsers: usersResult.data?.[0]?.count || 0,
+          totalEvents: eventsResult.data?.[0]?.count || 0,
+          totalStudios: studiosResult.data?.[0]?.count || 0
+        });
+
+        // Fetch recent users
+        const { data: users, error } = await supabase
+          .from('users')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (error) {
+          console.error('Error fetching users:', error);
+        } else {
+          setRecentUsers(users || []);
+        }
+
+        // Fetch events for module management
+        const { data: eventsData, error: eventsError } = await supabase
+          .from('events')
+          .select(`
+            id,
+            name,
+            status,
+            event_modules (
+              id,
+              ticketing_enabled,
+              consent_forms_enabled,
+              tattscore_enabled
+            )
+          `)
+          .order('created_at', { ascending: false });
+          
+        if (eventsError) {
+          console.error('Error fetching events:', eventsError);
+        } else {
+          setEvents(eventsData || []);
+        }
+        
+        // Fetch templates
+        fetchTemplates();
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchTemplates = () => {
+    if (!supabase) return;
+    
+    // Fetch consent templates
+    supabase
+      .from('consent_form_templates')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Error fetching consent templates:', error);
+        } else {
+          console.log('Fetched consent templates:', data);
+          setTemplates(data || []);
+        }
+      });
+    
+    // Fetch aftercare templates
+    supabase
+      .from('aftercare_templates')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Error fetching aftercare templates:', error);
+        } else {
+          console.log('Fetched aftercare templates:', data);
+          setAftercareTemplates(data || []);
+        }
+      });
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+      </div>
+    );
   }
-};
-```
 
-The main issues were:
+  // Only allow admin access
+  if (user?.role !== 'admin' && user?.email !== 'admin@tattsync.com') {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
+          <p className="text-gray-300 mb-6">You don't have permission to access this page.</p>
+        </div>
+      </div>
+    );
+  }
 
-1. A duplicate `fetchTemplates();\` call was removed
-2. The closing brace for the `if (supabase)\` block was missing
-3. The closing brace for the `try\` block was missing
-4. The closing brace for the `fetchDashboardData\` function was missing
+  return (
+    <div className="min-h-screen pt-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
+          <p className="text-gray-300">
+            Welcome to the TattSync Master Admin Dashboard
+          </p>
+        </div>
 
-The rest of the file was properly closed and structured.
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <StatsCard 
+            title="Total Users"
+            value={stats.totalUsers.toString()}
+            change=""
+            icon={Users}
+            color="purple"
+          />
+          <StatsCard 
+            title="Total Events"
+            value={stats.totalEvents.toString()}
+            change=""
+            icon={Calendar}
+            color="teal"
+          />
+          <StatsCard 
+            title="Total Studios"
+            value={stats.totalStudios.toString()}
+            change=""
+            icon={CreditCard}
+            color="orange"
+          />
+        </div>
+
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+              <h2 className="text-xl font-semibold text-white mb-4">Recent Users</h2>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-white/5">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Email</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Role</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Created</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10">
+                    {recentUsers.map((user) => (
+                      <tr key={user.id} className="hover:bg-white/5">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center">
+                              <User className="w-5 h-5 text-purple-400" />
+                            </div>
+                            <div>
+                              <p className="text-white font-medium">{user.name}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <Mail className="w-4 h-4 text-gray-400" />
+                            <span className="text-gray-300">{user.email}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-500/20 text-purple-400 capitalize">
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-gray-300">
+                          {formatDate(user.created_at)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => navigate(`/admin/users?edit=${user.id}`)}
+                              className="bg-white/10 hover:bg-white/20 text-gray-300 px-3 py-1 rounded text-sm transition-colors"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => navigate(`/admin/users?password=${user.id}`)}
+                              className="bg-white/10 hover:bg-white/20 text-gray-300 px-3 py-1 rounded text-sm transition-colors"
+                            >
+                              <Key className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {recentUsers.length === 0 && (
+                <div className="text-center py-8">
+                  <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-300">No users found</p>
+                </div>
+              )}
+              
+              <div className="mt-4 text-right">
+                <button
+                  onClick={() => navigate('/admin/users')}
+                  className="text-purple-400 hover:text-purple-300 transition-colors"
+                >
+                  View All Users
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+              <h2 className="text-xl font-semibold text-white mb-4">Event Module Management</h2>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-white/5">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Event</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Ticketing</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Consent Forms</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">TattScore</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10">
+                    {events.map((event) => (
+                      <tr key={event.id} className="hover:bg-white/5">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <p className="text-white font-medium">{event.name}</p>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            event.status === 'published' 
+                              ? 'bg-green-500/20 text-green-400' 
+                              : event.status === 'draft'
+                              ? 'bg-yellow-500/20 text-yellow-400'
+                              : 'bg-gray-500/20 text-gray-400'
+                          }`}>
+                            {event.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={event.event_modules?.[0]?.ticketing_enabled || false} 
+                              onChange={() => console.log('Toggle ticketing')}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                          </label>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={event.event_modules?.[0]?.consent_forms_enabled || false} 
+                              onChange={() => console.log('Toggle consent forms')}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                          </label>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={event.event_modules?.[0]?.tattscore_enabled || false} 
+                              onChange={() => console.log('Toggle TattScore')}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                          </label>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {events.length === 0 && (
+                <div className="text-center py-8">
+                  <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-300">No events found</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+              <h2 className="text-xl font-semibold text-white mb-4">Admin Actions</h2>
+              
+              <div className="space-y-4">
+                <button
+                  onClick={() => navigate('/admin/users')}
+                  className="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
+                >
+                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <Users className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium mb-1">User Management</h3>
+                    <p className="text-gray-400 text-sm">Manage user accounts and permissions</p>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => navigate('/admin/consent-templates')}
+                  className="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
+                >
+                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <Heart className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium mb-1">Consent Templates</h3>
+                    <p className="text-gray-400 text-sm">Manage consent form templates</p>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => navigate('/admin/aftercare-templates')}
+                  className="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
+                >
+                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium mb-1">Aftercare Templates</h3>
+                    <p className="text-gray-400 text-sm">Manage aftercare email templates</p>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => navigate('/events')}
+                  className="w-full bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg p-4 text-left transition-colors flex items-start space-x-3"
+                >
+                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-medium mb-1">Event Management</h3>
+                    <p className="text-gray-400 text-sm">Create and manage events</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+              <h2 className="text-xl font-semibold text-white mb-4">Consent Management</h2>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-white font-medium">Consent Templates</h3>
+                  <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full text-xs">
+                    {templates ? templates.length : 0} Templates
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <h3 className="text-white font-medium">Aftercare Templates</h3>
+                  <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full text-xs">
+                    {aftercareTemplates ? aftercareTemplates.length : 0} Templates
+                  </span>
+                </div>
+                
+                <button
+                  onClick={() => navigate('/admin/consent-templates')}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors mt-2"
+                >
+                  Manage Templates
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+              <h2 className="text-xl font-semibold text-white mb-4">System Status</h2>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">Database</span>
+                  <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs">Connected</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">Storage</span>
+                  <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs">Connected</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">Email Service</span>
+                  <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-xs">Connected</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">Version</span>
+                  <span className="text-gray-300">1.0.0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
