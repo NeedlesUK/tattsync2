@@ -62,41 +62,12 @@ export function Header() {
             consent_forms_enabled: data.consent_forms_enabled || false,
             tattscore_enabled: data.tattscore_enabled || false
           });
-        // Navigate to dashboard immediately after setting user
-        console.log('🧭 Navigating to dashboard at:', new Date().toISOString());
-        setTimeout(() => {
-          clearTimeout(navigationTimeout);
-          window.location.href = '/dashboard';
-        }, 100);
-        
-        // Continue with fetching full user data in the background
-        fetchUserData(supabase, data.session.user.id)
-          .then(userData => {
-            if (userData) {
-              console.log('Full user data fetched successfully:', userData);
-              setUser(userData);
-            }
-          })
-          .catch(error => {
-            console.error('Error fetching full user data:', error);
-          });
+        }
       }
     } catch (error) {
       console.error('Error fetching module availability:', error);
     }
-        // If we can't get user data, return a basic user object based on auth data
-        const { data: { user: authUser } } = await supabaseClient.auth.getUser();
-        if (authUser) {
-          return {
-            id: authUser.id,
-            name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
-            email: authUser.email || '',
-            role: authUser.user_metadata?.role || 'artist',
-            roles: authUser.user_metadata?.roles || [authUser.user_metadata?.role || 'artist']
-          };
-        } else {
-          return null;
-        }
+  };
 
   // Define navigation based on user role
   const getNavigation = (): any[] => {
@@ -168,29 +139,17 @@ export function Header() {
   const getRoleDisplay = (role: string) => {
     switch (role) {
       case 'admin':
-      const userDataPromise = supabaseClient.from('users').select('*').eq('id', userId).single();
-      
-      // Race the fetch against the timeout
-      const { data: userData, error: userError } = await Promise.race([
-        userDataPromise,
-        timeoutPromise.then(() => ({ data: null, error: new Error('Timeout') }))
-      ]);
+        return { label: 'Master Admin', icon: Crown, color: 'bg-purple-600' };
+      case 'event_manager':
+        return { label: 'Event Manager', icon: Calendar, color: 'bg-blue-600' };
+      case 'event_admin':
+        return { label: 'Event Admin', icon: Settings, color: 'bg-green-600' };
+      case 'studio_manager':
+        return { label: 'Studio Manager', icon: Building, color: 'bg-red-600' };
       case 'judge':
         return { label: 'Judge', icon: Award, color: 'bg-orange-600' };
       default:
-        // If we can't get user data, return a basic user object based on auth data
-        const { data: { user: authUser } } = await supabaseClient.auth.getUser();
-        if (authUser) {
-          return {
-            id: authUser.id,
-            name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
-            email: authUser.email || '',
-            role: authUser.user_metadata?.role || 'artist',
-            roles: authUser.user_metadata?.roles || [authUser.user_metadata?.role || 'artist']
-          };
-        } else {
-          return null;
-        }
+        return { label: role.charAt(0).toUpperCase() + role.slice(1), icon: User, color: 'bg-gray-600' };
     }
   };
 
