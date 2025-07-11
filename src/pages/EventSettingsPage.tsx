@@ -1,399 +1,694 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, LogOut, Settings, Crown, Calendar, Award, Building, MessageCircle, Ticket, Users, Bell } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { 
+  Settings, 
+  Calendar, 
+  Users, 
+  CreditCard, 
+  MessageCircle, 
+  Gift, 
+  Heart, 
+  Award, 
+  FileText, 
+  Bell, 
+  Shield, 
+  BarChart,
+  Mail,
+  AlertCircle
+} from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { EventDetailsModal } from '../components/settings/EventDetailsModal';
+import { ApplicationSettingsModal } from '../components/settings/ApplicationSettingsModal';
+import { PaymentSettingsModal } from '../components/settings/PaymentSettingsModal';
+import { TicketSettingsModal } from '../components/settings/TicketSettingsModal';
+import { ConsentFormSettingsModal } from '../components/settings/ConsentFormSettingsModal';
+import { MessagingSettingsModal } from '../components/settings/MessagingSettingsModal';
+import { EmailTemplatesModal } from '../components/settings/EmailTemplatesModal';
+import { NotificationRulesModal } from '../components/settings/NotificationRulesModal';
+import { AdminAccessModal } from '../components/settings/AdminAccessModal';
+import { StatisticsModal } from '../components/settings/StatisticsModal';
+import { EventInformationModal } from '../components/settings/EventInformationModal';
+import { EventDealsModal } from '../components/settings/EventDealsModal';
 
-export function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
-  const location = useLocation();
-  const [userRoles, setUserRoles] = useState<string[]>([]);
-  
+export function EventSettingsPage() {
+  const { user, supabase } = useAuth();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [event, setEvent] = useState<any>(null);
+  const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [moduleAvailability, setModuleAvailability] = useState({
+    ticketing_enabled: false,
+    consent_forms_enabled: false,
+    tattscore_enabled: false
+  });
+
+  // Get event ID from URL
+  const eventId = searchParams.get('event');
+
   useEffect(() => {
-    if (user?.roles) {
-      setUserRoles(user.roles);
-    } else if (user?.role) {
-      setUserRoles([user.role]);
+    if (eventId) {
+      fetchEventDetails(parseInt(eventId));
+      fetchModuleAvailability(parseInt(eventId));
     } else {
-      setUserRoles([]);
+      // No event ID provided, redirect to events page
+      navigate('/events');
     }
-  }, [user]);
+  }, [eventId, navigate]);
 
-  // Define navigation based on user role
-  const getNavigation = (): any[] => {
-    // Default navigation for all users
-    const baseNavigation = [
-      { name: 'Dashboard', href: '/dashboard' }
-    ];
-    
-    // For event managers, show specific navigation
-    if (userRoles.includes('event_manager') || userRoles.includes('event_admin')) {
-      return [
-        ...baseNavigation,
-        { 
-          name: 'Messages', 
-          href: '/messages',
-          badge: {
-            count: 0, // Replace with actual unread count
-            color: 'bg-green-500 text-white'
-          }
-        },
-        { 
-          name: 'Tickets', 
-          href: '/ticket-management',
-          requiresModule: 'ticketing_enabled'
-        },
-        { 
-         name: 'Applications', 
-          href: '/applications'
-        },
-        { 
-          name: 'Attendees', 
-          href: '/attendees'
-        },
-      ];
-    }
-    
-    // For regular users
-    return [
-      ...baseNavigation,
-      { name: 'Events', href: '/events' },
-      { name: 'Messages', href: '/messages' },
-      { name: 'Deals', href: '/deals' },
-    ];
-  };
-
-  const navigationItems = getNavigation();
-
-  // For Master Admin, direct links instead of dropdowns
-  const adminDirectLinks = [
-    { name: 'TattScore', href: '/tattscore/admin' },
-    { name: 'Studio', href: '/studio/dashboard' },
-    { name: 'Tickets', href: '/ticket-management' },
-  ];
-
-  // TattScore navigation items - filter based on role
-  const tattscoreNavigation = [
-    { name: 'TattScore Admin', href: '/tattscore/admin', roles: ['event_manager', 'event_admin'] },
-    { name: 'Leaderboard', href: '/tattscore/judging', roles: ['event_manager', 'event_admin', 'judge'] }
-  ];
-
-  // Studio navigation items
-  const studioNavigation = [
-    { name: 'Studio Dashboard', href: '/studio/dashboard', roles: ['studio_manager', 'artist', 'piercer'] },
-  ];
-
-  const isActive = (path: string) => location.pathname === path;
-
-  const getRoleDisplay = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return { label: 'Master Admin', icon: Crown, color: 'bg-purple-600' };
-      case 'event_manager':
-        return { label: 'Event Manager', icon: Calendar, color: 'bg-teal-600' };
-      case 'studio_manager':
-        return { label: 'Studio Manager', icon: Building, color: 'bg-blue-600' };
-      case 'judge':
-        return { label: 'Judge', icon: Award, color: 'bg-orange-600' };
-      default:
-        return null;
+  const fetchEventDetails = async (id: number) => {
+    try {
+      setIsLoading(true);
+      
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .eq('id', id)
+          .single();
+          
+        if (error) {
+          console.error('Error fetching event details:', error);
+          throw error;
+        }
+        
+        if (data) {
+          console.log('Event details:', data);
+          setEvent(data);
+        } else {
+          // Event not found
+          navigate('/events');
+        }
+      } else {
+        // Mock data for when Supabase is not available
+        setEvent({
+          id: id,
+          name: 'The Great Western Tattoo Show',
+          description: 'The premier tattoo event in the West Country',
+          event_slug: 'gwts',
+          start_date: '2024-08-10',
+          end_date: '2024-08-12',
+          location: 'Bristol, UK',
+          venue: 'Bristol Exhibition Centre',
+          max_attendees: 500,
+          status: 'published',
+          event_manager_id: user?.id
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching event details:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const roleDisplay = user ? getRoleDisplay(user.role) : null;
-  
-  // Check if a module is enabled for the current user
-  const isModuleEnabled = (moduleName: string) => {
-    // This is a placeholder - in a real implementation, you would check if the module is enabled
-    // for the current user's event
-    if (!user) return false;
-    
-    // For demo purposes, enable all modules for admin users
-    if (user.role === 'admin' || user.email === 'admin@tattsync.com') {
-      return true;
+  const fetchModuleAvailability = async (id: number) => {
+    try {
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('event_modules')
+          .select('*')
+          .eq('event_id', id)
+          .single();
+          
+        if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
+          console.error('Error fetching module availability:', error);
+          return;
+        }
+        
+        if (data) {
+          setModuleAvailability({
+            ticketing_enabled: data.ticketing_enabled || false,
+            consent_forms_enabled: data.consent_forms_enabled || false,
+            tattscore_enabled: data.tattscore_enabled || false
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching module availability:', error);
     }
-    
-    // For event managers, check if the module is enabled in their event
-    // This would typically be fetched from the database
-    // For now, we'll just return true for all modules
-    return true;
   };
 
-  // Filter navigation items based on user role
-  const filteredTattscoreNavigation = tattscoreNavigation.filter(item => 
-    !item.roles || (user && (userRoles.some(role => item.roles.includes(role)) || user?.email === 'gary@tattscore.com'))
-  );
+  const handleSaveEventDetails = async (eventData: any) => {
+    try {
+      if (supabase) {
+        const { error } = await supabase
+          .from('events')
+          .update(eventData)
+          .eq('id', event.id);
+          
+        if (error) {
+          console.error('Error updating event details:', error);
+          throw error;
+        }
+        
+        // Refresh event details
+        fetchEventDetails(event.id);
+      }
+    } catch (error) {
+      console.error('Error saving event details:', error);
+      throw error;
+    }
+  };
 
-  const filteredStudioNavigation = studioNavigation.filter(item => 
-    !item.roles || (user && (userRoles.some(role => item.roles.includes(role)) || user?.email === 'gary@tattscore.com'))
-  );
+  const handleSaveApplicationSettings = async (settings: any) => {
+    try {
+      console.log('Saving application settings:', settings);
+      // In a real implementation, save to database
+    } catch (error) {
+      console.error('Error saving application settings:', error);
+      throw error;
+    }
+  };
+
+  const handleSavePaymentSettings = async (settings: any) => {
+    try {
+      console.log('Saving payment settings:', settings);
+      // In a real implementation, save to database
+    } catch (error) {
+      console.error('Error saving payment settings:', error);
+      throw error;
+    }
+  };
+
+  const handleSaveTicketSettings = async (settings: any) => {
+    try {
+      if (!moduleAvailability.ticketing_enabled) {
+        throw new Error('Ticketing module is not enabled for this event');
+      }
+      
+      console.log('Saving ticket settings:', settings);
+      // In a real implementation, save to database
+    } catch (error) {
+      console.error('Error saving ticket settings:', error);
+      throw error;
+    }
+  };
+
+  const handleSaveConsentSettings = async (settings: any) => {
+    try {
+      if (!moduleAvailability.consent_forms_enabled) {
+        throw new Error('Consent Forms module is not enabled for this event');
+      }
+      
+      console.log('Saving consent settings:', settings);
+      // In a real implementation, save to database
+    } catch (error) {
+      console.error('Error saving consent settings:', error);
+      throw error;
+    }
+  };
+
+  const handleSaveMessagingSettings = async (settings: any) => {
+    try {
+      console.log('Saving messaging settings:', settings);
+      // In a real implementation, save to database
+    } catch (error) {
+      console.error('Error saving messaging settings:', error);
+      throw error;
+    }
+  };
+
+  const handleSaveEmailTemplates = async (templates: any) => {
+    try {
+      console.log('Saving email templates:', templates);
+      // In a real implementation, save to database
+    } catch (error) {
+      console.error('Error saving email templates:', error);
+      throw error;
+    }
+  };
+
+  const handleSaveNotificationRules = async (rules: any) => {
+    try {
+      console.log('Saving notification rules:', rules);
+      // In a real implementation, save to database
+    } catch (error) {
+      console.error('Error saving notification rules:', error);
+      throw error;
+    }
+  };
+
+  const handleSaveAdminAccess = async (admins: any) => {
+    try {
+      console.log('Saving admin access:', admins);
+      // In a real implementation, save to database
+    } catch (error) {
+      console.error('Error saving admin access:', error);
+      throw error;
+    }
+  };
+
+  const handleSaveStatistics = async (settings: any) => {
+    try {
+      console.log('Saving statistics settings:', settings);
+      // In a real implementation, save to database
+    } catch (error) {
+      console.error('Error saving statistics settings:', error);
+      throw error;
+    }
+  };
+
+  const handleSaveEventInformation = async (information: any) => {
+    try {
+      console.log('Saving event information:', information);
+      // In a real implementation, save to database
+    } catch (error) {
+      console.error('Error saving event information:', error);
+      throw error;
+    }
+  };
+
+  const handleSaveDeals = async (deals: any) => {
+    try {
+      console.log('Saving deals:', deals);
+      // In a real implementation, save to database
+    } catch (error) {
+      console.error('Error saving deals:', error);
+      throw error;
+    }
+  };
+
+  const handleOpenModal = (modalName: string) => {
+    // Check if module is enabled before opening modal
+    if (modalName === 'tickets' && !moduleAvailability.ticketing_enabled) {
+      alert('Ticketing module is not enabled for this event. Please enable it in the Admin Dashboard.');
+      return;
+    }
+    
+    if (modalName === 'consent' && !moduleAvailability.consent_forms_enabled) {
+      alert('Consent Forms module is not enabled for this event. Please enable it in the Admin Dashboard.');
+      return;
+    }
+    
+    if (modalName === 'tattscore' && !moduleAvailability.tattscore_enabled) {
+      alert('TattScore module is not enabled for this event. Please enable it in the Admin Dashboard.');
+      return;
+    }
+    
+    setActiveModal(modalName);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!event) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Event Not Found</h1>
+          <p className="text-gray-300 mb-6">The event you're looking for doesn't exist or has been removed.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <header className="bg-black/20 backdrop-blur-md border-b border-purple-500/20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-3">
-              <img 
-                src="/IMG_0953.png" 
-                alt="TattSync Logo" 
-                className="w-10 h-10 object-contain"
-              />
-              <span className="text-white font-bold text-xl">TattSync</span>
-            </Link>
+    <div className="min-h-screen pt-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">{event.name} Settings</h1>
+          <p className="text-gray-300">Configure your event settings and modules</p>
+        </div>
+
+        {/* Settings Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Event Details */}
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                <Settings className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Event Details</h2>
+                <p className="text-gray-300 text-sm">Basic event information</p>
+              </div>
+            </div>
+            <p className="text-gray-300 mb-4">Name, dates, location</p>
+            <button
+              onClick={() => handleOpenModal('details')}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ml-auto"
+            >
+              <span>Configure</span>
+              <span className="text-lg">→</span>
+            </button>
           </div>
 
-          {user && (
-            <nav className="hidden md:flex space-x-8">
-              {navigationItems.map((item) => {
-                // Skip items that require a module if the module is not enabled
-                if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
-                  return null;
-                }
-                
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href} 
-                    className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isActive(item.href)
-                        ? 'text-purple-400 bg-purple-400/10'
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    {item.name}
-                    {item.badge && (
-                      <span className={`ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${
-                        item.badge.count > 0 
-                          ? 'bg-red-500 text-white' 
-                          : item.badge.color
-                      }`}>
-                        {item.badge.count}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-              
-              {/* For Master Admin, show direct links */}
-              {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive(item.href)
-                      ? 'text-purple-400 bg-purple-400/10'
-                      : 'text-gray-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
-              
-              {/* TattScore Navigation - only for non-admin users */}
-              {!userRoles.includes('admin') && filteredTattscoreNavigation.length > 0 && (
-                <div className="relative group">
-                  <button className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors flex items-center space-x-1">
-                    <span>TattScore</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  <div className="absolute left-0 mt-2 w-48 bg-slate-800 border border-white/10 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                    {filteredTattscoreNavigation.map((item) => (
-                      <Link
-                        key={item.name}
-                        to={item.href}
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
-                      >
-                        {item.name}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Studio Navigation - only for non-admin users */}
-              {!userRoles.includes('admin') && filteredStudioNavigation.length > 0 && (
-                <div className="relative group">
-                  <button className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors flex items-center space-x-1">
-                    <span>Studio</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  <div className="absolute left-0 mt-2 w-48 bg-slate-800 border border-white/10 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                    {filteredStudioNavigation.map((item) => (
-                      <Link
-                        key={item.name}
-                        to={item.href}
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
-                      >
-                        {item.name}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </nav>
-          )}
-
-          <div className="flex items-center space-x-4">
-            {user ? (
-              <div className="flex items-center space-x-3">
-                <Link
-                  to="/profile"
-                  className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors"
-                >
-                  {user.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
-                  ) : (
-                    <div className="w-8 h-8 bg-purple-500/30 rounded-full flex items-center justify-center overflow-hidden">
-                      {user.name ? (
-                        <span className="text-white font-bold text-sm">{user.name.charAt(0).toUpperCase()}</span>
-                      ) : (
-                        <User className="w-5 h-5 text-purple-400" />
-                      )}
-                    </div>
-                  )}
-                  <div className="hidden sm:block">
-                    <span className="block font-medium">{user.name || 'User'}</span>
-                  </div>
-                </Link>
-                {user && roleDisplay && (
-                  <span className={`${roleDisplay?.color || 'bg-purple-600'} text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1`}>
-                    {user.role === 'admin' || user.email === 'admin@tattsync.com' ? (
-                      <>
-                        <Crown className="w-3 h-3" />
-                        <span className="hidden sm:inline">{roleDisplay?.label || 'Master Admin'}</span>
-                      </>
-                    ) : (
-                      <>
-                        {roleDisplay && <roleDisplay.icon className="w-3 h-3" />}
-                        <span className="hidden sm:inline">{roleDisplay?.label || ''}</span>
-                      </>
-                    )}
-                  </span>
-                )}
-                <button
-                  onClick={logout}
-                  className="text-gray-300 hover:text-white transition-colors"
-                  aria-label="Logout"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
+          {/* Applications */}
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-teal-500/20 rounded-lg flex items-center justify-center">
+                <Users className="w-6 h-6 text-teal-400" />
               </div>
-            ) : (
-              <div className="hidden sm:block">
-                <Link
-                  to="/login"
-                  className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
-                >
-                  Sign In
-                </Link>
+              <div>
+                <h2 className="text-xl font-bold text-white">Applications</h2>
+                <p className="text-gray-300 text-sm">Application form settings</p>
               </div>
-            )}
-
+            </div>
+            <p className="text-gray-300 mb-4">Form fields, limits</p>
             <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden text-gray-300 hover:text-white"
+              onClick={() => handleOpenModal('applications')}
+              className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ml-auto"
             >
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              <span>Configure</span>
+              <span className="text-lg">→</span>
+            </button>
+          </div>
+
+          {/* Payments */}
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+                <CreditCard className="w-6 h-6 text-green-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Payments</h2>
+                <p className="text-gray-300 text-sm">Payment methods and pricing</p>
+              </div>
+            </div>
+            <p className="text-gray-300 mb-4">Stripe, bank transfer, cash</p>
+            <button
+              onClick={() => handleOpenModal('payments')}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ml-auto"
+            >
+              <span>Configure</span>
+              <span className="text-lg">→</span>
+            </button>
+          </div>
+
+          {/* Tickets */}
+          <div className={`bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 ${!moduleAvailability.ticketing_enabled ? 'opacity-50' : ''}`}>
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Tickets</h2>
+                <p className="text-gray-300 text-sm">Ticket types and pricing</p>
+              </div>
+              {!moduleAvailability.ticketing_enabled && (
+                <span className="bg-red-500/20 text-red-400 px-2 py-1 rounded-full text-xs">
+                  Disabled
+                </span>
+              )}
+            </div>
+            <p className="text-gray-300 mb-4">Day passes, weekend passes</p>
+            <button
+              onClick={() => handleOpenModal('tickets')}
+              className={`bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ml-auto ${!moduleAvailability.ticketing_enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={!moduleAvailability.ticketing_enabled}
+            >
+              <span>Configure</span>
+              <span className="text-lg">→</span>
+            </button>
+          </div>
+
+          {/* Consent Forms */}
+          <div className={`bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 ${!moduleAvailability.consent_forms_enabled ? 'opacity-50' : ''}`}>
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center">
+                <Heart className="w-6 h-6 text-red-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Consent Forms</h2>
+                <p className="text-gray-300 text-sm">Consent form settings</p>
+              </div>
+              {!moduleAvailability.consent_forms_enabled && (
+                <span className="bg-red-500/20 text-red-400 px-2 py-1 rounded-full text-xs">
+                  Disabled
+                </span>
+              )}
+            </div>
+            <p className="text-gray-300 mb-4">Enable/disable consent forms</p>
+            <button
+              onClick={() => handleOpenModal('consent')}
+              className={`bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ml-auto ${!moduleAvailability.consent_forms_enabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={!moduleAvailability.consent_forms_enabled}
+            >
+              <span>Configure</span>
+              <span className="text-lg">→</span>
+            </button>
+          </div>
+
+          {/* Messaging */}
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                <MessageCircle className="w-6 h-6 text-orange-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Messaging</h2>
+                <p className="text-gray-300 text-sm">Messaging settings</p>
+              </div>
+            </div>
+            <p className="text-gray-300 mb-4">Permissions, notifications</p>
+            <button
+              onClick={() => handleOpenModal('messaging')}
+              className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ml-auto"
+            >
+              <span>Configure</span>
+              <span className="text-lg">→</span>
+            </button>
+          </div>
+
+          {/* Email Templates */}
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                <Mail className="w-6 h-6 text-yellow-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Email Templates</h2>
+                <p className="text-gray-300 text-sm">Customize email templates</p>
+              </div>
+            </div>
+            <p className="text-gray-300 mb-4">Approval, rejection emails</p>
+            <button
+              onClick={() => handleOpenModal('email')}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ml-auto"
+            >
+              <span>Configure</span>
+              <span className="text-lg">→</span>
+            </button>
+          </div>
+
+          {/* Notification Rules */}
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-pink-500/20 rounded-lg flex items-center justify-center">
+                <Bell className="w-6 h-6 text-pink-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Notification Rules</h2>
+                <p className="text-gray-300 text-sm">Automated notifications</p>
+              </div>
+            </div>
+            <p className="text-gray-300 mb-4">Triggers, recipients</p>
+            <button
+              onClick={() => handleOpenModal('notifications')}
+              className="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ml-auto"
+            >
+              <span>Configure</span>
+              <span className="text-lg">→</span>
+            </button>
+          </div>
+
+          {/* Admin Access */}
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-indigo-500/20 rounded-lg flex items-center justify-center">
+                <Shield className="w-6 h-6 text-indigo-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Admin Access</h2>
+                <p className="text-gray-300 text-sm">Manage event administrators</p>
+              </div>
+            </div>
+            <p className="text-gray-300 mb-4">Access control</p>
+            <button
+              onClick={() => handleOpenModal('admin')}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ml-auto"
+            >
+              <span>Configure</span>
+              <span className="text-lg">→</span>
+            </button>
+          </div>
+
+          {/* Statistics */}
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+                <BarChart className="w-6 h-6 text-cyan-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Statistics</h2>
+                <p className="text-gray-300 text-sm">Event analytics and reporting</p>
+              </div>
+            </div>
+            <p className="text-gray-300 mb-4">Coming soon</p>
+            <button
+              onClick={() => handleOpenModal('statistics')}
+              className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ml-auto"
+            >
+              <span>Configure</span>
+              <span className="text-lg">→</span>
+            </button>
+          </div>
+
+          {/* Event Information */}
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-emerald-500/20 rounded-lg flex items-center justify-center">
+                <FileText className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Event Information</h2>
+                <p className="text-gray-300 text-sm">Manage event information</p>
+              </div>
+            </div>
+            <p className="text-gray-300 mb-4">Content, media, FAQs</p>
+            <button
+              onClick={() => handleOpenModal('information')}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ml-auto"
+            >
+              <span>Configure</span>
+              <span className="text-lg">→</span>
+            </button>
+          </div>
+
+          {/* Deals & Offers */}
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-amber-500/20 rounded-lg flex items-center justify-center">
+                <Gift className="w-6 h-6 text-amber-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Deals & Offers</h2>
+                <p className="text-gray-300 text-sm">Manage promotional offers</p>
+              </div>
+            </div>
+            <p className="text-gray-300 mb-4">Discounts, special offers</p>
+            <button
+              onClick={() => handleOpenModal('deals')}
+              className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ml-auto"
+            >
+              <span>Configure</span>
+              <span className="text-lg">→</span>
             </button>
           </div>
         </div>
-
-        {isMenuOpen && user && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              {navigationItems.map((item) => {
-                // Skip items that require a module if the module is not enabled
-                if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
-                  return null;
-                }
-                
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href} 
-                    className={`flex items-center px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                      isActive(item.href)
-                        ? 'text-purple-400 bg-purple-400/10'
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
-                    }`}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {item.name}
-                    {item.badge && (
-                      <span className={`ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${
-                        item.badge.count > 0 
-                          ? 'bg-red-500 text-white' 
-                          : item.badge.color
-                      }`}>
-                        {item.badge.count}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-              
-              {/* For Master Admin, show direct links in mobile menu too */}
-              {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                    isActive(item.href)
-                      ? 'text-purple-400 bg-purple-400/10'
-                      : 'text-gray-300 hover:text-white hover:bg-white/10'
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))}
-              
-              {/* TattScore Mobile Navigation - only for non-admin users */}
-              {!userRoles.includes('admin') && filteredTattscoreNavigation.length > 0 && (
-                <>
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    TattScore
-                  </div>
-                  {filteredTattscoreNavigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      {item.name}
-                    </Link>
-                  ))}
-                </>
-              )}
-              
-              {/* Studio Mobile Navigation - only for non-admin users */}
-              {!userRoles.includes('admin') && filteredStudioNavigation.length > 0 && (
-                <>
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Studio
-                  </div>
-                  {filteredStudioNavigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      {item.name}
-                    </Link>
-                  ))}
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </div>
-    </header>
+
+      {/* Modals */}
+      <EventDetailsModal
+        eventId={event.id}
+        eventName={event.name}
+        eventStartDate={event.start_date}
+        eventEndDate={event.end_date}
+        isOpen={activeModal === 'details'}
+        onClose={() => setActiveModal(null)}
+        onSave={handleSaveEventDetails}
+        initialData={event}
+      />
+
+      <ApplicationSettingsModal
+        eventId={event.id}
+        eventName={event.name}
+        isOpen={activeModal === 'applications'}
+        onClose={() => setActiveModal(null)}
+        onSave={handleSaveApplicationSettings}
+      />
+
+      <PaymentSettingsModal
+        eventId={event.id}
+        eventName={event.name}
+        isOpen={activeModal === 'payments'}
+        onClose={() => setActiveModal(null)}
+        onSave={handleSavePaymentSettings}
+      />
+
+      {moduleAvailability.ticketing_enabled && (
+        <TicketSettingsModal
+          eventId={event.id}
+          eventName={event.name}
+          eventStartDate={event.start_date}
+          eventEndDate={event.end_date}
+          isOpen={activeModal === 'tickets'}
+          onClose={() => setActiveModal(null)}
+          onSave={handleSaveTicketSettings}
+        />
+      )}
+
+      {moduleAvailability.consent_forms_enabled && (
+        <ConsentFormSettingsModal
+          eventId={event.id}
+          eventName={event.name}
+          isOpen={activeModal === 'consent'}
+          onClose={() => setActiveModal(null)}
+          onSave={handleSaveConsentSettings}
+        />
+      )}
+
+      <MessagingSettingsModal
+        eventId={event.id}
+        eventName={event.name}
+        isOpen={activeModal === 'messaging'}
+        onClose={() => setActiveModal(null)}
+        onSave={handleSaveMessagingSettings}
+      />
+
+      <EmailTemplatesModal
+        eventId={event.id}
+        eventName={event.name}
+        isOpen={activeModal === 'email'}
+        onClose={() => setActiveModal(null)}
+        onSave={handleSaveEmailTemplates}
+      />
+
+      <NotificationRulesModal
+        eventId={event.id}
+        eventName={event.name}
+        isOpen={activeModal === 'notifications'}
+        onClose={() => setActiveModal(null)}
+        onSave={handleSaveNotificationRules}
+      />
+
+      <AdminAccessModal
+        eventId={event.id}
+        eventName={event.name}
+        isOpen={activeModal === 'admin'}
+        onClose={() => setActiveModal(null)}
+        onSave={handleSaveAdminAccess}
+      />
+
+      <StatisticsModal
+        eventId={event.id}
+        eventName={event.name}
+        isOpen={activeModal === 'statistics'}
+        onClose={() => setActiveModal(null)}
+        onSave={handleSaveStatistics}
+      />
+
+      <EventInformationModal
+        eventId={event.id}
+        eventName={event.name}
+        isOpen={activeModal === 'information'}
+        onClose={() => setActiveModal(null)}
+        onSave={handleSaveEventInformation}
+      />
+
+      <EventDealsModal
+        eventId={event.id}
+        eventName={event.name}
+        isOpen={activeModal === 'deals'}
+        onClose={() => setActiveModal(null)}
+        onSave={handleSaveDeals}
+      />
+    </div>
   );
 }
