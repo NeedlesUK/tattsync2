@@ -422,7 +422,19 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    console.error('useAuth must be used within an AuthProvider');
+    return {
+      supabase: null,
+      user: null,
+      session: null,
+      isLoading: false,
+      login: async () => { throw new Error('Auth context not available'); },
+      register: async () => { throw new Error('Auth context not available'); },
+      logout: async () => { throw new Error('Auth context not available'); },
+      updateAuthUser: async () => { throw new Error('Auth context not available'); },
+      updateUserPassword: async () => { throw new Error('Auth context not available'); },
+      updateUserRoles: async () => { throw new Error('Auth context not available'); },
+    };
   }
   return context;
 }

@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { StatsCard } from '../components/dashboard/StatsCard';
 
 export function DashboardPage() {
-  const { user, supabase } = useAuth();
+  const { user, supabase, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [events, setEvents] = useState<any[]>([]);
@@ -25,8 +25,10 @@ export function DashboardPage() {
   const [applications, setApplications] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (!authLoading) {
+      fetchDashboardData();
+    }
+  }, [authLoading]);
 
   const fetchDashboardData = async () => {
     try {
@@ -123,7 +125,7 @@ export function DashboardPage() {
       console.log('❌ Error in fetchDashboardData, setting empty data');
     } finally {
       console.log('✅ Dashboard data fetch complete, setting isLoading to false');
-      setIsLoading(false);
+      setTimeout(() => setIsLoading(false), 100); // Small delay to ensure state updates properly
     }
   };
 
@@ -146,10 +148,13 @@ export function DashboardPage() {
     });
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+        <div>
+          <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-4"></div>
+          <p className="text-white text-center">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
