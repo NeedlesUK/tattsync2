@@ -41,21 +41,10 @@ export function RegistrationPage() {
     e.preventDefault();
     setError(null);
     
-    console.log(`Login form submitted with email: ${formData.email} at ${new Date().toISOString()}`);
-    console.log(`⏱️ Form submission timestamp: ${new Date().toISOString()}`);
-    
-    // Set a timeout to force navigation if the normal flow doesn't complete
-    const navigationTimeout = setTimeout(() => {
-      console.log('⏱️ Navigation timeout reached, forcing redirect');
-      navigate('/dashboard');
-    }, 5000);
-    
     try {
       setIsLoading(true);
       
       if (isLogin) {
-        console.log(`Attempting login with email: ${formData.email} at ${new Date().toISOString()}`);
-        console.log(`⏱️ Login attempt timestamp: ${new Date().toISOString()}`);
         await login(formData.email, formData.password);
       } else {
         // Validate registration form
@@ -199,9 +188,6 @@ export function RegistrationPage() {
                 type="submit"
                 disabled={isLoading}
                 className="w-full bg-gradient-to-r from-purple-600 to-teal-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => {
-                  console.log('Login button clicked, form will handle submission');
-                }}
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
