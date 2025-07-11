@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, LogOut, Settings, Crown, Calendar, Award, Building, MessageCircle, Ticket, Users, Bell } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { Menu, X, User, LogOut, Settings, Crown, Calendar, Award, Building, MessageCircle, Ticket, Users, Bell, Heart } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [moduleAvailability, setModuleAvailability] = useState({
-    ticketing_enabled: false,
-    consent_forms_enabled: false,
-    tattscore_enabled: false
+    ticketing_enabled: true,
+    consent_forms_enabled: true,
+    tattscore_enabled: true
   });
+  const [currentEventId, setCurrentEventId] = useState<number | null>(null);
   
   useEffect(() => {
     if (user?.roles) {
@@ -22,36 +24,32 @@ export function Header() {
     } else {
       setUserRoles([]);
     }
-    
-    // Fetch module availability for the current event
-    if (user && (user.role === 'event_manager' || user.role === 'event_admin')) {
-      fetchModuleAvailability();
-    }
   }, [user]);
 
-  const fetchModuleAvailability = async () => {
+  // Check for event ID in URL and fetch module availability
+  useEffect(() => {
+    const eventId = searchParams.get('event');
+    if (eventId) {
+      setCurrentEventId(parseInt(eventId));
+      fetchModuleAvailability(parseInt(eventId));
+    }
+  }, [searchParams]);
+
+  const fetchModuleAvailability = async (eventId: number) => {
     try {
-      if (supabase) {
-        // Get the current event ID - in a real implementation, this would come from context or state
-        // For now, we'll try to get it from the URL if it's in the format /event-settings?event=X
-        const urlParams = new URLSearchParams(window.location.search);
-        const eventId = urlParams.get('event');
-        
-        if (!eventId) return;
-        
-        const { data, error } = await supabase
+      if (user?.supabase) {
+        const { data, error } = await user.supabase
           .from('event_modules')
           .select('*')
           .eq('event_id', eventId)
           .single();
           
-        if (error) {
-          console.error('Error fetching event modules:', error);
+        if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
+          console.error('Error fetching module availability:', error);
           return;
         }
         
         if (data) {
-          console.log('Fetched event modules for header:', data);
           setModuleAvailability({
             ticketing_enabled: data.ticketing_enabled || false,
             consent_forms_enabled: data.consent_forms_enabled || false,
@@ -75,7 +73,7 @@ export function Header() {
     if (userRoles.includes('event_manager') || userRoles.includes('event_admin')) {
       return [
         ...baseNavigation,
-        { 
+        {
           name: 'Messages', 
           href: '/messages',
           badge: {
@@ -84,13 +82,13 @@ export function Header() {
           }
         },
         { 
-          name: 'Tickets', 
+          name: 'Tickets',
           href: '/ticket-management',
           requiresModule: 'ticketing_enabled',
-          isEnabled: moduleAvailability.ticketing_enabled
+          disabled: !moduleAvailability.ticketing_enabled
         },
         { 
-         name: 'Applications', 
+          name: 'Applications',
           href: '/applications'
         },
         { 
@@ -113,15 +111,27 @@ export function Header() {
 
   // For Master Admin, direct links instead of dropdowns
   const adminDirectLinks = [
-    { name: 'TattScore', href: '/tattscore/admin' },
+    { name: 'TattScore', href: '/tattscore/admin', requiresModule: 'tattscore_enabled', disabled: !moduleAvailability.tattscore_enabled },
     { name: 'Studio', href: '/studio/dashboard' },
-    { name: 'Tickets', href: '/ticket-management' },
+    { name: 'Tickets', href: '/ticket-management', requiresModule: 'ticketing_enabled', disabled: !moduleAvailability.ticketing_enabled },
   ];
 
   // TattScore navigation items - filter based on role
   const tattscoreNavigation = [
-    { name: 'TattScore Admin', href: '/tattscore/admin', roles: ['event_manager', 'event_admin'] },
-    { name: 'Leaderboard', href: '/tattscore/judging', roles: ['event_manager', 'event_admin', 'judge'] }
+    { 
+      name: 'TattScore Admin', 
+      href: '/tattscore/admin', 
+      roles: ['event_manager', 'event_admin'],
+      requiresModule: 'tattscore_enabled',
+      disabled: !moduleAvailability.tattscore_enabled
+    },
+    { 
+      name: 'Leaderboard', 
+      href: '/tattscore/judging', 
+      roles: ['event_manager', 'event_admin', 'judge'],
+      requiresModule: 'tattscore_enabled',
+      disabled: !moduleAvailability.tattscore_enabled
+    }
   ];
 
   // Studio navigation items
@@ -150,17 +160,14 @@ export function Header() {
   
   // Check if a module is enabled for the current user
   const isModuleEnabled = (moduleName: string) => {
-    // Check if the module is enabled based on the fetched module availability
-    if (!user) {
-      return false;
-    }
+    if (!user) return false;
     
     // For demo purposes, enable all modules for admin users
     if (user.role === 'admin' || user.email === 'admin@tattsync.com') {
       return true;
     }
     
-    // For event managers, check the module availability
+    // Check module availability
     switch (moduleName) {
       case 'ticketing_enabled':
         return moduleAvailability.ticketing_enabled;
@@ -201,8 +208,12 @@ export function Header() {
             <nav className="hidden md:flex space-x-8">
               {navigationItems.map((item) => {
                 // Skip items that require a module if the module is not enabled
-                if ((item.requiresModule && !isModuleEnabled(item.requiresModule)) || 
-                    (item.isEnabled !== undefined && !item.isEnabled)) {
+                if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
+                  return null;
+                }
+
+                // Skip disabled items
+                if (item.disabled) {
                   return null;
                 }
                 
@@ -231,48 +242,72 @@ export function Header() {
               })}
               
               {/* For Master Admin, show direct links */}
-              {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive(item.href)
-                      ? 'text-purple-400 bg-purple-400/10'
-                      : 'text-gray-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => {
+                // Skip items that require a module if the module is not enabled
+                if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
+                  return null;
+                }
+                
+                // Skip disabled items
+                if (item.disabled) {
+                  return null;
+                }
+                
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive(item.href)
+                        ? 'text-purple-400 bg-purple-400/10'
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                );
+              })}
               
               {/* TattScore Navigation - only for non-admin users */}
               {!userRoles.includes('admin') && filteredTattscoreNavigation.length > 0 && (
                 <div className="relative group">
-                  <button 
-                    className={`px-3 py-2 rounded-md text-sm font-medium ${
-                      moduleAvailability.tattscore_enabled 
-                        ? "text-gray-300 hover:text-white hover:bg-white/10" 
-                        : "text-gray-500 cursor-not-allowed"
-                    } transition-colors flex items-center space-x-1`}
-                    disabled={!moduleAvailability.tattscore_enabled}
-                  >
+                  <button className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors flex items-center space-x-1">
                     <span>TattScore</span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
+                    {!moduleAvailability.tattscore_enabled && (
+                      <span className="ml-1 bg-red-500/20 text-red-400 px-1 py-0.5 rounded-full text-xs">
+                        Disabled
+                      </span>
+                    )}
                   </button>
-                  <div className={`absolute left-0 mt-2 w-48 bg-slate-800 border border-white/10 rounded-md shadow-lg opacity-0 invisible ${
-                    moduleAvailability.tattscore_enabled ? "group-hover:opacity-100 group-hover:visible" : ""
-                  } transition-all z-50`}>
-                    {filteredTattscoreNavigation.map((item) => (
-                      <Link
-                        key={item.name}
-                        to={item.href}
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
-                      >
-                        {item.name}
-                      </Link>
-                    ))}
+                  <div className="absolute left-0 mt-2 w-48 bg-slate-800 border border-white/10 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    {filteredTattscoreNavigation.map((item) => {
+                      // Skip items that require a module if the module is not enabled
+                      if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
+                        return null;
+                      }
+                      
+                      // Skip disabled items
+                      if (item.disabled) {
+                        return (
+                          <div key={item.name} className="block px-4 py-2 text-sm text-gray-500 cursor-not-allowed">
+                            {item.name} (Disabled)
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <Link
+                          key={item.name}
+                          to={item.href}
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+                        >
+                          {item.name}
+                        </Link>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -372,8 +407,12 @@ export function Header() {
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navigationItems.map((item) => {
                 // Skip items that require a module if the module is not enabled
-                if ((item.requiresModule && !isModuleEnabled(item.requiresModule)) || 
-                    (item.isEnabled !== undefined && !item.isEnabled)) {
+                if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
+                  return null;
+                }
+                
+                // Skip disabled items
+                if (item.disabled) {
                   return null;
                 }
                 
@@ -403,45 +442,70 @@ export function Header() {
               })}
               
               {/* For Master Admin, show direct links in mobile menu too */}
-              {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                    isActive(item.href)
-                      ? 'text-purple-400 bg-purple-400/10'
-                      : 'text-gray-300 hover:text-white hover:bg-white/10'
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => {
+                // Skip items that require a module if the module is not enabled
+                if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
+                  return null;
+                }
+                
+                // Skip disabled items
+                if (item.disabled) {
+                  return null;
+                }
+                
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                      isActive(item.href)
+                        ? 'text-purple-400 bg-purple-400/10'
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                    }`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.name}
+                  </Link>
+                );
+              })}
               
               {/* TattScore Mobile Navigation - only for non-admin users */}
               {!userRoles.includes('admin') && filteredTattscoreNavigation.length > 0 && (
                 <>
-                  <div className={`px-3 py-2 text-xs font-semibold ${
-                    moduleAvailability.tattscore_enabled ? "text-gray-400" : "text-gray-600"
-                  } uppercase tracking-wider`}>
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     TattScore
-                    {!moduleAvailability.tattscore_enabled && " (Disabled)"}
+                    {!moduleAvailability.tattscore_enabled && (
+                      <span className="ml-1 bg-red-500/20 text-red-400 px-1 py-0.5 rounded-full text-xs">
+                        Disabled
+                      </span>
+                    )}
                   </div>
-                  {moduleAvailability.tattscore_enabled && filteredTattscoreNavigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      {item.name}
-                    </Link>
-                  ))}
-                  {!moduleAvailability.tattscore_enabled && (
-                    <p className="px-3 py-2 text-gray-500 text-sm">
-                      TattScore module is disabled for this event
-                    </p>
-                  )}
+                  {filteredTattscoreNavigation.map((item) => {
+                    // Skip items that require a module if the module is not enabled
+                    if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
+                      return null;
+                    }
+                    
+                    // Skip disabled items
+                    if (item.disabled) {
+                      return (
+                        <div key={item.name} className="block px-3 py-2 rounded-md text-base font-medium text-gray-500 cursor-not-allowed">
+                          {item.name} (Disabled)
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {item.name}
+                      </Link>
+                    );
+                  })}
                 </>
               )}
               
