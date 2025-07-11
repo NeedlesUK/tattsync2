@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, LogOut, Settings, Crown, Calendar, Award, Building, MessageCircle, Ticket, Users, Bell, Heart } from 'lucide-react';
+import { 
+  Menu, 
+  X, 
+  User, 
+  LogOut, 
+  Settings, 
+  Crown, 
+  Calendar, 
+  Award, 
+  Building, 
+  MessageCircle, 
+  Users, 
+  Bell, 
+  Heart 
+} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function Header() {
@@ -507,27 +521,6 @@ function CheckCircle({ className }: { className?: string }) {
     >
       <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
       <polyline points="22 4 12 14.01 9 11.01" />
-    </svg>
-  );
-}
-
-// Add missing Ticket component
-function Ticket({ className }: { className?: string }) {
-  return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
-      <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
-      <path d="M13 5v2" />
-      <path d="M13 17v2" />
-      <path d="M13 11v2" />
     </svg>
   );
 }
