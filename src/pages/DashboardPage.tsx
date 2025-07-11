@@ -27,7 +27,7 @@ export function DashboardPage() {
   useEffect(() => {
     // Only fetch data if we have a user and auth loading is complete
     if (!authLoading && user) {
-      setIsLoading(true);
+      if (!isLoading) setIsLoading(true);
       fetchDashboardData();
     }
   }, [authLoading, user]);
@@ -35,7 +35,7 @@ export function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      console.log('🔍 Starting to fetch dashboard data...');
+      console.log('🔍 Starting to fetch dashboard data...', new Date().toISOString());
       
       if (supabase) {
         console.log('🔍 Supabase client available, fetching events...');
@@ -47,6 +47,7 @@ export function DashboardPage() {
           .order('start_date', { ascending: true });
           
         if (eventsError) {
+          console.log('❌ Error fetching events:', eventsError.message);
           console.error('Error fetching events:', eventsError);
           console.log('⚠️ Error fetching events, continuing with other data...');
         } else if (eventsData) {
@@ -63,6 +64,7 @@ export function DashboardPage() {
           .order('created_at', { ascending: false });
           
         if (applicationsError) {
+          console.log('❌ Error fetching applications:', applicationsError.message);
           console.error('Error fetching applications:', applicationsError);
           console.log('⚠️ Error fetching applications, continuing...');
         } else if (applicationsData) {
@@ -79,6 +81,7 @@ export function DashboardPage() {
             approvedApplications: approvedCount
           }));
         }
+        console.log('✅ Dashboard data fetch complete');
       } else {
         // Mock data for when Supabase is not available
         setEvents([
@@ -122,12 +125,14 @@ export function DashboardPage() {
           totalRevenue: 0
         });
       }
+      return true; // Indicate successful completion
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       console.log('❌ Error in fetchDashboardData, setting empty data');
     } finally {
       setIsLoading(false);
     }
+    return false;
   };
 
   const handleManageEvent = (eventId: number) => {

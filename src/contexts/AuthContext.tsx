@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   const fetchUserData = async (supabaseClient: SupabaseClient, userId: string): Promise<AppUser | null> => {
     try {
       // Fetch user data with a more robust approach
-      const { data: userData, error: userError } = await supabaseClient
+      const { data: userData, error: userError } = await supabaseClient.rpc('get_user_with_roles', { user_id: userId });
         .from('users')
         .select('id, name, email, role, user_roles(role)')
         .eq('id', userId)
@@ -155,16 +155,16 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         setUser(initialUser);
         
         // Then fetch complete user data
-        try {
-          const appUser = await fetchUserData(supabase, currentSession.user.id);
-          if (appUser) {
-            setUser(appUser);
-          } else {
-            console.warn('Failed to fetch complete user data on auth change, keeping auth data');
-          }
-          setAuthInitialized(true);
-        } catch (error) {
-          console.warn('Error fetching user data on auth change:', error);
+        const appUser = await fetchUserData(supabase, currentSession.user.id)
+          .catch(error => {
+            console.warn('Error fetching user data on auth change:', error);
+            return null;
+          });
+          
+        if (appUser) {
+          setUser(appUser);
+        } else {
+          console.warn('Failed to fetch complete user data on auth change, keeping auth data');
           // Keep the initial user data from auth
           setAuthInitialized(true);
         }
