@@ -15,7 +15,15 @@ export function DashboardPage() {
   //     navigate('/admin/dashboard');
   //   }
   // }, [user, navigate]);
+
+  const [stats, setStats] = useState({
+    upcomingEvents: 0,
+    pendingApplications: 0,
+    approvedApplications: 0,
+    totalRevenue: 0
   });
+
+  const [applications, setApplications] = useState<any[]>([]);
 
   useEffect(() => {
     fetchDashboardData();
