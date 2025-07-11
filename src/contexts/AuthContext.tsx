@@ -65,7 +65,8 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       if (userError) {
         console.error('Error fetching user data from DB:', userError);
         // Fallback to auth.user data if DB fetch fails
-        const authUser = (await supabaseClient.auth.getSession()).data.session?.user;
+        const { data } = await supabaseClient.auth.getSession();
+        const authUser = data.session?.user;
         if (authUser) {
           return {
             id: authUser.id,
@@ -80,13 +81,18 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       }
 
       if (userData) {
-        const roles = userData.user_roles.map((ur: { role: string }) => ur.role);
+        // Handle case where user_roles might be null
+        const userRoles = userData.user_roles || [];
+        const roles = Array.isArray(userRoles) 
+          ? userRoles.map((ur: { role: string }) => ur.role) 
+          : [];
+          
         return {
           id: userData.id,
           name: userData.name,
           email: userData.email,
           role: userData.role, // Primary role
-          roles: roles, // All roles
+          roles: roles.length > 0 ? roles : [userData.role], // All roles or fallback to primary role
           avatar: userData.avatar || undefined, // Assuming avatar might be in user_profiles or users table
         };
       }
@@ -103,13 +109,25 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       return;
     }
 
+    // Set a timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.log('Loading timeout reached, setting isLoading to false');
+        setIsLoading(false);
+      }
+    }, 10000); // 10 seconds timeout
+
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       console.log('Auth state changed:', event);
       if (currentSession) {
         setSession(currentSession);
-        const appUser = await fetchUserData(supabase, currentSession.user.id);
-        if (appUser) {
-          setUser(appUser);
+        try {
+          const appUser = await fetchUserData(supabase, currentSession.user.id);
+          if (appUser) {
+            setUser(appUser);
+          }
+        } catch (error) {
+          console.error('Error fetching user data on auth change:', error);
         }
       } else {
         setSession(null);
@@ -122,15 +140,23 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
       if (currentSession) {
         setSession(currentSession);
-        const appUser = await fetchUserData(supabase, currentSession.user.id);
-        if (appUser) {
-          setUser(appUser);
+        try {
+          const appUser = await fetchUserData(supabase, currentSession.user.id);
+          if (appUser) {
+            setUser(appUser);
+          }
+        } catch (error) {
+          console.error('Error fetching user data on init:', error);
         }
       }
+      setIsLoading(false);
+    }).catch(error => {
+      console.error('Error getting session:', error);
       setIsLoading(false);
     });
 
     return () => {
+      clearTimeout(loadingTimeout);
       authListener.subscription.unsubscribe();
     };
   }, []);
