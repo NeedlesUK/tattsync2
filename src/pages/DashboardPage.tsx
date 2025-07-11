@@ -9,12 +9,11 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [events, setEvents] = useState<any[]>([]);
-  // Temporarily comment out admin redirection to isolate login hang issue
-  // useEffect(() => {
-  //   if (user?.role === 'admin') {
-  //     navigate('/admin/dashboard');
-  //   }
-  // }, [user, navigate]);
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      navigate('/admin/dashboard');
+    }
+  }, [user, navigate]);
 
   const [stats, setStats] = useState({
     upcomingEvents: 0,
