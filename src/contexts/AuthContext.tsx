@@ -55,29 +55,15 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   // Function to fetch user data from the 'users' table
   const fetchUserData = async (supabaseClient: SupabaseClient, userId: string): Promise<AppUser | null> => {
     try {
-      // Add timeout protection for database queries
-      const timeoutPromise = new Promise<null>((_, reject) => 
-        setTimeout(() => reject(new Error('Database query timeout')), 10000)
-      );
-      
-      // Fetch user data with timeout protection
-      const userDataPromise = supabaseClient
+      // Fetch user data with a more robust approach
+      const { data: userData, error: userError } = await supabaseClient
         .from('users')
         .select('id, name, email, role, user_roles(role)')
         .eq('id', userId)
         .single();
-      
-      // Race between the query and the timeout
-      const { data: userData, error: userError } = await Promise.race([
-        userDataPromise,
-        timeoutPromise.then(() => {
-          console.log('⏱️ Database query timed out, falling back to auth data');
-          return { data: null, error: new Error('Query timeout') };
-        })
-      ]);
 
       if (userError) {
-        console.error('Error fetching user data from DB:', userError);
+        console.warn('Error fetching user data from DB, using fallback:', userError);
         // Fallback to auth.user data if DB fetch fails
         const { data } = await supabaseClient.auth.getSession();
         const authUser = data.session?.user;
@@ -112,7 +98,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       }
       return null;
     } catch (error) {
-      console.error('Error in fetchUserData:', error);
+      console.warn('Error in fetchUserData, using fallback:', error);
       return null;
     }
   };
@@ -133,6 +119,24 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       console.log('Auth state changed:', event);
+      
+      // Handle sign out event
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Handle token refresh errors
+      if (event === 'TOKEN_REFRESHED' && !currentSession) {
+        console.warn('Token refresh failed, signing out user');
+        setSession(null);
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+      
       if (currentSession) {
         setSession(currentSession);
         
@@ -154,9 +158,13 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
           const appUser = await fetchUserData(supabase, currentSession.user.id);
           if (appUser) {
             setUser(appUser);
+          } else {
+            // Keep the initial user if DB fetch fails
+            console.warn('Failed to fetch complete user data, keeping auth data');
           }
         } catch (error) {
-          console.error('Error fetching user data on auth change:', error);
+          console.warn('Error fetching user data on auth change:', error);
+          // Keep the initial user data from auth
         }
       } else {
         setSession(null);
@@ -189,9 +197,12 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
             const appUser = await fetchUserData(supabase, currentSession.user.id);
             if (appUser) {
               setUser(appUser);
+            } else {
+              // Keep the initial user if DB fetch fails
+              console.warn('Failed to fetch complete user data on init, keeping auth data');
             }
           } catch (error) {
-            console.error('Error fetching user data on init:', error);
+            console.warn('Error fetching user data on init:', error);
           }
         }
         setIsLoading(false);
