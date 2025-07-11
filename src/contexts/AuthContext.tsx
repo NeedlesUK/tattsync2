@@ -1,4 +1,3 @@
-```typescript
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { createClient, SupabaseClient, User, Session } from '@supabase/supabase-js';
 
@@ -247,7 +246,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       }
 
       // Refresh local user state
-      const updatedUser = await fetchUserData(supabase, user.id);
+      const updatedUser = await fetchUserData(supabase, data.user.id);
       if (updatedUser) {
         setUser(updatedUser);
       }
@@ -343,4 +342,3 @@ export function useAuth() {
   }
   return context;
 }
-```
