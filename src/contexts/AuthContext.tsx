@@ -51,6 +51,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   const [user, setUser] = useState<AppUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authInitialized, setAuthInitialized] = useState(false);
 
   // Function to fetch user data from the 'users' table
   const fetchUserData = async (supabaseClient: SupabaseClient, userId: string): Promise<AppUser | null> => {
@@ -110,12 +111,10 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     }
     
     // Set a timeout to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
-      if (isLoading) {
-        console.log('⏱️ Loading timeout reached, setting isLoading to false');
-        setIsLoading(false);
-      }
-    }, 10000); // 10 seconds timeout
+    setTimeout(() => {
+      setIsLoading(false);
+      setAuthInitialized(true);
+    }, 5000); // 5 seconds timeout as a fallback
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       console.log('Auth state changed:', event);
@@ -124,6 +123,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       if (event === 'SIGNED_OUT') {
         setSession(null);
         setUser(null);
+        setAuthInitialized(true);
         setIsLoading(false);
         return;
       }
@@ -132,6 +132,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       if (event === 'TOKEN_REFRESHED' && !currentSession) {
         console.warn('Token refresh failed, signing out user');
         setSession(null);
+        setAuthInitialized(true);
         setUser(null);
         setIsLoading(false);
         return;
@@ -159,16 +160,20 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
           if (appUser) {
             setUser(appUser);
           } else {
-            // Keep the initial user if DB fetch fails
             console.warn('Failed to fetch complete user data, keeping auth data');
           }
+          setAuthInitialized(true);
+        } else {
+          setAuthInitialized(true);
         } catch (error) {
           console.warn('Error fetching user data on auth change:', error);
           // Keep the initial user data from auth
         }
+        setAuthInitialized(true);
       } else {
         setSession(null);
         setUser(null);
+        setAuthInitialized(true);
       }
       setIsLoading(false);
     });
@@ -209,12 +214,11 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       })
       .catch(error => {
         console.error('Error getting session:', error);
+        setAuthInitialized(true);
         setIsLoading(false);
       });
 
     return () => {
-      clearTimeout(loadingTimeout);
-      clearTimeout(loadingTimeout);
       authListener.subscription.unsubscribe();
     };
   }, []);
@@ -406,7 +410,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     supabase,
     user,
     session,
-    isLoading,
+    isLoading: isLoading && !authInitialized,
     login,
     register,
     logout,

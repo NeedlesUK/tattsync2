@@ -7,7 +7,7 @@ import { StatsCard } from '../components/dashboard/StatsCard';
 export function DashboardPage() {
   const { user, supabase, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [events, setEvents] = useState<any[]>([]);
   useEffect(() => {
     if (user?.role === 'admin') {
@@ -25,10 +25,12 @@ export function DashboardPage() {
   const [applications, setApplications] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!authLoading) {
+    // Only fetch data if we have a user and auth loading is complete
+    if (!authLoading && user) {
+      setIsLoading(true);
       fetchDashboardData();
     }
-  }, [authLoading]);
+  }, [authLoading, user]);
 
   const fetchDashboardData = async () => {
     try {
@@ -124,8 +126,7 @@ export function DashboardPage() {
       console.error('Error fetching dashboard data:', error);
       console.log('❌ Error in fetchDashboardData, setting empty data');
     } finally {
-      console.log('✅ Dashboard data fetch complete, setting isLoading to false');
-      setTimeout(() => setIsLoading(false), 100); // Small delay to ensure state updates properly
+      setIsLoading(false);
     }
   };
 
@@ -148,12 +149,39 @@ export function DashboardPage() {
     });
   };
 
-  if (authLoading || isLoading) {
+  // Show loading state only when explicitly loading
+  if (isLoading) {
     return (
       <div className="min-h-screen pt-16 flex items-center justify-center">
         <div>
           <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-4"></div>
           <p className="text-white text-center">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // If auth is still loading but we're not fetching data yet
+  if (authLoading) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center">
+        <div>
+          <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mb-4"></div>
+          <p className="text-white text-center">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // If no user is logged in, show a message
+  if (!user) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-white mb-4">Please log in to view your dashboard</p>
+          <Link to="/login" className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg">
+            Sign In
+          </Link>
         </div>
       </div>
     );
