@@ -131,14 +131,6 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       }
     }, 10000); // 10 seconds timeout
 
-    // Set a timeout to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
-      if (isLoading) {
-        console.log('Loading timeout reached, setting isLoading to false');
-        setIsLoading(false);
-      }
-    }, 10000); // 10 seconds timeout
-
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       console.log('Auth state changed:', event);
       if (currentSession) {
