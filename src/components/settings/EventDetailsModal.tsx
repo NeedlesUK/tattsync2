@@ -75,6 +75,67 @@ export function EventDetailsModal({
     banner: false
   });
 
+  const handleImageUpload = async (file: File, type: 'logo' | 'banner') => {
+    if (!supabase) {
+      setErrors(prev => ({
+        ...prev,
+        [type === 'logo' ? 'logo_url' : 'banner_image_url']: 'Storage service not available'
+      }));
+      return;
+    }
+    
+    try {
+      setIsUploading(prev => ({ ...prev, [type]: true }));
+      
+      // Set file size limit (5MB)
+      const MAX_SIZE = 5 * 1024 * 1024;
+      if (file.size > MAX_SIZE) {
+        throw new Error(`File size exceeds 5MB limit`);
+      }
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Only image files are allowed');
+      }
+      
+      // Create a unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${type}_${eventId}_${Date.now()}.${fileExt}`;
+      const filePath = `events/${eventId}/${fileName}`;
+      
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('event-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+        
+      if (uploadError) throw uploadError;
+      
+      // Get the public URL
+      const { data } = supabase.storage
+        .from('event-images')
+        .getPublicUrl(filePath);
+        
+      // Update form data with the new URL
+      if (type === 'logo') {
+        handleInputChange('logo_url', data.publicUrl);
+      } else {
+        handleInputChange('banner_image_url', data.publicUrl);
+      }
+      
+    } catch (error: any) {
+      console.error(`Error uploading ${type} image:`, error);
+      setErrors(prev => ({
+        ...prev,
+        [type === 'logo' ? 'logo_url' : 'banner_image_url']: error.message || `Failed to upload ${type} image`
+      }));
+    } finally {
+      setIsUploading(prev => ({ ...prev, [type]: false }));
+    }
+  };
+
   // Setup dropzone for logo
   const onDropLogo = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -194,67 +255,6 @@ export function EventDetailsModal({
     }
   };
 
-  const handleImageUpload = async (file: File, type: 'logo' | 'banner') => {
-    if (!supabase) {
-      setErrors(prev => ({
-        ...prev,
-        [type === 'logo' ? 'logo_url' : 'banner_image_url']: 'Storage service not available'
-      }));
-      return;
-    }
-    
-    try {
-      setIsUploading(prev => ({ ...prev, [type]: true }));
-      
-      // Set file size limit (5MB)
-      const MAX_SIZE = 5 * 1024 * 1024;
-      if (file.size > MAX_SIZE) {
-        throw new Error(`File size exceeds 5MB limit`);
-      }
-      
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        throw new Error('Only image files are allowed');
-      }
-      
-      // Create a unique file name
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${type}_${eventId}_${Date.now()}.${fileExt}`;
-      const filePath = `events/${eventId}/${fileName}`;
-      
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('event-images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-        
-      if (uploadError) throw uploadError;
-      
-      // Get the public URL
-      const { data } = supabase.storage
-        .from('event-images')
-        .getPublicUrl(filePath);
-        
-      // Update form data with the new URL
-      if (type === 'logo') {
-        handleInputChange('logo_url', data.publicUrl);
-      } else {
-        handleInputChange('banner_image_url', data.publicUrl);
-      }
-      
-    } catch (error: any) {
-      console.error(`Error uploading ${type} image:`, error);
-      setErrors(prev => ({
-        ...prev,
-        [type === 'logo' ? 'logo_url' : 'banner_image_url']: error.message || `Failed to upload ${type} image`
-      }));
-    } finally {
-      setIsUploading(prev => ({ ...prev, [type]: false }));
-    }
-  };
-  
   const generateSlug = () => {
     const slug = formData.name
       .toLowerCase()
