@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, LogOut, Settings, Crown, Calendar, Award, Building, MessageCircle, Bell } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { Menu, X, User, LogOut, Settings, Crown, Calendar, Award, Building, MessageCircle, Ticket, Users, Bell } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, logout, supabase } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [moduleAvailability, setModuleAvailability] = useState({
@@ -360,148 +360,113 @@ export function Header() {
 
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden text-gray-300 hover:text-white p-2 rounded-md"
-              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+              className="md:hidden text-gray-300 hover:text-white"
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
 
-        {/* Mobile menu */}
-        {isMenuOpen && (
-          <div className="md:hidden border-t border-white/10 py-3">
+        {isMenuOpen && user && (
+          <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {user ? (
+              {navigationItems.map((item) => {
+                // Skip items that require a module if the module is not enabled
+                if ((item.requiresModule && !isModuleEnabled(item.requiresModule)) || 
+                    (item.isEnabled !== undefined && !item.isEnabled)) {
+                  return null;
+                }
+                
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href} 
+                    className={`flex items-center px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                      isActive(item.href)
+                        ? 'text-purple-400 bg-purple-400/10'
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                    }`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.name}
+                    {item.badge && (
+                      <span className={`ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${
+                        item.badge.count > 0 
+                          ? 'bg-red-500 text-white' 
+                          : item.badge.color
+                      }`}>
+                        {item.badge.count}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+              
+              {/* For Master Admin, show direct links in mobile menu too */}
+              {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                    isActive(item.href)
+                      ? 'text-purple-400 bg-purple-400/10'
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              ))}
+              
+              {/* TattScore Mobile Navigation - only for non-admin users */}
+              {!userRoles.includes('admin') && filteredTattscoreNavigation.length > 0 && (
                 <>
-                  {navigationItems.map((item) => {
-                    // Skip items that require a module if the module is not enabled
-                    if ((item.requiresModule && !isModuleEnabled(item.requiresModule)) || 
-                        (item.isEnabled !== undefined && !item.isEnabled)) {
-                      return null;
-                    }
-                    
-                    return (
-                      <Link
-                        key={item.name}
-                        to={item.href} 
-                        className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                          isActive(item.href)
-                            ? 'text-purple-400 bg-purple-400/10'
-                            : 'text-gray-300 hover:text-white hover:bg-white/10'
-                        }`}
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        {item.name}
-                        {item.badge && (
-                          <span className={`ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${
-                            item.badge.count > 0 
-                              ? 'bg-red-500 text-white' 
-                              : item.badge.color
-                          }`}>
-                            {item.badge.count}
-                          </span>
-                        )}
-                      </Link>
-                    );
-                  })}
-                  
-                  {/* For Master Admin, show direct links in mobile menu too */}
-                  {(user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
+                  <div className={`px-3 py-2 text-xs font-semibold ${
+                    moduleAvailability.tattscore_enabled ? "text-gray-400" : "text-gray-600"
+                  } uppercase tracking-wider`}>
+                    TattScore
+                    {!moduleAvailability.tattscore_enabled && " (Disabled)"}
+                  </div>
+                  {moduleAvailability.tattscore_enabled && filteredTattscoreNavigation.map((item) => (
                     <Link
                       key={item.name}
                       to={item.href}
-                      className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                        isActive(item.href)
-                          ? 'text-purple-400 bg-purple-400/10'
-                          : 'text-gray-300 hover:text-white hover:bg-white/10'
-                      }`}
+                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       {item.name}
                     </Link>
                   ))}
-                  
-                  {/* TattScore Mobile Navigation - only for non-admin users */}
-                  {!userRoles.includes('admin') && filteredTattscoreNavigation.length > 0 && (
-                    <>
-                      <div className={`px-3 py-2 text-xs font-semibold ${
-                        moduleAvailability.tattscore_enabled ? "text-gray-400" : "text-gray-600"
-                      } uppercase tracking-wider`}>
-                        TattScore
-                        {!moduleAvailability.tattscore_enabled && " (Disabled)"}
-                      </div>
-                      {moduleAvailability.tattscore_enabled && filteredTattscoreNavigation.map((item) => (
-                        <Link
-                          key={item.name}
-                          to={item.href}
-                          className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          {item.name}
-                        </Link>
-                      ))}
-                      {!moduleAvailability.tattscore_enabled && (
-                        <p className="px-3 py-2 text-gray-500 text-sm">
-                          TattScore module is disabled for this event
-                        </p>
-                      )}
-                    </>
-                  )}
-                  
-                  {/* Studio Mobile Navigation - only for non-admin users */}
-                  {!userRoles.includes('admin') && filteredStudioNavigation.length > 0 && (
-                    <>
-                      <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                        Studio
-                      </div>
-                      {filteredStudioNavigation.map((item) => (
-                        <Link
-                          key={item.name}
-                          to={item.href}
-                          className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          {item.name}
-                        </Link>
-                      ))}
-                    </>
+                  {!moduleAvailability.tattscore_enabled && (
+                    <p className="px-3 py-2 text-gray-500 text-sm">
+                      TattScore module is disabled for this event
+                    </p>
                   )}
                 </>
-              ) : (
-                <Link
-                  to="/login"
-                  className="block w-full text-center bg-gradient-to-r from-purple-600 to-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Sign In
-                </Link>
+              )}
+              
+              {/* Studio Mobile Navigation - only for non-admin users */}
+              {!userRoles.includes('admin') && filteredStudioNavigation.length > 0 && (
+                <>
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Studio
+                  </div>
+                  {filteredStudioNavigation.map((item) => (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                </>
               )}
             </div>
           </div>
         )}
       </div>
     </header>
-  );
-}
-
-// Add missing Ticket component
-function Ticket({ className }: { className?: string }) {
-  return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
-      <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
-      <path d="M13 5v2" />
-      <path d="M13 17v2" />
-      <path d="M13 11v2" />
-    </svg>
   );
 }
