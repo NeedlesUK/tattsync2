@@ -56,12 +56,8 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   // Function to fetch user data from the 'users' table
   const fetchUserData = async (supabaseClient: SupabaseClient, userId: string): Promise<AppUser | null> => {
     try {
-      // Fetch user data with a more robust approach
+      // Fetch user data using the RPC function which should return user details including roles
       const { data: userData, error: userError } = await supabaseClient.rpc('get_user_with_roles', { user_id: userId });
-        .from('users')
-        .select('id, name, email, role, user_roles(role)')
-        .eq('id', userId)
-        .single();
 
       if (userError) {
         console.warn('Error fetching user data from DB, using fallback:', userError);
@@ -82,12 +78,9 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       }
 
       if (userData) {
-        // Handle case where user_roles might be null
-        const userRoles = userData.user_roles || [];
-        const roles = Array.isArray(userRoles) 
-          ? userRoles.map((ur: { role: string }) => ur.role) 
-          : [];
-          
+        // Assuming the 'get_user_with_roles' RPC returns an object with 'roles' as an array
+        const roles = userData.roles || [userData.role]; // Fallback to primary role if 'roles' array is not present
+
         return {
           id: userData.id,
           name: userData.name,
