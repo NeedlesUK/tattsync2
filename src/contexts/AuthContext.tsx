@@ -1,433 +1,472 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Menu, X, User, LogOut, Settings, Crown, Calendar, Award, Building, MessageCircle, Ticket, Users, Bell } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
-// Define the user type
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  roles?: string[];
-  avatar?: string;
-}
-
-// Define the auth context type
-interface AuthContextType {
-  user: User | null;
-  supabase: SupabaseClient | null;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => Promise<void>;
-  updateAuthUser: (userData: Partial<User>) => Promise<void>;
-  updateUserRoles: (roles: string[], primaryRole: string) => Promise<void>;
-  updateUserPassword: (userId: string, newPassword: string) => Promise<void>;
-}
-
-// Create the auth context
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Create a Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-let supabase: SupabaseClient | null = null;
-
-if (supabaseUrl && supabaseAnonKey) {
-  try {
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
-    console.log('Supabase client initialized successfully');
-  } catch (error) {
-    console.error('Failed to initialize Supabase client:', error);
-  }
-} else {
-  console.warn('Supabase credentials not found. Some features may not work.');
-  console.log('Missing:', {
-    url: !supabaseUrl ? 'VITE_SUPABASE_URL' : null,
-    key: !supabaseAnonKey ? 'VITE_SUPABASE_ANON_KEY' : null
+export function Header() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const location = useLocation();
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [moduleAvailability, setModuleAvailability] = useState({
+    ticketing_enabled: false,
+    consent_forms_enabled: false,
+    tattscore_enabled: false
   });
-}
-
-// Create the auth provider
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
   
-  // Set up a safety timeout to prevent infinite loading
   useEffect(() => {
-    const safetyTimeout = setTimeout(() => {
-      if (isLoading) {
-        console.warn('Safety timeout reached - forcing loading state to false');
-        setIsLoading(false);
-      }
-    }, 5000);
+    if (user?.roles) {
+      setUserRoles(user.roles);
+    } else if (user?.role) {
+      setUserRoles([user.role]);
+    } else {
+      setUserRoles([]);
+    }
     
-    return () => clearTimeout(safetyTimeout);
-  }, [isLoading]);
+    // Fetch module availability for the current event
+    if (user && (user.role === 'event_manager' || user.role === 'event_admin')) {
+      fetchModuleAvailability();
+    }
+  }, [user]);
 
-  // Check for existing session on mount
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        setIsLoading(true);
-        console.log('Checking for existing session...');
+  const fetchModuleAvailability = async () => {
+    try {
+      if (supabase) {
+        // Get the current event ID - in a real implementation, this would come from context or state
+        // For now, we'll try to get it from the URL if it's in the format /event-settings?event=X
+        const urlParams = new URLSearchParams(window.location.search);
+        const eventId = urlParams.get('event');
         
-        if (!supabase) {
-          console.warn('No Supabase client available');
-          setIsLoading(false);
-          return;
-        }
+        if (!eventId) return;
         
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
+        const { data, error } = await supabase
+          .from('event_modules')
+          .select('*')
+          .eq('event_id', eventId)
+          .single();
+          
         if (error) {
-          console.error('Error getting session:', error);
-          setIsLoading(false);
+          console.error('Error fetching event modules:', error);
           return;
         }
         
-        if (session) {
-          console.log('Session found, fetching user data');
-          const userId = session.user.id;
-          
-          // Fetch user data from the database
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .single();
-            
-          if (userError) {
-            console.error('Error fetching user data:', userError);
-            setIsLoading(false);
-            return;
-          }
-          
-          if (userData) {
-            console.log('User data fetched successfully');
-            
-            // Fetch user roles
-            const { data: rolesData, error: rolesError } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', userId);
-              
-            const roles = rolesError ? [] : rolesData?.map(r => r.role) || [];
-            
-            setUser({
-              id: userId,
-              name: userData.name,
-              email: userData.email,
-              role: userData.role,
-              roles: roles.length > 0 ? roles : [userData.role]
-            });
-          } else {
-            // User not found in database, create a new user record
-            const userMetadata = session.user.user_metadata || {};
-            const email = session.user.email || '';
-            const name = userMetadata.name || email.split('@')[0] || 'User';
-            
-            const newUser = {
-              id: userId,
-              name,
-              email,
-              role: 'artist', // Default role
-            };
-            
-            const { error: insertError } = await supabase
-              .from('users')
-              .insert([newUser]);
-              
-            if (insertError) {
-              console.error('Error creating user record:', insertError);
-            } else {
-              console.log('Created new user record');
-              setUser(newUser);
-            }
-          }
-        } else {
-          console.log('No session found');
-          setUser(null);
+        if (data) {
+          console.log('Fetched event modules for header:', data);
+          setModuleAvailability({
+            ticketing_enabled: data.ticketing_enabled || false,
+            consent_forms_enabled: data.consent_forms_enabled || false,
+            tattscore_enabled: data.tattscore_enabled || false
+          });
         }
-      } catch (error) {
-        console.error('Error in checkSession:', error);
-      } finally {
-        console.log('Setting isLoading to false');
-        setIsLoading(false);
       }
-    };
-    
-    checkSession();
-    
-    // Set up auth state change listener
-    if (supabase) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          console.log('Auth state changed:', event);
-          
-          if (event === 'SIGNED_IN' && session) {
-            // User signed in, fetch their data
-            const userId = session.user.id;
-            
-            // Fetch user data from the database
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', userId)
-              .single();
-              
-            if (userError) {
-              console.error('Error fetching user data:', userError);
-              return;
-            }
-            
-            if (userData) {
-              // Fetch user roles
-              const { data: rolesData, error: rolesError } = await supabase
-                .from('user_roles')
-                .select('role')
-                .eq('user_id', userId);
-                
-              const roles = rolesError ? [] : rolesData?.map(r => r.role) || [];
-              
-              setUser({
-                id: userId,
-                name: userData.name,
-                email: userData.email,
-                role: userData.role,
-                roles: roles.length > 0 ? roles : [userData.role]
-              });
-              
-              // Navigate to dashboard
-              navigate('/dashboard');
-            }
-          } else if (event === 'SIGNED_OUT') {
-            // User signed out
-            setUser(null);
-            navigate('/');
-          }
-        }
-      );
-      
-      // Clean up subscription on unmount
-      return () => {
-        subscription.unsubscribe();
-      };
+    } catch (error) {
+      console.error('Error fetching module availability:', error);
     }
-  }, [navigate]);
+  };
 
-  // Login function
-  const login = async (email: string, password: string): Promise<boolean> => {
-    try {
-      if (!supabase) {
-        throw new Error('Supabase client not available');
-      }
-      
-      console.log('Attempting login for:', email);
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      if (error) {
-        console.error('Login error:', error);
-        throw error;
-      }
-      
-      console.log('Login successful, session:', data.session ? 'exists' : 'null');
-      
-      if (data.session) {
-        // Set user immediately after login success
-        const userMetadata = data.session.user.user_metadata || {};
-        const initialUser = {
-          id: data.session.user.id,
-          name: userMetadata.name || data.session.user.email?.split('@')[0] || 'User',
-          email: data.session.user.email || '',
-          role: userMetadata.role || 'artist', 
-          roles: userMetadata.roles || [userMetadata.role || 'artist']
-        };
-        
-        setUser(initialUser);
-        
-        // Force navigation after setting user state
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 500);
-        
-        return true;
-      }
-      
+  // Define navigation based on user role
+  const getNavigation = (): any[] => {
+    // Default navigation for all users
+    const baseNavigation = [
+      { name: 'Dashboard', href: '/dashboard' }
+    ];
+    
+    // For event managers, show specific navigation
+    if (userRoles.includes('event_manager') || userRoles.includes('event_admin')) {
+      return [
+        ...baseNavigation,
+        { 
+          name: 'Messages', 
+          href: '/messages',
+          badge: {
+            count: 0, // Replace with actual unread count
+            color: 'bg-green-500 text-white'
+          }
+        },
+        { 
+          name: 'Tickets', 
+          href: '/ticket-management',
+          requiresModule: 'ticketing_enabled',
+          isEnabled: moduleAvailability.ticketing_enabled
+        },
+        { 
+         name: 'Applications', 
+          href: '/applications'
+        },
+        { 
+          name: 'Attendees', 
+          href: '/attendees'
+        },
+      ];
+    }
+    
+    // For regular users
+    return [
+      ...baseNavigation,
+      { name: 'Events', href: '/events' },
+      { name: 'Messages', href: '/messages' },
+      { name: 'Deals', href: '/deals' },
+    ];
+  };
+
+  const navigationItems = getNavigation();
+
+  // For Master Admin, direct links instead of dropdowns
+  const adminDirectLinks = [
+    { name: 'TattScore', href: '/tattscore/admin' },
+    { name: 'Studio', href: '/studio/dashboard' },
+    { name: 'Tickets', href: '/ticket-management' },
+  ];
+
+  // TattScore navigation items - filter based on role
+  const tattscoreNavigation = [
+    { name: 'TattScore Admin', href: '/tattscore/admin', roles: ['event_manager', 'event_admin'] },
+    { name: 'Leaderboard', href: '/tattscore/judging', roles: ['event_manager', 'event_admin', 'judge'] }
+  ];
+
+  // Studio navigation items
+  const studioNavigation = [
+    { name: 'Studio Dashboard', href: '/studio/dashboard', roles: ['studio_manager', 'artist', 'piercer'] },
+  ];
+
+  const isActive = (path: string) => location.pathname === path;
+
+  const getRoleDisplay = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return { label: 'Master Admin', icon: Crown, color: 'bg-purple-600' };
+      case 'event_manager':
+        return { label: 'Event Manager', icon: Calendar, color: 'bg-teal-600' };
+      case 'studio_manager':
+        return { label: 'Studio Manager', icon: Building, color: 'bg-blue-600' };
+      case 'judge':
+        return { label: 'Judge', icon: Award, color: 'bg-orange-600' };
+      default:
+        return null;
+    }
+  };
+
+  const roleDisplay = user ? getRoleDisplay(user.role) : null;
+  
+  // Check if a module is enabled for the current user
+  const isModuleEnabled = (moduleName: string) => {
+    // Check if the module is enabled based on the fetched module availability
+    if (!user) {
       return false;
-    } catch (error) {
-      console.error('Error in login function:', error);
-      throw error;
+    }
+    
+    // For demo purposes, enable all modules for admin users
+    if (user.role === 'admin' || user.email === 'admin@tattsync.com') {
+      return true;
+    }
+    
+    // For event managers, check the module availability
+    switch (moduleName) {
+      case 'ticketing_enabled':
+        return moduleAvailability.ticketing_enabled;
+      case 'consent_forms_enabled':
+        return moduleAvailability.consent_forms_enabled;
+      case 'tattscore_enabled':
+        return moduleAvailability.tattscore_enabled;
+      default:
+        return true;
     }
   };
 
-  // Logout function
-  const logout = async (): Promise<void> => {
-    try {
-      if (!supabase) {
-        throw new Error('Supabase client not available');
-      }
-      
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('Logout error:', error);
-        throw error;
-      }
-      
-      setUser(null);
-      navigate('/');
-    } catch (error) {
-      console.error('Error in logout function:', error);
-      throw error;
-    }
-  };
+  // Filter navigation items based on user role
+  const filteredTattscoreNavigation = tattscoreNavigation.filter(item => 
+    !item.roles || (user && (userRoles.some(role => item.roles.includes(role)) || user?.email === 'gary@tattscore.com'))
+  );
 
-  // Update user function
-  const updateAuthUser = async (userData: Partial<User>): Promise<void> => {
-    try {
-      if (!supabase || !user) {
-        throw new Error('Supabase client or user not available');
-      }
-      
-      // Update user in database
-      const { error } = await supabase
-        .from('users')
-        .update({
-          name: userData.name || user.name,
-          email: userData.email || user.email,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-        
-      if (error) {
-        console.error('Error updating user:', error);
-        throw error;
-      }
-      
-      // Update local user state
-      setUser(prev => prev ? { ...prev, ...userData } : null);
-    } catch (error) {
-      console.error('Error in updateAuthUser function:', error);
-      throw error;
-    }
-  };
-
-  // Update user roles function
-  const updateUserRoles = async (roles: string[], primaryRole: string): Promise<void> => {
-    try {
-      if (!supabase || !user) {
-        throw new Error('Supabase client or user not available');
-      }
-      
-      // Update primary role in users table
-      const { error: userError } = await supabase
-        .from('users')
-        .update({
-          role: primaryRole,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-        
-      if (userError) {
-        console.error('Error updating user role:', userError);
-        throw userError;
-      }
-      
-      // Delete existing roles
-      const { error: deleteError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', user.id);
-        
-      if (deleteError) {
-        console.error('Error deleting user roles:', deleteError);
-        throw deleteError;
-      }
-      
-      // Insert new roles
-      const roleRecords = roles.map(role => ({
-        user_id: user.id,
-        role,
-        is_primary: role === primaryRole
-      }));
-      
-      const { error: insertError } = await supabase
-        .from('user_roles')
-        .insert(roleRecords);
-        
-      if (insertError) {
-        console.error('Error inserting user roles:', insertError);
-        throw insertError;
-      }
-      
-      // Update local user state
-      setUser(prev => prev ? { ...prev, role: primaryRole, roles } : null);
-    } catch (error) {
-      console.error('Error in updateUserRoles function:', error);
-      throw error;
-    }
-  };
-
-  // Update user password function (admin only)
-  const updateUserPassword = async (userId: string, newPassword: string): Promise<void> => {
-    try {
-      if (!supabase) {
-        throw new Error('Supabase client not available');
-      }
-      
-      // Check if current user is admin
-      if (user?.role !== 'admin') {
-        throw new Error('Only admins can update user passwords');
-      }
-      
-      // Update user password
-      const { error } = await supabase.auth.admin.updateUserById(
-        userId,
-        { password: newPassword }
-      );
-      
-      if (error) {
-        console.error('Error updating user password:', error);
-        throw error;
-      }
-    } catch (error) {
-      console.error('Error in updateUserPassword function:', error);
-      throw error;
-    }
-  };
-
-  // Create the context value
-  const value: AuthContextType = {
-    user,
-    supabase,
-    isLoading,
-    login,
-    logout,
-    updateAuthUser,
-    updateUserRoles,
-    updateUserPassword
-  };
+  const filteredStudioNavigation = studioNavigation.filter(item => 
+    !item.roles || (user && (userRoles.some(role => item.roles.includes(role)) || user?.email === 'gary@tattscore.com'))
+  );
 
   return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+    <header className="bg-black/20 backdrop-blur-md border-b border-purple-500/20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center space-x-3">
+              <img 
+                src="/IMG_0953.png" 
+                alt="TattSync Logo" 
+                className="w-10 h-10 object-contain"
+              />
+              <span className="text-white font-bold text-xl">TattSync</span>
+            </Link>
+          </div>
 
-// Create a hook to use the auth context
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  
-  return context;
-};
+          {user && (
+            <nav className="hidden md:flex space-x-8">
+              {navigationItems.map((item) => {
+                // Skip items that require a module if the module is not enabled
+                if ((item.requiresModule && !isModuleEnabled(item.requiresModule)) || 
+                    (item.isEnabled !== undefined && !item.isEnabled)) {
+                  return null;
+                }
+                
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href} 
+                    className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive(item.href)
+                        ? 'text-purple-400 bg-purple-400/10'
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {item.name}
+                    {item.badge && (
+                      <span className={`ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${
+                        item.badge.count > 0 
+                          ? 'bg-red-500 text-white' 
+                          : item.badge.color
+                      }`}>
+                        {item.badge.count}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+              
+              {/* For Master Admin, show direct links */}
+              {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive(item.href)
+                      ? 'text-purple-400 bg-purple-400/10'
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              ))}
+              
+              {/* TattScore Navigation - only for non-admin users */}
+              {!userRoles.includes('admin') && filteredTattscoreNavigation.length > 0 && (
+                <div className="relative group">
+                  <button 
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      moduleAvailability.tattscore_enabled 
+                        ? "text-gray-300 hover:text-white hover:bg-white/10" 
+                        : "text-gray-500 cursor-not-allowed"
+                    } transition-colors flex items-center space-x-1`}
+                    disabled={!moduleAvailability.tattscore_enabled}
+                  >
+                    <span>TattScore</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div className={`absolute left-0 mt-2 w-48 bg-slate-800 border border-white/10 rounded-md shadow-lg opacity-0 invisible ${
+                    moduleAvailability.tattscore_enabled ? "group-hover:opacity-100 group-hover:visible" : ""
+                  } transition-all z-50`}>
+                    {filteredTattscoreNavigation.map((item) => (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Studio Navigation - only for non-admin users */}
+              {!userRoles.includes('admin') && filteredStudioNavigation.length > 0 && (
+                <div className="relative group">
+                  <button className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors flex items-center space-x-1">
+                    <span>Studio</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div className="absolute left-0 mt-2 w-48 bg-slate-800 border border-white/10 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    {filteredStudioNavigation.map((item) => (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </nav>
+          )}
+
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <div className="flex items-center space-x-3">
+                <Link
+                  to="/profile"
+                  className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors"
+                >
+                  {user.avatar ? (
+                    <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
+                  ) : (
+                    <div className="w-8 h-8 bg-purple-500/30 rounded-full flex items-center justify-center overflow-hidden">
+                      {user.name ? (
+                        <span className="text-white font-bold text-sm">{user.name.charAt(0).toUpperCase()}</span>
+                      ) : (
+                        <User className="w-5 h-5 text-purple-400" />
+                      )}
+                    </div>
+                  )}
+                  <div className="hidden sm:block">
+                    <span className="block font-medium">{user.name || 'User'}</span>
+                  </div>
+                </Link>
+                {user && roleDisplay && (
+                  <span className={`${roleDisplay?.color || 'bg-purple-600'} text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1`}>
+                    {user.role === 'admin' || user.email === 'admin@tattsync.com' ? (
+                      <>
+                        <Crown className="w-3 h-3" />
+                        <span className="hidden sm:inline">{roleDisplay?.label || 'Master Admin'}</span>
+                      </>
+                    ) : (
+                      <>
+                        {roleDisplay && <roleDisplay.icon className="w-3 h-3" />}
+                        <span className="hidden sm:inline">{roleDisplay?.label || ''}</span>
+                      </>
+                    )}
+                  </span>
+                )}
+                <button
+                  onClick={logout}
+                  className="text-gray-300 hover:text-white transition-colors"
+                  aria-label="Logout"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </div>
+            ) : (
+              <div className="hidden sm:block">
+                <Link
+                  to="/login"
+                  className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
+                >
+                  Sign In
+                </Link>
+              </div>
+            )}
+
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden text-gray-300 hover:text-white"
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+
+        {isMenuOpen && user && (
+          <div className="md:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              {navigationItems.map((item) => {
+                // Skip items that require a module if the module is not enabled
+                if ((item.requiresModule && !isModuleEnabled(item.requiresModule)) || 
+                    (item.isEnabled !== undefined && !item.isEnabled)) {
+                  return null;
+                }
+                
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href} 
+                    className={`flex items-center px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                      isActive(item.href)
+                        ? 'text-purple-400 bg-purple-400/10'
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                    }`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.name}
+                    {item.badge && (
+                      <span className={`ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${
+                        item.badge.count > 0 
+                          ? 'bg-red-500 text-white' 
+                          : item.badge.color
+                      }`}>
+                        {item.badge.count}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+              
+              {/* For Master Admin, show direct links in mobile menu too */}
+              {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                    isActive(item.href)
+                      ? 'text-purple-400 bg-purple-400/10'
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              ))}
+              
+              {/* TattScore Mobile Navigation - only for non-admin users */}
+              {!userRoles.includes('admin') && filteredTattscoreNavigation.length > 0 && (
+                <>
+                  <div className={`px-3 py-2 text-xs font-semibold ${
+                    moduleAvailability.tattscore_enabled ? "text-gray-400" : "text-gray-600"
+                  } uppercase tracking-wider`}>
+                    TattScore
+                    {!moduleAvailability.tattscore_enabled && " (Disabled)"}
+                  </div>
+                  {moduleAvailability.tattscore_enabled && filteredTattscoreNavigation.map((item) => (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                  {!moduleAvailability.tattscore_enabled && (
+                    <p className="px-3 py-2 text-gray-500 text-sm">
+                      TattScore module is disabled for this event
+                    </p>
+                  )}
+                </>
+              )}
+              
+              {/* Studio Mobile Navigation - only for non-admin users */}
+              {!userRoles.includes('admin') && filteredStudioNavigation.length > 0 && (
+                <>
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Studio
+                  </div>
+                  {filteredStudioNavigation.map((item) => (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}
