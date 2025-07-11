@@ -160,18 +160,14 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
           if (appUser) {
             setUser(appUser);
           } else {
-            console.warn('Failed to fetch complete user data, keeping auth data');
+            console.warn('Failed to fetch complete user data on auth change, keeping auth data');
           }
           setAuthInitialized(true);
         } catch (error) {
           console.warn('Error fetching user data on auth change:', error);
           // Keep the initial user data from auth
           setAuthInitialized(true);
-        } catch (error) {
-          console.warn('Error fetching user data on auth change:', error);
-          // Keep the initial user data from auth
         }
-        setAuthInitialized(true);
       } else {
         setSession(null);
         setUser(null);
