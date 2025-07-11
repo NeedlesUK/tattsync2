@@ -50,69 +50,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
     
     if (supabaseUrl && supabaseAnonKey) {
-      const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-      setSupabase(supabaseClient);
-      
-      // Check for existing session
-      console.log('Checking for existing session...');
-      supabaseClient.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          console.log('Found existing session, fetching user data...');
-          fetchUserData(supabaseClient, session.user.id)
-            .then(userData => {
-              if (userData) {
-                setUser(userData);
-              }
-            })
-            .catch(error => {
-              console.error('Error fetching user data:', error);
-            })
-            .finally(() => {
-              setIsLoading(false);
-            });
-        } else {
-          console.log('No existing session found');
-          setIsLoading(false);
-        }
-      });
-      
-      // Set up auth state change listener
-      const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
-        async (event, session) => {
-          console.log('Auth state changed:', event);
-          
-          if (event === 'SIGNED_IN' && session) {
-            console.log('User signed in, fetching user data...');
-            try {
-              const userData = await fetchUserData(supabaseClient, session.user.id);
-              if (userData) {
-                console.log('User data fetched successfully:', userData);
-                setUser(userData);
-              }
-            } catch (error) {
-              console.error('Error fetching user data after sign in:', error);
-            } finally {
-              setIsLoading(false);
-            }
-          } else if (event === 'SIGNED_OUT') {
-            console.log('User signed out');
-            setUser(null);
+      try {
+        const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+        setSupabase(supabaseClient);
+        
+        // Check for existing session
+        console.log('Checking for existing session...');
+        supabaseClient.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            console.log('Found existing session, fetching user data...');
+            fetchUserData(supabaseClient, session.user.id)
+              .then(userData => {
+                if (userData) {
+                  console.log('User data fetched successfully:', userData);
+                  setUser(userData);
+                }
+              })
+              .catch(error => {
+                console.error('Error fetching user data:', error);
+              })
+              .finally(() => {
+                setIsLoading(false);
+              });
+          } else {
+            console.log('No existing session found');
             setIsLoading(false);
           }
-        }
-      );
-      
-      // Set a safety timeout to prevent infinite loading
-      const safetyTimeout = setTimeout(() => {
-        console.log('Safety timeout reached - forcing loading state to false');
+        });
+        
+        // Set up auth state change listener
+        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
+          async (event, session) => {
+            console.log('Auth state changed:', event);
+            
+            if (event === 'SIGNED_IN' && session) {
+              console.log('User signed in, fetching user data...');
+              try {
+                const userData = await fetchUserData(supabaseClient, session.user.id);
+                if (userData) {
+                  console.log('User data fetched successfully:', userData);
+                  setUser(userData);
+                  
+                  // Force navigation to dashboard
+                  console.log('Redirecting to dashboard after successful sign in');
+                  window.location.href = '/dashboard';
+                }
+              } catch (error) {
+                console.error('Error fetching user data after sign in:', error);
+              } finally {
+                setIsLoading(false);
+              }
+            } else if (event === 'SIGNED_OUT') {
+              console.log('User signed out');
+              setUser(null);
+              setIsLoading(false);
+            }
+          }
+        );
+        
+        // Set a safety timeout to prevent infinite loading
+        const safetyTimeout = setTimeout(() => {
+          console.log('Safety timeout reached - forcing loading state to false');
+          setIsLoading(false);
+        }, 5000);
+        
+        // Clean up subscription and timeout on unmount
+        return () => {
+          subscription.unsubscribe();
+          clearTimeout(safetyTimeout);
+        };
+      } catch (error) {
+        console.error('Error initializing Supabase client:', error);
         setIsLoading(false);
-      }, 5000);
-      
-      // Clean up subscription and timeout on unmount
-      return () => {
-        subscription.unsubscribe();
-        clearTimeout(safetyTimeout);
-      };
+      }
     } else {
       console.error('Supabase credentials not found in environment variables');
       setIsLoading(false);
@@ -209,9 +219,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Force navigation after setting user state
         console.log('🧭 Forcing navigation to dashboard at:', new Date().toISOString());
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 500);
+        window.location.href = '/dashboard';
       }
     } catch (error) {
       console.error('Error in login function:', error);
