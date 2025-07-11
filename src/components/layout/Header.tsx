@@ -58,6 +58,13 @@ export function Header() {
             tattscore_enabled: data.tattscore_enabled || false
           });
         }
+                  className="block w-full text-center bg-gradient-to-r from-purple-600 to-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sign In
+                </Link>
+              )}
+              
       }
     } catch (error) {
       console.error('Error fetching module availability:', error);
