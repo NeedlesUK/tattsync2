@@ -1,399 +1,257 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, LogOut, Settings, Crown, Calendar, Award, Building, MessageCircle, Ticket, Users, Bell } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { Link } from 'react-router-dom';
+import { Calendar, Users, CreditCard, MessageCircle, Gift, Shield, Award, Building, Eye } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
-export function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
-  const location = useLocation();
-  const [userRoles, setUserRoles] = useState<string[]>([]);
-  
+export function DashboardPage() {
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [events, setEvents] = useState<any[]>([]);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+
   useEffect(() => {
-    if (user?.roles) {
-      setUserRoles(user.roles);
-    } else if (user?.role) {
-      setUserRoles([user.role]);
-    } else {
-      setUserRoles([]);
-    }
-  }, [user]);
+    // Simulate loading data
+    setTimeout(() => {
+      setEvents([
+        {
+          id: 1,
+          name: 'The Great Western Tattoo Show',
+          date: '2024-08-10',
+          status: 'published',
+          event_slug: 'gwts'
+        }
+      ]);
+      setApplications([]);
+      setRecentActivity([]);
+      setIsLoading(false);
+    }, 1000);
+  }, []);
 
-  // Define navigation based on user role
-  const getNavigation = (): any[] => {
-    // Default navigation for all users
-    const baseNavigation = [
-      { name: 'Dashboard', href: '/dashboard' }
-    ];
-    
-    // For event managers, show specific navigation
-    if (userRoles.includes('event_manager') || userRoles.includes('event_admin')) {
-      return [
-        ...baseNavigation,
-        { 
-          name: 'Messages', 
-          href: '/messages',
-          badge: {
-            count: 0, // Replace with actual unread count
-            color: 'bg-green-500 text-white'
-          }
-        },
-        { 
-          name: 'Tickets', 
-          href: '/ticket-management',
-          requiresModule: 'ticketing_enabled'
-        },
-        { 
-         name: 'Applications', 
-          href: '/applications'
-        },
-        { 
-          name: 'Attendees', 
-          href: '/attendees'
-        },
-      ];
-    }
-    
-    // For regular users
-    return [
-      ...baseNavigation,
-      { name: 'Events', href: '/events' },
-      { name: 'Messages', href: '/messages' },
-      { name: 'Deals', href: '/deals' },
-    ];
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
   };
 
-  const navigationItems = getNavigation();
-
-  // For Master Admin, direct links instead of dropdowns
-  const adminDirectLinks = [
-    { name: 'TattScore', href: '/tattscore/admin' },
-    { name: 'Studio', href: '/studio/dashboard' },
-    { name: 'Tickets', href: '/ticket-management' },
-  ];
-
-  // TattScore navigation items - filter based on role
-  const tattscoreNavigation = [
-    { name: 'TattScore Admin', href: '/tattscore/admin', roles: ['event_manager', 'event_admin'] },
-    { name: 'Leaderboard', href: '/tattscore/judging', roles: ['event_manager', 'event_admin', 'judge'] }
-  ];
-
-  // Studio navigation items
-  const studioNavigation = [
-    { name: 'Studio Dashboard', href: '/studio/dashboard', roles: ['studio_manager', 'artist', 'piercer'] },
-  ];
-
-  const isActive = (path: string) => location.pathname === path;
-
-  const getRoleDisplay = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return { label: 'Master Admin', icon: Crown, color: 'bg-purple-600' };
-      case 'event_manager':
-        return { label: 'Event Manager', icon: Calendar, color: 'bg-teal-600' };
-      case 'studio_manager':
-        return { label: 'Studio Manager', icon: Building, color: 'bg-blue-600' };
-      case 'judge':
-        return { label: 'Judge', icon: Award, color: 'bg-orange-600' };
-      default:
-        return null;
-    }
+  const handleManageEvent = (eventId: number) => {
+    window.location.href = `/event-settings?event=${eventId}`;
   };
 
-  const roleDisplay = user ? getRoleDisplay(user.role) : null;
-  
-  // Check if a module is enabled for the current user
-  const isModuleEnabled = (moduleName: string) => {
-    // This is a placeholder - in a real implementation, you would check if the module is enabled
-    // for the current user's event
-    if (!user) return false;
-    
-    // For demo purposes, enable all modules for admin users
-    if (user.role === 'admin' || user.email === 'admin@tattsync.com') {
-      return true;
-    }
-    
-    // For event managers, check if the module is enabled in their event
-    // This would typically be fetched from the database
-    // For now, we'll just return true for all modules
-    return true;
+  const handlePreviewEvent = (eventSlug: string) => {
+    // Open in new tab
+    window.open(`/events/${eventSlug}`, '_blank');
   };
 
-  // Filter navigation items based on user role
-  const filteredTattscoreNavigation = tattscoreNavigation.filter(item => 
-    !item.roles || (user && (userRoles.some(role => item.roles.includes(role)) || user?.email === 'gary@tattscore.com'))
-  );
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pt-16 flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
-  const filteredStudioNavigation = studioNavigation.filter(item => 
-    !item.roles || (user && (userRoles.some(role => item.roles.includes(role)) || user?.email === 'gary@tattscore.com'))
-  );
-
-  return (
-    <header className="bg-black/20 backdrop-blur-md border-b border-purple-500/20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-3">
-              <img 
-                src="/IMG_0953.png" 
-                alt="TattSync Logo" 
-                className="w-10 h-10 object-contain"
-              />
-              <span className="text-white font-bold text-xl">TattSync</span>
+  if (user?.role === 'admin' || user?.email === 'admin@tattsync.com') {
+    return (
+      <div className="min-h-screen pt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold text-white mb-4">
+              Welcome back, {user.name}!
+            </h1>
+            <p className="text-xl text-gray-300 mb-8">
+              You have admin access to the TattSync platform.
+            </p>
+            <Link
+              to="/dashboard"
+              className="inline-block bg-gradient-to-r from-purple-600 to-teal-600 text-white px-8 py-3 rounded-lg font-medium hover:shadow-lg transition-all transform hover:scale-105"
+            >
+              Go to Admin Dashboard
             </Link>
           </div>
 
-          {user && (
-            <nav className="hidden md:flex space-x-8">
-              {navigationItems.map((item) => {
-                // Skip items that require a module if the module is not enabled
-                if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
-                  return null;
-                }
-                
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href} 
-                    className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isActive(item.href)
-                        ? 'text-purple-400 bg-purple-400/10'
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    {item.name}
-                    {item.badge && (
-                      <span className={`ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${
-                        item.badge.count > 0 
-                          ? 'bg-red-500 text-white' 
-                          : item.badge.color
-                      }`}>
-                        {item.badge.count}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-              
-              {/* For Master Admin, show direct links */}
-              {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive(item.href)
-                      ? 'text-purple-400 bg-purple-400/10'
-                      : 'text-gray-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  {item.name}
-                </Link>
-              ))}
-              
-              {/* TattScore Navigation - only for non-admin users */}
-              {!userRoles.includes('admin') && filteredTattscoreNavigation.length > 0 && (
-                <div className="relative group">
-                  <button className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors flex items-center space-x-1">
-                    <span>TattScore</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  <div className="absolute left-0 mt-2 w-48 bg-slate-800 border border-white/10 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                    {filteredTattscoreNavigation.map((item) => (
-                      <Link
-                        key={item.name}
-                        to={item.href}
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
-                      >
-                        {item.name}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Studio Navigation - only for non-admin users */}
-              {!userRoles.includes('admin') && filteredStudioNavigation.length > 0 && (
-                <div className="relative group">
-                  <button className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors flex items-center space-x-1">
-                    <span>Studio</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  <div className="absolute left-0 mt-2 w-48 bg-slate-800 border border-white/10 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                    {filteredStudioNavigation.map((item) => (
-                      <Link
-                        key={item.name}
-                        to={item.href}
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
-                      >
-                        {item.name}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </nav>
-          )}
-
-          <div className="flex items-center space-x-4">
-            {user ? (
-              <div className="flex items-center space-x-3">
-                <Link
-                  to="/profile"
-                  className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors"
-                >
-                  {user.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full" />
-                  ) : (
-                    <div className="w-8 h-8 bg-purple-500/30 rounded-full flex items-center justify-center overflow-hidden">
-                      {user.name ? (
-                        <span className="text-white font-bold text-sm">{user.name.charAt(0).toUpperCase()}</span>
-                      ) : (
-                        <User className="w-5 h-5 text-purple-400" />
-                      )}
-                    </div>
-                  )}
-                  <div className="hidden sm:block">
-                    <span className="block font-medium">{user.name || 'User'}</span>
-                  </div>
-                </Link>
-                {user && roleDisplay && (
-                  <span className={`${roleDisplay?.color || 'bg-purple-600'} text-white text-xs px-2 py-1 rounded-full flex items-center space-x-1`}>
-                    {user.role === 'admin' || user.email === 'admin@tattsync.com' ? (
-                      <>
-                        <Crown className="w-3 h-3" />
-                        <span className="hidden sm:inline">{roleDisplay?.label || 'Master Admin'}</span>
-                      </>
-                    ) : (
-                      <>
-                        {roleDisplay && <roleDisplay.icon className="w-3 h-3" />}
-                        <span className="hidden sm:inline">{roleDisplay?.label || ''}</span>
-                      </>
-                    )}
-                  </span>
-                )}
-                <button
-                  onClick={logout}
-                  className="text-gray-300 hover:text-white transition-colors"
-                  aria-label="Logout"
-                >
-                  <LogOut className="w-5 h-5" />
-                </button>
+          {/* Quick Access Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all">
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-teal-500 rounded-lg flex items-center justify-center mb-4">
+                <Calendar className="w-6 h-6 text-white" />
               </div>
-            ) : (
-              <div className="hidden sm:block">
-                <Link
-                  to="/login"
-                  className="bg-gradient-to-r from-purple-600 to-teal-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
-                >
-                  Sign In
-                </Link>
-              </div>
-            )}
+              <h3 className="text-xl font-semibold text-white mb-2">Event Management</h3>
+              <p className="text-gray-300 mb-4">Manage your tattoo conventions and events</p>
+              <Link
+                to="/events"
+                className="text-purple-400 hover:text-purple-300 font-medium transition-colors flex items-center"
+              >
+                View Events
+                <svg className="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
 
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden text-gray-300 hover:text-white"
-            >
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all">
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mb-4">
+                <Award className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">TattScore</h3>
+              <p className="text-gray-300 mb-4">Professional competition judging system</p>
+              <Link
+                to="/tattscore/admin"
+                className="text-orange-400 hover:text-orange-300 font-medium transition-colors flex items-center"
+              >
+                Manage Competitions
+                <svg className="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center mb-4">
+                <Building className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">Studio Management</h3>
+              <p className="text-gray-300 mb-4">Day-to-day studio operations and booking</p>
+              <Link
+                to="/studio/dashboard"
+                className="text-blue-400 hover:text-blue-300 font-medium transition-colors flex items-center"
+              >
+                Studio Dashboard
+                <svg className="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen pt-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
+          <p className="text-gray-300">Welcome back, {user?.name}</p>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Applications</p>
+                <p className="text-2xl font-bold text-white">{applications.length}</p>
+              </div>
+              <Users className="w-8 h-8 text-purple-400" />
+            </div>
+          </div>
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Events</p>
+                <p className="text-2xl font-bold text-white">{events.length}</p>
+              </div>
+              <Calendar className="w-8 h-8 text-teal-400" />
+            </div>
+          </div>
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Messages</p>
+                <p className="text-2xl font-bold text-white">0</p>
+              </div>
+              <MessageCircle className="w-8 h-8 text-orange-400" />
+            </div>
+          </div>
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400 text-sm">Deals</p>
+                <p className="text-2xl font-bold text-white">0</p>
+              </div>
+              <Gift className="w-8 h-8 text-red-400" />
+            </div>
           </div>
         </div>
 
-        {isMenuOpen && user && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              {navigationItems.map((item) => {
-                // Skip items that require a module if the module is not enabled
-                if (item.requiresModule && !isModuleEnabled(item.requiresModule)) {
-                  return null;
-                }
-                
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href} 
-                    className={`flex items-center px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                      isActive(item.href)
-                        ? 'text-purple-400 bg-purple-400/10'
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
-                    }`}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {item.name}
-                    {item.badge && (
-                      <span className={`ml-1 px-1.5 py-0.5 text-xs font-medium rounded-full ${
-                        item.badge.count > 0 
-                          ? 'bg-red-500 text-white' 
-                          : item.badge.color
-                      }`}>
-                        {item.badge.count}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-              
-              {/* For Master Admin, show direct links in mobile menu too */}
-              {user && (user.role === 'admin' || userRoles.includes('admin')) && adminDirectLinks.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                    isActive(item.href)
-                      ? 'text-purple-400 bg-purple-400/10'
-                      : 'text-gray-300 hover:text-white hover:bg-white/10'
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
+        {/* Recent Activity */}
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 mb-8">
+          <h2 className="text-xl font-bold text-white mb-6">Recent Activity</h2>
+          
+          {recentActivity.length > 0 ? (
+            <div className="space-y-4">
+              {recentActivity.map((activity, index) => (
+                <div key={index} className="flex items-start space-x-3 p-3 bg-white/5 rounded-lg">
+                  <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center">
+                    <Users className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-white">{activity.message}</p>
+                    <p className="text-gray-400 text-sm">{activity.timestamp}</p>
+                  </div>
+                </div>
               ))}
-              
-              {/* TattScore Mobile Navigation - only for non-admin users */}
-              {!userRoles.includes('admin') && filteredTattscoreNavigation.length > 0 && (
-                <>
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    TattScore
-                  </div>
-                  {filteredTattscoreNavigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      {item.name}
-                    </Link>
-                  ))}
-                </>
-              )}
-              
-              {/* Studio Mobile Navigation - only for non-admin users */}
-              {!userRoles.includes('admin') && filteredStudioNavigation.length > 0 && (
-                <>
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    Studio
-                  </div>
-                  {filteredStudioNavigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      {item.name}
-                    </Link>
-                  ))}
-                </>
-              )}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-400">No recent activity</p>
+            </div>
+          )}
+        </div>
+
+        {/* Upcoming Events */}
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+          <h2 className="text-xl font-bold text-white mb-6">Upcoming Events</h2>
+          
+          {events.length > 0 ? (
+            <div className="space-y-4">
+              {events.map((event) => (
+                <div key={event.id} className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                  <div>
+                    <h3 className="text-white font-medium">{event.name}</h3>
+                    <p className="text-gray-400 text-sm">{formatDate(event.date)}</p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      event.status === 'published' 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-yellow-500/20 text-yellow-400'
+                    }`}>
+                      {event.status === 'published' ? 'Published' : 'Draft'}
+                    </span>
+                    <button
+                      onClick={() => handlePreviewEvent(event.event_slug)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Preview
+                    </button>
+                    <button
+                      onClick={() => handleManageEvent(event.id)}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-1 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Manage
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-400">No upcoming events</p>
+              <Link
+                to="/events"
+                className="mt-4 inline-block bg-gradient-to-r from-purple-600 to-teal-600 text-white px-6 py-2 rounded-lg font-medium hover:shadow-lg transition-all"
+              >
+                Create Event
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
-    </header>
+    </div>
   );
 }
