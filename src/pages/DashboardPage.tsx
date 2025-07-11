@@ -9,12 +9,12 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [events, setEvents] = useState<any[]>([]);
-  const [applications, setApplications] = useState<any[]>([]);
-  const [stats, setStats] = useState({
-    upcomingEvents: 0,
-    pendingApplications: 0,
-    approvedApplications: 0,
-    totalRevenue: 0
+  // Temporarily comment out admin redirection to isolate login hang issue
+  // useEffect(() => {
+  //   if (user?.role === 'admin') {
+  //     navigate('/admin/dashboard');
+  //   }
+  // }, [user, navigate]);
   });
 
   useEffect(() => {
@@ -24,8 +24,10 @@ export function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
+      console.log('🔍 Starting to fetch dashboard data...');
       
       if (supabase) {
+        console.log('🔍 Supabase client available, fetching events...');
         // Fetch events managed by the user
         const { data: eventsData, error: eventsError } = await supabase
           .from('events')
@@ -35,7 +37,9 @@ export function DashboardPage() {
           
         if (eventsError) {
           console.error('Error fetching events:', eventsError);
+          console.log('⚠️ Error fetching events, continuing with other data...');
         } else if (eventsData) {
+          console.log(`✅ Successfully fetched ${eventsData.length} events`);
           setEvents(eventsData);
           setStats(prev => ({ ...prev, upcomingEvents: eventsData.length }));
         }
@@ -49,7 +53,9 @@ export function DashboardPage() {
           
         if (applicationsError) {
           console.error('Error fetching applications:', applicationsError);
+          console.log('⚠️ Error fetching applications, continuing...');
         } else if (applicationsData) {
+          console.log(`✅ Successfully fetched ${applicationsData.length} applications`);
           setApplications(applicationsData);
           
           // Count pending and approved applications
@@ -107,7 +113,9 @@ export function DashboardPage() {
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      console.log('❌ Error in fetchDashboardData, setting empty data');
     } finally {
+      console.log('✅ Dashboard data fetch complete, setting isLoading to false');
       setIsLoading(false);
     }
   };

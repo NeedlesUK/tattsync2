@@ -55,12 +55,26 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   // Function to fetch user data from the 'users' table
   const fetchUserData = async (supabaseClient: SupabaseClient, userId: string): Promise<AppUser | null> => {
     try {
-      // Fetch user data from the 'users' table
-      const { data: userData, error: userError } = await supabaseClient
+      // Add timeout protection for database queries
+      const timeoutPromise = new Promise<null>((_, reject) => 
+        setTimeout(() => reject(new Error('Database query timeout')), 5000)
+      );
+      
+      // Fetch user data with timeout protection
+      const userDataPromise = supabaseClient
         .from('users')
-        .select('id, name, email, role, user_roles(role)') // Select user_roles to get all roles
+        .select('id, name, email, role, user_roles(role)')
         .eq('id', userId)
         .single();
+      
+      // Race between the query and the timeout
+      const { data: userData, error: userError } = await Promise.race([
+        userDataPromise,
+        timeoutPromise.then(() => {
+          console.log('⏱️ Database query timed out, falling back to auth data');
+          return { data: null, error: new Error('Query timeout') };
+        })
+      ]);
 
       if (userError) {
         console.error('Error fetching user data from DB:', userError);
@@ -108,6 +122,14 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       setIsLoading(false);
       return;
     }
+    
+    // Set a timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.log('⏱️ Loading timeout reached, setting isLoading to false');
+        setIsLoading(false);
+      }
+    }, 10000); // 10 seconds timeout
 
     // Set a timeout to prevent infinite loading
     const loadingTimeout = setTimeout(() => {
@@ -121,6 +143,21 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
       console.log('Auth state changed:', event);
       if (currentSession) {
         setSession(currentSession);
+        
+        // Set user immediately with basic info from auth
+        const authUser = currentSession.user;
+        const userMetadata = authUser.user_metadata || {};
+        const initialUser: AppUser = {
+          id: authUser.id,
+          name: userMetadata.name || authUser.email?.split('@')[0] || 'User',
+          email: authUser.email || '',
+          role: userMetadata.role || 'artist',
+          roles: userMetadata.roles || [userMetadata.role || 'artist'],
+          avatar: userMetadata.avatar_url
+        };
+        setUser(initialUser);
+        
+        // Then fetch complete user data
         try {
           const appUser = await fetchUserData(supabase, currentSession.user.id);
           if (appUser) {
@@ -137,25 +174,43 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     });
 
     // Check for existing session on mount
-    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
-      if (currentSession) {
-        setSession(currentSession);
-        try {
-          const appUser = await fetchUserData(supabase, currentSession.user.id);
-          if (appUser) {
-            setUser(appUser);
+    supabase.auth.getSession()
+      .then(async ({ data: { session: currentSession } }) => {
+        if (currentSession) {
+          setSession(currentSession);
+          
+          // Set user immediately with basic info from auth
+          const authUser = currentSession.user;
+          const userMetadata = authUser.user_metadata || {};
+          const initialUser: AppUser = {
+            id: authUser.id,
+            name: userMetadata.name || authUser.email?.split('@')[0] || 'User',
+            email: authUser.email || '',
+            role: userMetadata.role || 'artist',
+            roles: userMetadata.roles || [userMetadata.role || 'artist'],
+            avatar: userMetadata.avatar_url
+          };
+          setUser(initialUser);
+          
+          // Then fetch complete user data
+          try {
+            const appUser = await fetchUserData(supabase, currentSession.user.id);
+            if (appUser) {
+              setUser(appUser);
+            }
+          } catch (error) {
+            console.error('Error fetching user data on init:', error);
           }
-        } catch (error) {
-          console.error('Error fetching user data on init:', error);
         }
-      }
-      setIsLoading(false);
-    }).catch(error => {
-      console.error('Error getting session:', error);
-      setIsLoading(false);
-    });
+        setIsLoading(false);
+      })
+      .catch(error => {
+        console.error('Error getting session:', error);
+        setIsLoading(false);
+      });
 
     return () => {
+      clearTimeout(loadingTimeout);
       clearTimeout(loadingTimeout);
       authListener.subscription.unsubscribe();
     };
